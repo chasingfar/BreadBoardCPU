@@ -257,30 +257,54 @@ namespace BreadBoardCPU::ASM {
 #undef DEFINE_2
 	}
 	using namespace Ops;
+
+	template<size_t ArgNum,size_t VarNum>
 	struct Function{
 		struct Local{
-			int8_t offset;
+			int8_t offset=0;
+			Local(){}
+			Local(int8_t offset):offset(offset){}
+			code_t load(Reg to){
+				return load_local(offset,to);
+			}
+			code_t save(Reg value){
+				return save_local(offset,value);
+			}
 		};
+		std::array<Local,ArgNum> arg;
+		std::array<Local,VarNum> var;
 		Label start;
-		Local param[ParamsLen];
-		std::vector<Local> local;
-		code_t body;
-		Function(code_t body):body(body){}
-		code_t call(){
-			return {call(start),adj(ParamsLen)}
+		code_t body{};
+		Function(){
+			for(int8_t i=0;i<ArgNum;++i){
+				arg[i].offset=static_cast<int8_t>(i+1);
+			}
+			for(int8_t i=0;i<VarNum;++i){
+				var[i].offset=-static_cast<int8_t>(i+1);
+			}
 		}
-		code_t call(std::array<std::variant<Reg,code_t>,ParamsLen> args){
+		Function(code_t body):body(body),Function(){}
+		code_t call(){
+			return {Ops::call(start),adj(ArgNum)};
+		}
+		code_t call(std::array<std::variant<Reg,code_t>,ArgNum> args){
 			code_t codes{};
 			for(auto arg:args){
-				std::visit(Util::lambda_compose(
-					[&](Reg reg){codes.add({push(reg)});},
-					[&](code_t code){codes.add({code});}
-				),arg);
+				if(auto reg=std::get_if<Reg>(&arg)){
+					codes<<push(*reg);
 			}
-			return {codes,call()};
+				if(auto code=std::get_if<code_t>(&arg)){
+					codes<<*code;
 		}
-		friend ASM& operator<<(ASM& asm_,Function fn){
-			return asm_<<ent(fn.local.size())<<fn.body;
+			}
+			return codes<<call();
+		}
+		Function& operator<<(code_t code){
+			body<<code;
+			return *this;
+		}
+		friend ASM& operator<<(ASM& asm_,Function<ArgNum,VarNum> fn){
+			return asm_<<ent(VarNum)<<fn.body;
 		}
 	};
 
