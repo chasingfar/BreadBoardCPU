@@ -210,10 +210,16 @@ namespace BreadBoardCPU::ASM {
 		return {OP0(Local),offset};
 	}
 	code_t load_local(op_t offset){
-		return {OP0(Local),offset,load()};
+		return {lea(offset),load()};
+	}
+	code_t load_local(op_t offset,Reg to){
+		return {load_local(offset),pop(to)};
 	}
 	code_t save_local(op_t offset){
-		return {OP0(Local),offset,save()};
+		return {lea(offset),save()};
+	}
+	code_t save_local(op_t offset,Reg value){
+		return {push(value),save_local(offset)};
 	}
 
 #define DEFINE_0(type,name,FN)              \
