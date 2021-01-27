@@ -130,6 +130,7 @@ namespace BreadBoardCPU::ASM {
 			return os;
 		}
 	};
+	namespace Ops{
 
 	code_t push(Reg fromReg){
 		return {OP1(Push,from,fromReg)};
@@ -254,7 +255,8 @@ namespace BreadBoardCPU::ASM {
 #undef DEFINE_0
 #undef DEFINE_1
 #undef DEFINE_2
-	template<size_t ParamsLen>
+	}
+	using namespace Ops;
 	struct Function{
 		struct Local{
 			int8_t offset;
