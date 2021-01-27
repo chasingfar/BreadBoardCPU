@@ -34,6 +34,10 @@ namespace Util{
 
 			}
 		}
+		flat_vector<T>& operator<<(flat_vector<T> v){
+			this->insert(this->end(),v.begin(),v.end());
+			return *this;
+		}
 	};
 }
 namespace BreadBoardCPU::ASM {
