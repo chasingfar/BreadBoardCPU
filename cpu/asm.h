@@ -21,6 +21,9 @@ namespace Util{
 	template <typename T>
 	struct flat_vector:public std::vector<T>{
 		flat_vector(std::initializer_list<std::variant<T,flat_vector<T>>> v){
+			add(v);
+		}
+		void add(std::initializer_list<std::variant<T,flat_vector<T>>> v){
 			for(auto& e:v){
 				if(auto e_v = std::get_if<flat_vector<T>>(&e)){
 					this->insert(this->end(),e_v->begin(),e_v->end());
@@ -241,6 +244,33 @@ namespace BreadBoardCPU::ASM {
 #undef DEFINE_0
 #undef DEFINE_1
 #undef DEFINE_2
+	template<size_t ParamsLen>
+	struct Function{
+		struct Local{
+			int8_t offset;
+		};
+		Label start;
+		Local param[ParamsLen];
+		std::vector<Local> local;
+		code_t body;
+		Function(code_t body):body(body){}
+		code_t call(){
+			return {call(start),adj(ParamsLen)}
+		}
+		code_t call(std::array<std::variant<Reg,code_t>,ParamsLen> args){
+			code_t codes{};
+			for(auto arg:args){
+				std::visit(Util::lambda_compose(
+					[&](Reg reg){codes.add({push(reg)});},
+					[&](code_t code){codes.add({code});}
+				),arg);
+			}
+			return {codes,call()};
+		}
+		friend ASM& operator<<(ASM& asm_,Function fn){
+			return asm_<<ent(fn.local.size())<<fn.body;
+		}
+	};
 
 	void generate(const std::string& name,auto program) {
 		std::ofstream fout{name};
