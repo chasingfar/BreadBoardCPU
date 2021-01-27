@@ -46,7 +46,14 @@ namespace BreadBoardCPU::ASM {
 	using addr_t=uint16_t;
 	using lazy_t=std::function<op_t(addr_t)>;
 	using code_t=Util::flat_vector<std::variant<op_t,lazy_t>>;
+	using ops_t=std::vector<op_t>;
 
+	std::ostream& operator<<(std::ostream& os,ops_t ops){
+		for(auto op:ops){
+			os<<std::bitset<8>(op)<<std::endl;
+		}
+		return os;
+	}
 	template<typename T>
 	op_t getByte(T* v, int i){
 		if constexpr (std::endian::native==std::endian::little){
@@ -100,8 +107,8 @@ namespace BreadBoardCPU::ASM {
 		size_t size(){
 			return codes.size();
 		}
-		auto resolve(){
-			std::vector<op_t> ops;
+		ops_t resolve(){
+			ops_t ops;
 			ops.reserve(codes.size());
 			for(auto& code:codes){
 				if(auto fn = std::get_if<lazy_t>(&code)){
@@ -120,7 +127,7 @@ namespace BreadBoardCPU::ASM {
 			label.set(size());
 			return *this;
 		}
-		auto operator<<(end_t){
+		ops_t operator<<(end_t){
 			return resolve();
 		}
 		friend std::ostream& operator<<(std::ostream& os,ASM asm_){
@@ -325,7 +332,7 @@ namespace BreadBoardCPU::ASM {
 			std::cout<<std::endl;
 		}
 	}
-	auto test_loop_sum() {
+	ops_t test_loop_sum() {
 		ASM program{};
 		Label a{"a"},b{"b"};
 		return program
@@ -341,7 +348,7 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
-	auto test_save_load() {
+	ops_t test_save_load() {
 		ASM program{};
 		Label b,c{0xFFFF-5};
 		return program
@@ -355,7 +362,7 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
-	auto test_call_ret() {
+	ops_t test_call_ret() {
 		ASM program{};
 		Label start,fn_start;
 		return program
