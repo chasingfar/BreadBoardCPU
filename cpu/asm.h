@@ -47,7 +47,7 @@ namespace BreadBoardCPU::ASM {
 	using lazy_t=std::function<op_t(addr_t)>;
 	using code_t=Util::flat_vector<std::variant<op_t,lazy_t>>;
 	using ops_t=std::vector<op_t>;
-
+	
 	std::ostream& operator<<(std::ostream& os,ops_t ops){
 		for(auto op:ops){
 			os<<std::bitset<8>(op)<<std::endl;
@@ -138,7 +138,7 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	namespace Ops{
-
+	
 	code_t push(Reg fromReg){
 		return {OP1(Push,from,fromReg)};
 	}
@@ -299,10 +299,10 @@ namespace BreadBoardCPU::ASM {
 			for(auto arg:args){
 				if(auto reg=std::get_if<Reg>(&arg)){
 					codes<<push(*reg);
-			}
+				}
 				if(auto code=std::get_if<code_t>(&arg)){
 					codes<<*code;
-		}
+				}
 			}
 			return codes<<call();
 		}
@@ -378,8 +378,33 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
+	ops_t test_function() {
+		ASM program{};
+		Label start;
+		Function<2,2> fn;
+		auto [c,d]=fn.arg;
+		auto [e,f]=fn.var;
+		return program
+			<<jmp(start)
+			<<(fn
+				<<c.load(Reg::C)
+				<<d.load(Reg::D)
+				<<add(Reg::C,Reg::D,Reg::C)
+				<<e.save(Reg::C)
+				<<lev()
+			)
+			>>start
+			<<imm(Reg::A,5)
+			<<imm(Reg::B,3)
+			<<fn.call({Reg::A,Reg::B})
+			<<halt()
+			<<ASM::END
+		;
+
+	}
 	void generateASMROM() {
-		simulate("test_loop_sum",test_loop_sum());
+		//simulate("test_loop_sum",test_loop_sum());
+		std::cout<<test_function();
 		//generate("test_save_load",test_save_load());
 		//generate("test_call_ret",test_call_ret());
 	}
