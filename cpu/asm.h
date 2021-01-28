@@ -49,8 +49,19 @@ namespace BreadBoardCPU::ASM {
 	using ops_t=std::vector<op_t>;
 	
 	std::ostream& operator<<(std::ostream& os,ops_t ops){
+		std::string name;
+		size_t size=0,i=0;
 		for(auto op:ops){
-			os<<std::bitset<8>(op)<<std::endl;
+			os<<i<<" : "<<std::bitset<8>(op)<<" ; ";
+			if(size==0){
+				std::tie(name,size)=all::parse(op);
+				os<<name;
+			}else{
+				os<<(int)*reinterpret_cast<int8_t*>(&op);
+			}
+			os<<std::endl;
+			--size;
+			++i;
 		}
 		return os;
 	}
@@ -404,8 +415,8 @@ namespace BreadBoardCPU::ASM {
 	}
 	void generateASMROM() {
 		//simulate("test_loop_sum",test_loop_sum());
-		simulate("test_function",test_function());
-		//std::cout<<test_function();
+		//simulate("test_function",test_function());
+		std::cout<<test_function();
 		//generate("test_save_load",test_save_load());
 		//generate("test_call_ret",test_call_ret());
 	}
