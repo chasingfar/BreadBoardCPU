@@ -311,7 +311,7 @@ namespace BreadBoardCPU::ASM {
 			return *this;
 		}
 		friend ASM& operator<<(ASM& asm_,Function<ArgNum,VarNum> fn){
-			return asm_<<ent(VarNum)<<fn.body;
+			return asm_>>fn.start<<ent(VarNum)<<fn.body;
 		}
 	};
 
@@ -404,7 +404,8 @@ namespace BreadBoardCPU::ASM {
 	}
 	void generateASMROM() {
 		//simulate("test_loop_sum",test_loop_sum());
-		std::cout<<test_function();
+		simulate("test_function",test_function());
+		//std::cout<<test_function();
 		//generate("test_save_load",test_save_load());
 		//generate("test_call_ret",test_call_ret());
 	}
