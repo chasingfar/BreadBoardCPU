@@ -39,7 +39,7 @@ namespace BreadBoardCPU{
 		}
 		void print_stack(){
 			size_t addr_max=1u<<16u;
-			size_t sp=get_addr((size_t)pair(Reg16::SP))+1;
+			size_t sp=get_addr((size_t)Reg(Reg16::SP))+1;
 			size_t i;
 			for (i=sp; i < std::min(sp+10,addr_max); ++i) {
 				std::cout<<std::to_string(RAM[i])<<" ";

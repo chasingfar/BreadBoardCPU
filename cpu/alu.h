@@ -18,101 +18,99 @@ namespace BreadBoardCPU {
 			arithmetic = 0,
 			logic = 1,
 		};
-		namespace Logic{
+		#define FN_TABLE \
+			X(notA     ,= 0b0000u,"~$A"        ) \
+			X(AnorB    ,= 0b0001u,"~($A|$B)"   ) \
+			X(notAandB ,= 0b0010u,"(~$A)&$B"   ) \
+			X(fill0    ,= 0b0011u,"0b00000000" ) \
+			X(AnandB   ,= 0b0100u,"~($A&$B)"   ) \
+			X(notB     ,= 0b0101u,"~$B"        ) \
+			X(AxorB    ,= 0b0110u,"$A^$B"      ) \
+			X(AandnotB ,= 0b0111u,"$A&(~$B)"   ) \
+			X(notAorB  ,= 0b1000u,"~$A|$B"     ) \
+			X(notAxorB ,= 0b1001u,"(~$A)^$B"   ) \
+			X(B        ,= 0b1010u,"$B"         ) \
+			X(AandB    ,= 0b1011u,"$A&$B"      ) \
+			X(fill1    ,= 0b1100u,"0b11111111" ) \
+			X(AornotB  ,= 0b1101u,"$A|(~$B)"   ) \
+			X(AorB     ,= 0b1110u,"$A|$B"      ) \
+			X(A        ,= 0b1111u,"$A"         ) \
+
+		struct Logic{
+			enum fn{
+				#define X(a, b, c) a b,
+					FN_TABLE
+				#undef X
+			};
+			inline static const std::string fn_str[]={
+				#define X(a, b, c) c,
+					FN_TABLE
+				#undef X
+			};
+			fn S;
+			Logic() = default;
+			constexpr Logic(fn S) : S(S) { }
+			constexpr bool operator==(Logic a) const { return S == a.S; }
+			constexpr bool operator!=(Logic a) const { return S != a.S; }
+			operator std::string() const {
+				return fn_str[S];
+			}
+		};
+		#undef FN_TABLE
+		/*namespace Logic{
 			enum struct fn{
-				notA     = 0b0000u,
-				AnorB    = 0b0001u,
-				notAandB = 0b0010u,
-				fill0    = 0b0011u,
-				AnandB   = 0b0100u,
-				notB     = 0b0101u,
-				AxorB    = 0b0110u,
-				AandnotB = 0b0111u,
-				notAorB  = 0b1000u,
-				notAxorB = 0b1001u,
-				B        = 0b1010u,
-				AandB    = 0b1011u,
-				fill1    = 0b1100u,
-				AornotB  = 0b1101u,
-				AorB     = 0b1110u,
-				A        = 0b1111u,
+				#define X(a, b, c) a b,
+					FN_TABLE
+				#undef X
 			};
 			std::string fn_str[]={
-					"~$A",
-					"~($A|$B)",
-					"(~$A)&$B",
-					"0b00000000",
-					"~($A&$B)",
-					"~$B",
-					"$A^$B",
-					"$A&(~$B)",
-					"~$A|$B",
-					"(~$A)^$B",
-					"$B",
-					"$A&$B",
-					"0b11111111",
-					"$A|(~$B)",
-					"$A|$B",
-					"$A",
+				#define X(a, b, c) c,
+					FN_TABLE
+				#undef X
 			};
-		}
-		namespace Arith{
-			enum struct fn{
-				A                     = 0b0000u,
-				AorB                  = 0b0001u,
-				AornotB               = 0b0010u,
-				minus1                = 0b0011u,
-				AplusAandnotB         = 0b0100u,
-				AorBplusAandnotB      = 0b0101u,
-				AminusBminus1         = 0b0110u,
-				AandnotBminus1        = 0b0111u,
-				AplusAandB            = 0b1000u,
-				AplusB                = 0b1001u,
-				AornotBplusAandB      = 0b1010u,
-				AandBminus1           = 0b1011u,
-				AplusA                = 0b1100u,
-				AorBplusA             = 0b1101u,
-				AornotBplusA          = 0b1110u,
-				Aminus1               = 0b1111u,
+		}*/
+		struct Arith{
+			#define FN_TABLE \
+				X(A                ,= 0b0000u,"$A"               ) \
+				X(AorB             ,= 0b0001u,"$A|B"             ) \
+				X(AornotB          ,= 0b0010u,"$A|(~B)"          ) \
+				X(minus1           ,= 0b0011u,"-1"               ) \
+				X(AplusAandnotB    ,= 0b0100u,"$A+($A&(~B))"     ) \
+				X(AorBplusAandnotB ,= 0b0101u,"($A|B)+($A&(~B))" ) \
+				X(AminusBminus1    ,= 0b0110u,"$A-B-1"           ) \
+				X(AandnotBminus1   ,= 0b0111u,"($A&(~B))-1"      ) \
+				X(AplusAandB       ,= 0b1000u,"$A+($A&B)"        ) \
+				X(AplusB           ,= 0b1001u,"$A+B"             ) \
+				X(AornotBplusAandB ,= 0b1010u,"($A|(~B))+($A&B)" ) \
+				X(AandBminus1      ,= 0b1011u,"($A&B)-1"         ) \
+				X(AplusA           ,= 0b1100u,"$A+$A"            ) \
+				X(AorBplusA        ,= 0b1101u,"($A|B)+$A"        ) \
+				X(AornotBplusA     ,= 0b1110u,"($A|(~B))+$A"     ) \
+				X(Aminus1          ,= 0b1111u,"$A-1"             ) \
+
+			enum fn{
+				#define X(a, b, c) a b,
+					FN_TABLE
+				#undef X
 			};
-			std::string fn_str[]={
-					"$A",
-					"$A|B",
-					"$A|(~B)",
-					"-1",
-					"$A+($A&(~B))",
-					"($A|B)+($A&(~B))",
-					"$A-B-1",
-					"($A&(~B))-1",
-					"$A+($A&B)",
-					"$A+B",
-					"($A|(~B))+($A&B)",
-					"($A&B)-1",
-					"$A+$A",
-					"($A|B)+$A",
-					"($A|(~B))+$A",
-					"$A-1",
+			inline static const std::string fn_str[]={
+				#define X(a, b, c) c,
+					FN_TABLE
+				#undef X
 			};
-		}
+			#undef FN_TABLE
+			fn S;
+			Arith() = default;
+			constexpr Arith(fn S) : S(S) { }
+			constexpr bool operator==(Arith a) const { return S == a.S; }
+			constexpr bool operator!=(Arith a) const { return S != a.S; }
+			operator std::string() const {
+				return fn_str[S];
+			}
+		};
+
 		template<size_t size,typename T,typename U>
 		static std::pair<Carry,U> run(Carry Cn,Method M,T _S,U _A,U _B){
-			/*U S_=U(S);
-			size_t O=0;
-			S_=(S_&(0b1100))|((S_&0b0001)<<1)|((S_&0b0010)>>1);
-			S_^=(M==Method::logic?0b0011:0b0000);
-			for(size_t i=0;i<size;i++){
-				auto a=((A>>i)&0b1);
-				auto b=((B>>i)&0b1);
-				auto c=((a<<1)|b);
-				auto d=((S_>>c)&0b1)<<i;
-				O|=d;
-			}
-			if(M==Method::logic){
-				return {Carry::no,O};
-			}else{
-				O+=A+(Cn==Carry::yes?1:0);
-				return {(O>>size)&0b1u?Carry::yes:Carry::no,O};
-			}*/
 			std::bitset<4> S{_S};
 			std::bitset<size> F,A{_A},B{_B};
 			std::bitset<size+1> C;

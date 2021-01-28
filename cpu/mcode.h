@@ -41,8 +41,8 @@ namespace BreadBoardCPU{
 		}
 		void copy16(Reg16 from,Reg16 to){
 			LOG(from,to);
-			copy(toL(from),toL(to));
-			copy(toH(from),toH(to));
+			copy(from.L(),to.L());
+			copy(from.H(),to.H());
 		}
 
 		void inc(Reg from,Reg to){
@@ -61,8 +61,8 @@ namespace BreadBoardCPU{
 		}
 		void inc16(Reg16 reg16){
 			LOG(reg16);
-			inc(toL(reg16));
-			inc(toH(reg16),MARG::getCarry(marg));
+			inc(reg16.L());
+			inc(reg16.H(),MARG::getCarry(marg));
 		}
 
 		void dec(Reg from,Reg to){
@@ -81,8 +81,8 @@ namespace BreadBoardCPU{
 		}
 		void dec16(Reg16 reg16){
 			LOG(reg16);
-			dec(toL(reg16));
-			dec(toH(reg16), MARG::getCarry(marg));
+			dec(reg16.L());
+			dec(reg16.H(), MARG::getCarry(marg));
 		}
 		void load(Reg16 from,Reg to){
 			LOG(from,to);
@@ -109,13 +109,13 @@ namespace BreadBoardCPU{
 		}
 		void add16(Reg16 lhs,Reg16 rhs,Reg16 dest){
 			LOG(lhs,rhs,dest);
-			add(toL(lhs),toL(rhs),toL(dest));
-			add(toH(lhs),toH(rhs),toH(dest),MARG::getCarry(marg));
+			add(lhs.L(),rhs.L(),dest.L());
+			add(lhs.H(),rhs.H(),dest.H(),MARG::getCarry(marg));
 		}
 		void add16(Reg16 lhs,Reg rhs,Reg16 dest){
 			LOG(lhs,rhs,dest);
-			add(toL(lhs),rhs,toL(dest));
-			inc(toH(lhs),toH(dest),MARG::getCarry(marg));
+			add(lhs.L(),rhs,dest.L());
+			inc(lhs.H(),dest.H(),MARG::getCarry(marg));
 		}
 		void sub(Reg lhs,Reg rhs,Reg dest,Carry carry){
 			LOG(lhs,rhs,dest,carry);
@@ -129,13 +129,13 @@ namespace BreadBoardCPU{
 		}
 		void sub16(Reg16 lhs,Reg16 rhs,Reg16 dest){
 			LOG(lhs,rhs,dest);
-			sub(toL(lhs),toL(rhs),toL(dest));
-			sub(toH(lhs),toH(rhs),toH(dest),MARG::getCarry(marg));
+			sub(lhs.L(),rhs.L(),dest.L());
+			sub(lhs.H(),rhs.H(),dest.H(),MARG::getCarry(marg));
 		}
 		void sub16(Reg16 lhs,Reg rhs,Reg16 dest){
 			LOG(lhs,rhs,dest);
-			sub(toL(lhs),rhs,toL(dest));
-			dec(toH(lhs),toH(dest),MARG::getCarry(marg));
+			sub(lhs.L(),rhs,dest.L());
+			dec(lhs.H(),dest.H(),MARG::getCarry(marg));
 		}
 		void shift_left(Reg lhs,Reg dest,unsigned pad){
 			LOG(lhs,dest,pad);
@@ -229,18 +229,18 @@ namespace BreadBoardCPU{
 		}
 		void stack_pop16(Reg16 reg16){
 			LOG(reg16);
-			stack_pop(toH(reg16));
-			stack_pop(toL(reg16));
+			stack_pop(reg16.H());
+			stack_pop(reg16.L());
 		}
 		void stack_push16(Reg16 reg16){
 			LOG(reg16);
-			stack_push(toL(reg16));
-			stack_push(toH(reg16));
+			stack_push(reg16.L());
+			stack_push(reg16.H());
 		}
 		void load_imm16(Reg16 reg16){
 			LOG(reg16);
-			load_imm(toH(reg16));
-			load_imm(toL(reg16));
+			load_imm(reg16.H());
+			load_imm(reg16.L());
 		}
 		void jump(Reg16 addr){
 			LOG(addr);

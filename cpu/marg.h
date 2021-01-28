@@ -31,53 +31,111 @@ namespace BreadBoardCPU {
 		}
 	};
 	namespace Regs{
-		enum struct Reg {
-			OPR,TMA,
-			TML,TMH,
-			SPL,SPH,
-			PCL,PCH,
-			A,B,
-			C,D,
-			E,F,
-			L,H,
+		struct Reg {
+			using base_t=unsigned;
+			#define TABLE \
+				X(OPR) X(TMA) \
+				X(TML) X(TMH) \
+				X(SPL) X(SPH) \
+				X(PCL) X(PCH) \
+				X(A  ) X(B  ) \
+				X(C  ) X(D  ) \
+				X(E  ) X(F  ) \
+				X(L  ) X(H  ) \
+
+			enum Value: base_t{
+				#define X(a) a,
+					TABLE
+				#undef X
+			};
+			inline static const std::string str[]={
+				#define X(a) #a,
+					TABLE
+				#undef X
+			};
+			#undef TABLE
+			Value v;
+			Reg() = default;
+			constexpr Reg(Value v) : v(v) { }
+			explicit constexpr Reg(base_t v) : v(static_cast<Value>(v)) { }
+			//constexpr bool operator==(Reg a) const { return v == a.v; }
+			//constexpr bool operator!=(Reg a) const { return v != a.v; }
+			explicit operator std::string() const {return str[v];}
+			operator base_t() const {return v;}
+			friend std::ostream &operator<<(std::ostream &os, Reg reg) {
+				return os<<std::string(reg);
+			}
 		};
-		enum struct UReg {
-			A,B,
-			C,D,
-			E,F,
-			L,H,
+		struct UReg {
+			using base_t=unsigned ;
+			#define TABLE \
+				X(A  ) X(B  ) \
+				X(C  ) X(D  ) \
+				X(E  ) X(F  ) \
+				X(L  ) X(H  ) \
+
+			enum Value:base_t{
+				#define X(a) a,
+					TABLE
+				#undef X
+			};
+			inline static const std::string str[]={
+				#define X(a) #a,
+					TABLE
+				#undef X
+			};
+			#undef TABLE
+			Value v;
+			UReg() = default;
+			constexpr UReg(Value v) : v(v) { }
+			explicit constexpr UReg(base_t v) : v(static_cast<Value>(v)) { }
+			//constexpr bool operator==(UReg a) const { return v == a.v; }
+			//constexpr bool operator!=(UReg a) const { return v != a.v; }
+			explicit operator std::string() const {return str[v];}
+			operator base_t() const {return v;}
+			explicit operator Reg() const {return Reg((base_t)v+(base_t)Reg::A);}
+			friend std::ostream &operator<<(std::ostream &os, UReg ureg) {
+				return os<<std::string(ureg);
+			}
 		};
-		enum struct Reg16 {
-			IMM,
-			TMP,
-			SP,
-			PC,
-			BA,
-			DC,
-			FE,
-			HL,
+		struct Reg16 {
+			using base_t=unsigned;
+			#define TABLE \
+				X(IMM) \
+				X(TMP) \
+				X(SP ) \
+				X(PC ) \
+				X(BA ) \
+				X(DC ) \
+				X(FE ) \
+				X(HL ) \
+
+			enum Value:base_t {
+				#define X(a) a,
+					TABLE
+				#undef X
+			};
+			inline static const std::string str[]={
+				#define X(a) #a,
+					TABLE
+				#undef X
+			};
+			#undef TABLE
+			Value v;
+			Reg16() = default;
+			constexpr Reg16(Value v) : v(v) { }
+			explicit constexpr Reg16(base_t v) : v(static_cast<Value>(v)) { }
+			//constexpr bool operator==(Reg16 a) const { return v == a.v; }
+			//constexpr bool operator!=(Reg16 a) const { return v != a.v; }
+			explicit operator std::string() const {return str[v];}
+			operator base_t() const {return v;}
+			explicit operator Reg() const {return Reg(v<<1u);}
+			Reg L(){return Reg((v<<1u)+0);}
+			Reg H(){return Reg((v<<1u)+1);}
+			friend std::ostream &operator<<(std::ostream &os, Reg16 reg16) {
+				return os<<std::string(reg16);
+			}
 		};
-		static Reg user(UReg reg){
-			return static_cast<Reg>(static_cast<unsigned>(reg) + static_cast<unsigned>(Reg::A));
-		}
-		static Reg pair(Reg16 reg16){
-			return static_cast<Reg>(static_cast<unsigned>(reg16) << 1u );
-		}
-		static Reg toL(Reg16 reg16){
-			return static_cast<Reg>( (static_cast<unsigned>(reg16) << 1u) + 0);
-		}
-		static Reg toH(Reg16 reg16){
-			return static_cast<Reg>( (static_cast<unsigned>(reg16) << 1u) + 1);
-		}
-		std::ostream &operator<<(std::ostream &os, Reg reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
-		std::ostream &operator<<(std::ostream &os, UReg reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
-		std::ostream &operator<<(std::ostream &os, Reg16 reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
 	}
 	using namespace Regs;
 }
