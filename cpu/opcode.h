@@ -478,31 +478,7 @@ namespace BreadBoardCPU::OpCode {
 			return result;
 		}
 	};
-	/*using opcode=OpCode<
-			MARG::type,MCTRL::type,MARG::state::index::type,
-			Load       <0b11111>,
-			Save       <0b11110>,
-			Push       <0b11101>,
-			Pop        <0b11100>,
-			Calc       <0b11011>,
-			Logic      <0b110101>,
-			BranchCF   <0b11010011>,
-			BranchZero <0b11010010>,
-			ImmVal     <0b11010001>,
-			Jump       <0b11010000>,
-			Call       <0b11001111>,
-			Ret        <0b11001110>,
-
-			Interrupt<0b00000001>,
-			Interrupt<0b00001000>,
-			Interrupt<0b00010000>,
-			Interrupt<0b00011000>,
-			Interrupt<0b00100000>,
-			Interrupt<0b00101000>,
-			Interrupt<0b00110000>,
-			Interrupt<0b00111000>,
-			Initialize<0b00000000>
-	>;*/
+	
 	namespace Ops{
 		using Load       = Load       <0b11111>;
 		using Save       = Save       <0b11110>;
