@@ -26,9 +26,7 @@ std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& value) {
 }*/
 template<typename T0,typename... T>
 std::ostream& print_arg(std::ostream& os,T0 v0, T... value){
-	os<<"("<<v0;
-	((os << ',' << value), ...);
-	return os<<")";
+	return os<<"("<<v0<<((os << ',' << value), ...,")");
 }
 
 namespace Util {
