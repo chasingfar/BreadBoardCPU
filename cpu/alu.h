@@ -12,12 +12,15 @@ namespace BreadBoardCPU {
 			no = 1,
 		};
 		std::ostream &operator<<(std::ostream &os, Carry carry) {
-			return os<<static_cast<unsigned>(carry);
+			return os<<(carry==Carry::yes?"carry":"no_carry");
 		}
 		enum struct Method{
 			arithmetic = 0,
 			logic = 1,
 		};
+		std::ostream &operator<<(std::ostream &os, Method method) {
+			return os<<(method==Method::arithmetic?"arithmetic":"logic");
+		}
 		#define FN_TABLE \
 			X(notA     ,= 0b0000u,"~$A"        ) \
 			X(AnorB    ,= 0b0001u,"~($A|$B)"   ) \
