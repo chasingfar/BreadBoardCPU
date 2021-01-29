@@ -293,7 +293,7 @@ namespace BreadBoardCPU::ASM {
 		std::array<Local,VarNum> var;
 		Label start;
 		code_t body{};
-		Function(){
+		Function(std::string name):start(name){
 			for(int8_t i=0;i<ArgNum;++i){
 				arg[i].offset=static_cast<int8_t>(i+1);
 			}
@@ -301,7 +301,8 @@ namespace BreadBoardCPU::ASM {
 				var[i].offset=-static_cast<int8_t>(i+1);
 			}
 		}
-		Function(code_t body):body(body),Function(){}
+		Function():Function("name"){}
+		Function(std::string name,code_t body):body(body),Function(name){}
 		code_t call(){
 			return {Ops::call(start),adj(ArgNum)};
 		}
@@ -321,7 +322,7 @@ namespace BreadBoardCPU::ASM {
 			body<<code;
 			return *this;
 		}
-		friend ASM& operator<<(ASM& asm_,Function<ArgNum,VarNum> fn){
+		friend ASM& operator<<(ASM& asm_,Function<ArgNum,VarNum>& fn){
 			return asm_>>fn.start<<ent(VarNum)<<fn.body;
 		}
 	};
@@ -391,12 +392,12 @@ namespace BreadBoardCPU::ASM {
 	}
 	ops_t test_function() {
 		ASM program{};
-		Label start;
-		Function<2,2> fn;
+		Label main{"main"};
+		Function<2,2> fn{"fn(c,d)"};
 		auto [c,d]=fn.arg;
 		auto [e,f]=fn.var;
 		return program
-			<<jmp(start)
+			<<jmp(main)
 			<<(fn
 				<<c.load(Reg::C)
 				<<d.load(Reg::D)
@@ -404,7 +405,7 @@ namespace BreadBoardCPU::ASM {
 				<<e.save(Reg::C)
 				<<lev()
 			)
-			>>start
+			>>main
 			<<imm(Reg::A,5)
 			<<imm(Reg::B,3)
 			<<fn.call({Reg::A,Reg::B})
@@ -415,8 +416,8 @@ namespace BreadBoardCPU::ASM {
 	}
 	void generateASMROM() {
 		//simulate("test_loop_sum",test_loop_sum());
-		//simulate("test_function",test_function());
 		std::cout<<test_function();
+		simulate("test_function",test_function());
 		//generate("test_save_load",test_save_load());
 		//generate("test_call_ret",test_call_ret());
 	}
