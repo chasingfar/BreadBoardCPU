@@ -136,6 +136,12 @@ namespace BreadBoardCPU {
 				return os<<std::string(reg16);
 			}
 		};
+		static Reg user(UReg ureg){
+			return Reg(ureg + Reg::A);
+		}
+		static Reg pair(Reg16 reg16){
+			return Reg(reg16 << 1u );
+		}
 	}
 	using namespace Regs;
 }

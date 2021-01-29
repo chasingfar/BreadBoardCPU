@@ -70,13 +70,13 @@ namespace BreadBoardCPU {
 		static auto memToReg(auto o, Reg16 from, Reg to){
 			LOG(from, to);
 			o=alu::pass(o);
-			o=io::set2(o, Reg(from), to, DirMode::MemToReg);
+			o=io::set2(o, pair(from), to, DirMode::MemToReg);
 			return o;
 		}
 		static auto regToMem(auto o, Reg from, Reg16 to){
 			LOG(from, to);
 			o=alu::pass(o);
-			o=io::set2(o, from, Reg(to), DirMode::RegToMem);
+			o=io::set2(o, from, pair(to), DirMode::RegToMem);
 			return o;
 		}
 

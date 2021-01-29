@@ -223,7 +223,7 @@ namespace BreadBoardCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("Push");
-			ctx.stack_push(Reg(getUReg<from>(ctx)));
+			ctx.stack_push(user(getUReg<from>(ctx)));
 			ctx.next_op();
 			ctx.end();
 		}
@@ -238,7 +238,7 @@ namespace BreadBoardCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("Pop");
-			ctx.stack_pop(Reg(getUReg<to>(ctx)));
+			ctx.stack_pop(user(getUReg<to>(ctx)));
 			ctx.next_op();
 			ctx.end();
 		}
