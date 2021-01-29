@@ -18,11 +18,11 @@ namespace BreadBoardCPU{
 				i+=1;
 				mctrl=MCTRL::state::set(mctrl,MARG::state::get(marg));
 				mctrl=MCTRL::setIndex(mctrl,i);
-				LOG_STOP();
+				LOG_STEP()
 				return true;
 			}else{
 				i+=1;
-				LOG_END();
+				LOG_STOP()
 				return false;
 			}
 		}
