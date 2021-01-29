@@ -45,7 +45,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load(addr,Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -72,7 +71,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.stack_pop(Reg::TMA);
 			ctx.save(Reg::TMA,addr);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -87,7 +85,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm(Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 
@@ -156,7 +153,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.save_carry();
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -209,7 +205,6 @@ namespace BreadBoardCPU::OpCode {
 			}
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 
@@ -225,7 +220,6 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Push");
 			ctx.stack_push(user(getUReg<from>(ctx)));
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -240,7 +234,6 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Pop");
 			ctx.stack_pop(user(getUReg<to>(ctx)));
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 
@@ -257,7 +250,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm16(Reg16::TMP);
 			ctx.branch_zero(Reg16::TMP,Reg::TMA,Reg::TMA);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -272,7 +264,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm16(Reg16::TMP);
 			ctx.branch(Reg16::TMP);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -286,7 +277,6 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Jump");
 			ctx.load_imm16(Reg16::TMP);
 			ctx.jump(Reg16::TMP);
-			ctx.end();
 		}
 	};
 
@@ -303,7 +293,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.inc16(Reg16::PC);
 			ctx.stack_push16(Reg16::PC);
 			ctx.jump(Reg16::TMP);
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -317,7 +306,6 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Return");
 			ctx.stack_pop16(Reg16::TMP);
 			ctx.jump(Reg16::TMP);
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -334,7 +322,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm(Reg::TMA);
 			ctx.sub16(Reg16::SP,Reg::TMA,Reg16::SP);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -349,7 +336,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm(Reg::TMA);
 			ctx.add16(Reg16::SP,Reg::TMA,Reg16::SP);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -365,7 +351,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.stack_pop16(Reg16::HL);
 			ctx.stack_pop16(Reg16::TMP);
 			ctx.jump(Reg16::TMP);
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -381,7 +366,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.add16(Reg16::HL,Reg::TMA,Reg16::TMP);
 			ctx.stack_push16(Reg16::TMP);
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 
@@ -403,7 +387,6 @@ namespace BreadBoardCPU::OpCode {
 			ctx.shift_left(Reg::TML,Reg::TML,0);
 			ctx.shift_left(Reg::TML,Reg::TML,0);
 			ctx.jump(Reg16::TMP);
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -417,7 +400,6 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Init");
 			ctx.dec16(Reg16::SP);// Reg16::SP-=1
 			ctx.load_op();//load op from MEM[0]
-			ctx.end();
 		}
 	};
 	template <auto V>
@@ -437,7 +419,6 @@ namespace BreadBoardCPU::OpCode {
 		static void gen(MCode& ctx){
 			LOG("Unknown",std::bitset<8>(id::get(ctx.marg)));
 			ctx.next_op();
-			ctx.end();
 		}
 	};
 

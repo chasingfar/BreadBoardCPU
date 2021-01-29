@@ -205,7 +205,8 @@ namespace BreadBoardCPU{
 
 		void load_op(){
 			LOG(i);
-			load_reset(Reg16::PC, Reg::OPR);
+			load(Reg16::PC, Reg::OPR);
+			end();
 		}
 		void next_op(){
 			LOG(i);
@@ -252,7 +253,6 @@ namespace BreadBoardCPU{
 			save_carry();
 			if(MARG::getCF(marg)==cond){
 				jump(addr);
-				end();
 			}
 		}
 		void branch_zero(Reg16 addr,Reg lhs,Reg dest){
