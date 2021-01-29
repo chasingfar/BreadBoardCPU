@@ -333,6 +333,7 @@ namespace BreadBoardCPU::OpCode {
 			ctx.copy16(Reg16::SP,Reg16::HL);
 			ctx.load_imm(Reg::TMA);
 			ctx.sub16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.next_op();
 			ctx.end();
 		}
 	};
@@ -347,6 +348,7 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Adjust");
 			ctx.load_imm(Reg::TMA);
 			ctx.add16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.next_op();
 			ctx.end();
 		}
 	};
@@ -378,6 +380,7 @@ namespace BreadBoardCPU::OpCode {
 			ctx.load_imm(Reg::TMA);
 			ctx.add16(Reg16::HL,Reg::TMA,Reg16::TMP);
 			ctx.stack_push16(Reg16::TMP);
+			ctx.next_op();
 			ctx.end();
 		}
 	};
