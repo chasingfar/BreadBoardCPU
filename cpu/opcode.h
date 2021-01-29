@@ -376,7 +376,7 @@ namespace BreadBoardCPU::OpCode {
 			return {name,2};
 		}
 		static void gen(MCode& ctx){
-			LOG("Leave");
+			LOG("Local");
 			ctx.load_imm(Reg::TMA);
 			ctx.add16(Reg16::HL,Reg::TMA,Reg16::TMP);
 			ctx.stack_push16(Reg16::TMP);
