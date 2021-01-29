@@ -294,11 +294,11 @@ namespace BreadBoardCPU::ASM {
 		Label start;
 		code_t body{};
 		Function(std::string name):start(name){
-			for(int8_t i=0;i<ArgNum;++i){
-				arg[i].offset=static_cast<int8_t>(i+1);
+			for(int8_t i=0;i<static_cast<int8_t>(ArgNum);++i){
+				arg[i].offset=ArgNum-i+4;
 			}
-			for(int8_t i=0;i<VarNum;++i){
-				var[i].offset=-static_cast<int8_t>(i+1);
+			for(int8_t i=0;i<static_cast<int8_t>(VarNum);++i){
+				var[i].offset=-i;
 			}
 		}
 		Function():Function("name"){}
