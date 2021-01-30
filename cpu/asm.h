@@ -276,12 +276,23 @@ namespace BreadBoardCPU::ASM {
 	}
 	using namespace Ops;
 
-	template<size_t ArgNum,size_t VarNum>
-	struct Function{
-		struct Local{
+	struct Block{
+		Label& label;
+		code_t body{};
+		Block& operator<<(code_t code){
+			body<<std::move(code);
+			return *this;
+		}
+		friend ASM& operator<<(ASM& asm_,const Block& block){
+			return asm_>>block.label<<block.body;
+		}
+	};
+
+	namespace StaticFn{
+		struct FnLocal{
 			int8_t offset=0;
-			Local(){}
-			Local(int8_t offset):offset(offset){}
+			FnLocal()= default;
+			explicit FnLocal(int8_t offset):offset(offset){}
 			code_t load(Reg to){
 				return load_local(offset,to);
 			}
@@ -289,44 +300,94 @@ namespace BreadBoardCPU::ASM {
 				return save_local(offset,value);
 			}
 		};
-		std::array<Local,ArgNum> arg;
-		std::array<Local,VarNum> var;
-		Label start;
-		code_t body{};
-		Function(std::string name):start(name){
-			for(int8_t i=0;i<static_cast<int8_t>(ArgNum);++i){
-				arg[i].offset=ArgNum-i+4;
+		template<size_t N>
+		struct FnArg:FnLocal{
+			explicit FnArg(int8_t i):FnLocal(N-i+4){}
+		};
+		struct FnVar:FnLocal{
+			explicit FnVar(int8_t i):FnLocal(-i){}
+		};
+		struct FnVars{
+			std::unordered_map<std::string,FnVar> vars;
+			size_t size(){return vars.size();}
+			FnVar operator[](const std::string& name){
+				return vars.emplace(name,vars.size()).first->second;
 			}
-			for(int8_t i=0;i<static_cast<int8_t>(VarNum);++i){
-				var[i].offset=-i;
+		};
+		template<size_t ArgNum>
+		struct FnDecl{
+			Label start;
+			explicit FnDecl(std::string name):start(std::move(name)){}
+			code_t call(){
+				return {Ops::call(start),adj(ArgNum)};
 			}
-		}
-		Function():Function("name"){}
-		Function(std::string name,code_t body):body(body),Function(name){}
-		code_t call(){
-			return {Ops::call(start),adj(ArgNum)};
-		}
-		code_t call(std::array<std::variant<Reg,code_t>,ArgNum> args){
-			code_t codes{};
-			for(auto arg:args){
-				if(auto reg=std::get_if<Reg>(&arg)){
-					codes<<push(*reg);
+			code_t call(std::array<std::variant<Reg,code_t>,ArgNum> args){
+				code_t codes{};
+				for (auto arg:args) {
+					if(auto reg=std::get_if<Reg>(&arg)){
+						codes<<push(*reg);
+					}
+					if(auto code=std::get_if<code_t>(&arg)){
+						codes<<*code;
+					}
 				}
-				if(auto code=std::get_if<code_t>(&arg)){
-					codes<<*code;
-				}
+				return codes<<call();
 			}
-			return codes<<call();
-		}
-		Function& operator<<(code_t code){
-			body<<code;
-			return *this;
-		}
-		friend ASM& operator<<(ASM& asm_,Function<ArgNum,VarNum>& fn){
-			return asm_>>fn.start<<ent(VarNum)<<fn.body;
-		}
-	};
 
+			template<typename F>
+			Block impl(F&& fn){
+				FnVars vars;
+				code_t body=_impl(std::forward<F>(fn),vars,std::make_integer_sequence<int8_t,ArgNum>{});
+				return {start,{ent(vars.size()),body}};
+			}
+		private:
+			template<typename F,int8_t ...I>
+			code_t _impl(F&& fn,FnVars& vars,std::integer_sequence<int8_t,I...>){
+				return std::forward<F>(fn)(vars,FnArg<sizeof...(I)>{I}...);
+			}
+		};
+	}
+	namespace DynamicFn{
+		struct FnLocal{
+			int8_t offset=0;
+			FnLocal()= default;
+			explicit FnLocal(int8_t offset):offset(offset){}
+			code_t load(Reg to){
+				return load_local(offset,to);
+			}
+			code_t save(Reg value){
+				return save_local(offset,value);
+			}
+		};
+		struct FnArg:FnLocal{
+			const size_t N;
+			FnArg(size_t N,int8_t i):N{N},FnLocal(N-i+4){}
+		};
+		struct FnVar:FnLocal{
+			FnVar(int8_t i):FnLocal(-i){}
+		};
+		struct FnDecl{
+			Label start;
+			const size_t ArgNum;
+			FnDecl(std::string name,size_t ArgNum):start(std::move(name)),ArgNum(ArgNum){}
+			code_t call(){
+				return {Ops::call(start),adj(ArgNum)};
+			}
+			code_t call(std::vector<std::variant<Reg,code_t>> arg){
+				code_t codes{};
+				for (size_t i = 0; i < ArgNum; ++i) {
+					if(auto reg=std::get_if<Reg>(&arg[i])){
+						codes<<push(*reg);
+					}
+					if(auto code=std::get_if<code_t>(&arg[i])){
+						codes<<*code;
+					}
+				}
+				return codes<<call();
+			}
+		};
+	}
+	using namespace StaticFn;
 	void generate(const std::string& name,auto program) {
 		std::ofstream fout{name};
 		if (!fout) { return; }
@@ -393,18 +454,20 @@ namespace BreadBoardCPU::ASM {
 	ops_t test_function() {
 		ASM program{};
 		Label main{"main"};
-		Function<2,2> fn{"fn(c,d)"};
-		auto [c,d]=fn.arg;
-		auto [e,f]=fn.var;
+		FnDecl<2> fn{"fn(c,d)"};
 		return program
 			<<jmp(main)
-			<<(fn
-				<<c.load(Reg::C)
-				<<d.load(Reg::D)
-				<<add(Reg::C,Reg::D,Reg::C)
-				<<e.save(Reg::C)
-				<<lev()
-			)
+			<<fn.impl([](auto& vars,auto c,auto d)->code_t{
+				auto e=vars["e"];
+				auto f=vars["f"];
+				return {
+					c.load(Reg::C),
+					d.load(Reg::D),
+					add(Reg::C,Reg::D,Reg::C),
+					e.save(Reg::C),
+					lev(),
+				};
+			})
 			>>main
 			<<imm(Reg::A,5)
 			<<imm(Reg::B,3)
