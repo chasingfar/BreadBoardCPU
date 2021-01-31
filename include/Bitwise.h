@@ -9,39 +9,6 @@
 #include <sstream>
 #include <vector>
 
-inline std::vector<std::string> logs{};
-enum struct LogState{
-	Start,Step,Stop
-};
-inline LogState state = LogState::Stop;
-template<typename T0,typename... T>
-std::string log_arg(T0 v0, T... value){
-	std::stringstream ss;
-	ss<<"("<<v0<<((ss << ',' << value), ...,")");
-	return ss.str();
-}
-struct Logger{
-	Logger(std::string str){
-		logs.emplace_back(str);
-		if(state==LogState::Step){print();stop();}
-	}
-	~Logger(){
-		logs.pop_back();
-	}
-	static void print(){
-		for(auto log:logs){
-			std::cout<<":"<<log;
-		}
-	}
-	static void start(){state=LogState::Start;}
-	static void stop(){state=LogState::Stop;}
-	static void step(){state=LogState::Step;}
-};
-#define LOG(...) Logger __{__func__+log_arg(__VA_ARGS__)};
-#define LOG_START() Logger::start();
-#define LOG_STOP() Logger::stop();
-#define LOG_STEP() Logger::step();
-
 namespace Util {
 
 	namespace Bitwise {

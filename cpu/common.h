@@ -6,10 +6,46 @@
 #define BREADBOARDCPU_COMMON_H
 
 #include "../include/Bitwise.h"
+#include "../include/util.h"
 #include "alu.h"
 #include <functional>
+inline std::vector<std::string> logs{};
+enum struct LogState{
+	Start,Step,Stop
+};
+inline LogState state = LogState::Stop;
+template<typename T0,typename... T>
+std::string log_arg(T0 v0, T... value){
+	std::stringstream ss;
+	ss<<"("<<v0<<((ss << ',' << value), ...,")");
+	return ss.str();
+}
+struct Logger{
+	explicit Logger(const std::string& str){
+		logs.emplace_back(str);
+		if(state==LogState::Step){print();stop();}
+	}
+	~Logger(){
+		logs.pop_back();
+	}
+	static void print(){
+		for(const auto& log:logs){
+			std::cout<<":"<<log;
+		}
+	}
+	static void start(){state=LogState::Start;}
+	static void stop(){state=LogState::Stop;}
+	static void step(){state=LogState::Step;}
+};
+#define LOG(...) Logger __{__func__+log_arg(__VA_ARGS__)};
+#define LOG_START() Logger::start();
+#define LOG_STOP() Logger::stop();
+#define LOG_STEP() Logger::step();
 namespace BreadBoardCPU {
 	using namespace Util::Bitwise::BitField;
+	using Util::TruthTable;
+	using Util::ROM;
+	using Util::generateROM;
 
 	BITFILEDBASE(6) struct ALU : Base {
 		using fn     = BitField<4, Base, FollowMode::innerLow>;
@@ -125,74 +161,6 @@ namespace BreadBoardCPU {
 		}
 	};
 
-	template<typename IN,typename OUT,size_t S=0>
-	struct TruthTable{
-		std::function<OUT(IN)> fn;
-		struct iterator{
-			size_t in;
-			TruthTable& table;
-			iterator(TruthTable& table,size_t in):in(in),table(table){}
-			OUT operator*() const { return table(in); }
-
-			// Prefix increment
-			iterator& operator++() { ++in; return *this; }
-
-			friend bool operator== (const iterator& a, const iterator& b) { return (a.in == b.in)/*&&(a.table==b.table)*/; };
-			friend bool operator!= (const iterator& a, const iterator& b) { return !(a==b); };
-		};
-		explicit TruthTable(std::function<OUT(IN)> fn):fn(fn){}
-		OUT operator ()(IN in) const { return fn(in); }
-		iterator begin() { return iterator(*this,0); }
-		iterator end()   { return iterator(*this,IN(1ull<<S)); }
-	};
-	template<typename IN,typename OUT> TruthTable(std::function<OUT(IN)>)
-	->TruthTable<typename IN::type,typename OUT::type,IN::size>;
-
-	template<typename T>
-	struct ROM{
-		T data;
-		explicit ROM(T data):data(data){}
-		friend std::ostream& operator<<(std::ostream& os,ROM rom){
-			os<<"v2.0 raw"<<std::endl;
-			size_t i=0;
-			for(auto out:rom.data){
-				os<<std::hex<< static_cast<size_t>(out);
-				if(i%8==7){
-					os<<std::endl;
-				}else{
-					os<<" ";
-				}
-				++i;
-			}
-			return os;
-		}
-	};
-	/*template<typename IN,typename OUT>
-	struct ROM<TruthTable<IN,OUT>>{
-		TruthTable<IN,OUT> data;
-		explicit ROM(std::function<OUT(IN)> fn):data(TruthTable(fn)){}
-	};*/
-
-	template<typename IN,typename OUT>
-	void generateROM(std::ostream& os,std::function<OUT(IN)> program){
-		os<<"v2.0 raw"<<std::endl;
-		IN in{0};//{0b1111100000000000000};
-		do{
-			//std::cout<<"LGin:"<<in<<std::endl;
-			auto out=program(in);
-			os<<std::hex<<out;
-			//std::cout<<std::dec<<out<<std::endl;
-			if((in&7u)==7){
-				os<<std::endl;
-			}else{
-				os<<" ";
-			}
-			if(in>= (1ull<<19u)-1){
-				break;
-			}
-			in++;
-		}while(true);
-	}
 
 }
 #endif //BREADBOARDCPU_COMMON_H
