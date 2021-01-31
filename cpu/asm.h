@@ -122,11 +122,10 @@ namespace BreadBoardCPU::ASM {
 			ops_t ops;
 			ops.reserve(codes.size());
 			for(auto& code:codes){
-				if(auto fn = std::get_if<lazy_t>(&code)){
-					ops.emplace_back((*fn)(ops.size()));
-				} else {
-					ops.emplace_back(std::get<op_t>(code));
-				}
+				ops.emplace_back(std::visit(Util::lambda_compose{
+					[&](const lazy_t& fn){return fn(ops.size());},
+					[&](op_t op){return op;},
+				},code));
 			}
 			return ops;
 		}
