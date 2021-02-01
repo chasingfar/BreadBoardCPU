@@ -7,29 +7,7 @@
 #include <type_traits>
 #include <iostream>
 #include <sstream>
-
-inline static int is_logging = 0;
-inline static std::string log_prefix = ":";
-#define LOG(...) if(is_logging!=0){std::cout<<log_prefix<<__func__;print_arg(std::cout,__VA_ARGS__);++is_logging;log_prefix=":";}
-#define LOG_START() is_logging = 1;log_prefix=":";
-#define LOG_END() log_prefix=" | :";
-#define LOG_STOP() is_logging = -1;
-/*std::make_tuple(__VA_ARGS__);
-#include <tuple>
-template<class TupType, size_t... I>
-std::ostream& tuple_printer(std::ostream& os,const TupType& _tup, std::index_sequence<I...>){
-	return (..., (os << (I == 0? "" : ", ") << std::get<I>(_tup)));
-}
-template<typename... T>
-std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& value) {
-	return os<<"("<<tuple_printer(os,value, std::make_index_sequence<sizeof...(T)>())<<")";
-}*/
-template<typename T0,typename... T>
-std::ostream& print_arg(std::ostream& os,T0 v0, T... value){
-	os<<"("<<v0;
-	((os << ',' << value), ...);
-	return os<<")";
-}
+#include <vector>
 
 namespace Util {
 

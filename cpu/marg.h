@@ -4,7 +4,7 @@
 
 #ifndef BREADBOARDCPU_MARG_H
 #define BREADBOARDCPU_MARG_H
-#include "common.h"
+#include "regs.h"
 namespace BreadBoardCPU {
 	BITFILEDBASE(9) struct STATE : Base {
 		using index  = BitField<Size-2,Base,FollowMode::innerLow>;
@@ -30,55 +30,5 @@ namespace BreadBoardCPU {
 			return static_cast<size_t>(state::index::get(o));
 		}
 	};
-	namespace Regs{
-		enum struct Reg {
-			OPR,TMA,
-			TML,TMH,
-			SPL,SPH,
-			PCL,PCH,
-			A,B,
-			C,D,
-			E,F,
-			L,H,
-		};
-		enum struct UReg {
-			A,B,
-			C,D,
-			E,F,
-			L,H,
-		};
-		enum struct Reg16 {
-			IMM,
-			TMP,
-			SP,
-			PC,
-			BA,
-			DC,
-			FE,
-			HL,
-		};
-		static Reg user(UReg reg){
-			return static_cast<Reg>(static_cast<unsigned>(reg) + static_cast<unsigned>(Reg::A));
-		}
-		static Reg pair(Reg16 reg16){
-			return static_cast<Reg>(static_cast<unsigned>(reg16) << 1u );
-		}
-		static Reg toL(Reg16 reg16){
-			return static_cast<Reg>( (static_cast<unsigned>(reg16) << 1u) + 0);
-		}
-		static Reg toH(Reg16 reg16){
-			return static_cast<Reg>( (static_cast<unsigned>(reg16) << 1u) + 1);
-		}
-		std::ostream &operator<<(std::ostream &os, Reg reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
-		std::ostream &operator<<(std::ostream &os, UReg reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
-		std::ostream &operator<<(std::ostream &os, Reg16 reg) {
-			return os<<static_cast<unsigned>(reg);
-		}
-	}
-	using namespace Regs;
 }
 #endif //BREADBOARDCPU_MARG_H
