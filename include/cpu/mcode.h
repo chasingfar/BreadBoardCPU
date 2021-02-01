@@ -2,8 +2,8 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BREADBOARDCPU_MCODE_H
-#define BREADBOARDCPU_MCODE_H
+#ifndef BREADBOARDCPU_CPU_MCODE_H
+#define BREADBOARDCPU_CPU_MCODE_H
 
 #include "mctrl.h"
 namespace BreadBoardCPU{
@@ -270,4 +270,4 @@ namespace BreadBoardCPU{
 		}
 	};
 }
-#endif //BREADBOARDCPU_MCODE_H
+#endif //BREADBOARDCPU_CPU_MCODE_H

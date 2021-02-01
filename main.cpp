@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "cpu/BreadBoardCPU.h"
+#include "include/cpu/cpu.h"
+#include "include/asm/asm.h"
 int main() {
 	using namespace BreadBoardCPU;
 

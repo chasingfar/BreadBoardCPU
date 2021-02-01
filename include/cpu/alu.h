@@ -1,52 +1,13 @@
 //
-// Created by chasingfar on 2020/11/21.
+// Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_COMMON_H
-#define BREADBOARDCPU_COMMON_H
-
-#include "../include/Bitwise.h"
-#include "../include/util.h"
-#include "alu.h"
-#include <functional>
-inline std::vector<std::string> logs{};
-enum struct LogState{
-	Start,Step,Stop
-};
-inline LogState state = LogState::Stop;
-template<typename T0,typename... T>
-std::string log_arg(T0 v0, T... value){
-	std::stringstream ss;
-	ss<<"("<<v0<<((ss << ',' << value), ...,")");
-	return ss.str();
-}
-struct Logger{
-	explicit Logger(const std::string& str){
-		logs.emplace_back(str);
-		if(state==LogState::Step){print();stop();}
-	}
-	~Logger(){
-		logs.pop_back();
-	}
-	static void print(){
-		for(const auto& log:logs){
-			std::cout<<":"<<log;
-		}
-	}
-	static void start(){state=LogState::Start;}
-	static void stop(){state=LogState::Stop;}
-	static void step(){state=LogState::Step;}
-};
-#define LOG(...) Logger __{__func__+log_arg(__VA_ARGS__)};
-#define LOG_START() Logger::start();
-#define LOG_STOP() Logger::stop();
-#define LOG_STEP() Logger::step();
+#ifndef BREADBOARDCPU_CPU_ALU_H
+#define BREADBOARDCPU_CPU_ALU_H
+#include "common.h"
+#include "../alu.h"
 namespace BreadBoardCPU {
-	using namespace Util::Bitwise::BitField;
-	using Util::TruthTable;
-	using Util::ROM;
-	using Util::generateROM;
-
+	using namespace ALU74181;
 	BITFILEDBASE(6) struct ALU : Base {
 		using fn     = BitField<4, Base, FollowMode::innerLow>;
 		using method = BitField<1, fn>;
@@ -160,7 +121,5 @@ namespace BreadBoardCPU {
 			return setLogic(o,LogicFn::notA);
 		}
 	};
-
-
 }
-#endif //BREADBOARDCPU_COMMON_H
+#endif //BREADBOARDCPU_CPU_ALU_H

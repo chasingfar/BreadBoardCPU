@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/2/1.
 //
 
-#ifndef BREADBOARDCPU_REGS_H
-#define BREADBOARDCPU_REGS_H
+#ifndef BREADBOARDCPU_CPU_REGS_H
+#define BREADBOARDCPU_CPU_REGS_H
 #include "common.h"
 namespace BreadBoardCPU{
 	namespace Regs{
@@ -121,4 +121,4 @@ namespace BreadBoardCPU{
 	}
 	using namespace Regs;
 }
-#endif //BREADBOARDCPU_REGS_H
+#endif //BREADBOARDCPU_CPU_REGS_H

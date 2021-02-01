@@ -2,8 +2,8 @@
 // Created by chasingfar on 2020/11/12.
 //
 
-#ifndef BREADBOARDCPU_OPCODE_H
-#define BREADBOARDCPU_OPCODE_H
+#ifndef BREADBOARDCPU_CPU_OPCODE_H
+#define BREADBOARDCPU_CPU_OPCODE_H
 
 #include "mcode.h"
 namespace BreadBoardCPU::OpCode {
@@ -521,4 +521,4 @@ namespace BreadBoardCPU::OpCode {
 	}
 
 };
-#endif //BREADBOARDCPU_OPCODE_H
+#endif //BREADBOARDCPU_CPU_OPCODE_H

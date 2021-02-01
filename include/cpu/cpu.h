@@ -1,11 +1,11 @@
 //
-// Created by chasingfar on 2021/1/23.
+// Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_CPU_H
-#define BREADBOARDCPU_CPU_H
-
+#ifndef BREADBOARDCPU_CPU_CPU_H
+#define BREADBOARDCPU_CPU_CPU_H
 #include "opcode.h"
+#include "regpair.h"
 namespace BreadBoardCPU{
 	struct CPU{
 		uint8_t REG[16]{};
