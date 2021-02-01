@@ -1,11 +1,7 @@
 // For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.112.0/containers/cpp
 {
-<<<<<<< HEAD
 	"name": "Clang",
-=======
-	"name": "Core development",
->>>>>>> 8b8012a1ed941f9d9eaec87a862ab83b4fa81fd7
 	// Specifies where to find the Dockerfile to use.
 	"dockerFile": "Dockerfile",
 	// We add extra permissions which are needed for debugging, etc.
