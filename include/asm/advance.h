@@ -42,6 +42,19 @@ namespace BreadBoardCPU::ASM {
 			;
 		}
 	};
+	struct While{
+		Block cond;
+		Block body{};
+		friend ASM &operator<<(ASM &asm_, While while_) {
+			auto [cond,body]=std::move(while_);
+			return asm_
+					<<cond
+					<<brz(body.end)
+					<<body
+					<<jmp(cond.start)
+					;
+		}
+	};
 
 	auto test_if(){
 		ASM program{};
