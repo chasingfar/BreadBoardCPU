@@ -9,7 +9,7 @@
 
 namespace BreadBoardCPU::ASM {
 	struct Block {
-		Label &label;
+		Label label;
 		code_t body{};
 
 		Block &operator<<(code_t code) {
@@ -17,7 +17,7 @@ namespace BreadBoardCPU::ASM {
 			return *this;
 		}
 
-		friend ASM &operator<<(ASM &asm_, const Block &block) {
+		friend ASM &operator<<(ASM &asm_, Block block) {
 			return asm_ >> block.label << block.body;
 		}
 	};
