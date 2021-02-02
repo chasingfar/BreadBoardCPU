@@ -50,11 +50,7 @@ namespace BreadBoardCPU::ASM {
 			std::cout << "set  "  << addr << "(" << name << ")=" << *addr << std::endl;
 		}
 
-		Label(const Label &label) : addr(label.addr), name(label.name) {
-			std::cout << "copy " << addr << "(" << name << ")=" << *addr << std::endl;
-		}
-
-		op_t getByte(size_t i) {
+		op_t getByte(size_t i) const {
 			//std::cout << "read " << addr << "(" << name << ")=" << *addr << std::endl;
 			return (*addr >> (i * 8)) & 0xff;
 		}
@@ -64,7 +60,7 @@ namespace BreadBoardCPU::ASM {
 #define OP0(op) op::id::setAs<MARG::opcode,op_t>()
 #define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
 #define OP2(op, n1, v1, n2, v2) op::n2::setAs<MARG::opcode>(OP1(op,n1,v1),v2)
-#define LAZY(fn) [&](addr_t pc){return fn;}
+#define LAZY(fn) [=](addr_t pc){return fn;}
 #define ADDR_HL(addr) LAZY(addr.getByte(1)),LAZY(addr.getByte(0))
 #define ADDR_LH(addr) LAZY(addr.getByte(0)),LAZY(addr.getByte(1))
 	enum struct Reg : op_t {
@@ -112,7 +108,7 @@ namespace BreadBoardCPU::ASM {
 			return *this;
 		}
 
-		ASM &operator>>(Label &label) {
+		ASM &operator>>(Label label) {
 			label.set(pc());
 			return *this;
 		}
@@ -131,15 +127,15 @@ namespace BreadBoardCPU::ASM {
 	namespace Ops {
 		code_t push(Reg fromReg) {return {OP1(Push, from, fromReg)};}
 		code_t pop (Reg toReg)   {return {OP1(Pop, to, toReg)};}
-		code_t load(Label &addr) {return {OP1(Load, from, Reg16::IMM), ADDR_HL(addr)};}
+		code_t load(Label addr) {return {OP1(Load, from, Reg16::IMM), ADDR_HL(addr)};}
 		code_t load(Reg16 addr)  {return {OP1(Load, from, addr)};}
-		code_t save(Label &addr) {return {OP1(Save, to, Reg16::IMM), ADDR_HL(addr)};}
+		code_t save(Label addr) {return {OP1(Save, to, Reg16::IMM), ADDR_HL(addr)};}
 		code_t save(Reg16 addr)  {return {OP1(Save, to, addr)};}
 		code_t imm (op_t value)  {return {OP0(ImmVal), value};}
-		code_t brz (Label &addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
-		code_t brc (Label &addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
-		code_t jmp (Label &addr) {return {OP0(Jump), ADDR_HL(addr)};}
-		code_t call(Label &addr) {return {OP0(Call), ADDR_HL(addr)};}
+		code_t brz (Label addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
+		code_t brc (Label addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
+		code_t jmp (Label addr) {return {OP0(Jump), ADDR_HL(addr)};}
+		code_t call(Label addr) {return {OP0(Call), ADDR_HL(addr)};}
 		code_t ret ()            {return {OP0(Return)};}
 		code_t halt()            {return {OP0(Halt)};}
 		code_t ent (op_t size)   {return {OP0(Enter), size};}
@@ -147,15 +143,15 @@ namespace BreadBoardCPU::ASM {
 		code_t lev ()            {return {OP0(Leave)};}
 		code_t lea (op_t offset) {return {OP0(Local), offset};}
 
-		code_t load(Label &addr, Reg value) {return {load(addr), pop(value)};}
+		code_t load(Label addr, Reg value) {return {load(addr), pop(value)};}
 		code_t load(Reg16 addr, Reg value)  {return {load(addr), pop(value)};}
 		code_t load()                       {return load(Reg16::TMP);}//address from stack
 		code_t save()                       {return save(Reg16::TMP);}//address from stack
-		code_t save(Label &addr, Reg value) {return {push(value), save(addr)};}
+		code_t save(Label addr, Reg value) {return {push(value), save(addr)};}
 		code_t save(Reg16 addr, Reg value)  {return {push(value), save(addr)};}
 		code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
 		code_t push(op_t v)                 {return imm(v);}
-		code_t brz (Label &addr, Reg reg)   {return {push(reg), brz(addr)};}
+		code_t brz (Label addr, Reg reg)   {return {push(reg), brz(addr)};}
 		code_t load_local(op_t offset)            {return {lea(offset), load()};}
 		code_t load_local(op_t offset, Reg to)    {return {load_local(offset), pop(to)};}
 		code_t save_local(op_t offset)            {return {lea(offset), save()};}
