@@ -102,8 +102,10 @@ namespace BreadBoardCPU::ASM {
 	}
 	void generateASMROM() {
 		//simulate("test_loop_sum",test_loop_sum());
-		std::cout<<test_function();
-		simulate("test_function",test_function());
+		//std::cout<<test_function();
+		//simulate("test_function",test_function());
+		std::cout<<test_if();
+		simulate("test_if",test_if());
 		//generate("test_save_load",test_save_load());
 		//generate("test_call_ret",test_call_ret());
 	}

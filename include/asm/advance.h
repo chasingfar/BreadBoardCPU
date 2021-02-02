@@ -21,5 +21,30 @@ namespace BreadBoardCPU::ASM {
 			return asm_ >> block.label << block.body;
 		}
 	};
+	code_t If(code_t cond,code_t if_true,code_t if_false={}){
+		Label label_false,label_end;
+		return {
+			cond,
+			brz(label_false),
+			if_true,
+			jmp(label_end),
+			label_false,
+			if_false,
+			label_end,
+		};
+	}
+
+	auto test_if(){
+		ASM program{};
+		return program
+			<<If({imm(0)},
+			     {imm(Reg::A,1)},
+			     {imm(Reg::A,2)}
+			)
+			<<imm(Reg::B,3)
+			<<halt()
+			<<ASM::END
+			;
+	}
 }
 #endif //BREADBOARDCPU_ADVANCE_H
