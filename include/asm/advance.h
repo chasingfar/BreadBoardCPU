@@ -5,37 +5,40 @@
 #ifndef BREADBOARDCPU_ADVANCE_H
 #define BREADBOARDCPU_ADVANCE_H
 
+#include <utility>
+
 #include "basic.h"
 
 namespace BreadBoardCPU::ASM {
 	struct Block {
-		Label label;
+		Label start;
 		code_t body{};
-
+		Label end;
+		Block()=default;
+		Block(code_t code):body(std::move(code)){}
+		Block(Label start,code_t code):start(std::move(start)),body(std::move(code)){}
+		Block(Label start,code_t code,Label end):start(std::move(start)),body(std::move(code)),end(std::move(end)){}
 		Block &operator<<(code_t code) {
 			body << std::move(code);
 			return *this;
 		}
 
-		friend ASM &operator<<(ASM &asm_, Block block) {
-			return asm_ >> block.label << block.body;
+		friend ASM &operator<<(ASM &asm_, const Block& block) {
+			return asm_ >> block.start << block.body >> block.end;
 		}
 	};
 	struct IF{
 		code_t cond;
-		code_t if_true;
-		code_t if_false={};
+		Block if_true;
+		Block if_false{};
 		friend ASM &operator<<(ASM &asm_, IF if_) {
-			Label label_false{"if_false"},label_end{"if_end"};
-			auto [cond,if_true,if_false]=if_;
+			auto [cond,if_true,if_false]=std::move(if_);
 			return asm_
 				<<cond
-				<<brz(label_false)
+				<<brz(if_false.start)
 				<<if_true
-				<<jmp(label_end)
-				>>label_false
+				<<jmp(if_false.end)
 				<<if_false
-				>>label_end
 			;
 		}
 	};
