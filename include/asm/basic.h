@@ -8,6 +8,7 @@
 #include "../cpu/cpu.h"
 #include <memory>
 #include <functional>
+#include <utility>
 #include <variant>
 #include <map>
 
@@ -17,7 +18,6 @@ namespace BreadBoardCPU::ASM {
 	using op_t = uint8_t;
 	using addr_t = uint16_t;
 	using lazy_t = std::function<op_t(addr_t)>;
-	using code_t = Util::flat_vector<std::variant<op_t, lazy_t>>;
 	using ops_t = std::vector<op_t>;
 
 	std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
@@ -39,23 +39,27 @@ namespace BreadBoardCPU::ASM {
 	}
 
 	struct Label {
-		addr_t addr = 0;
+		std::shared_ptr<addr_t> addr;
 		std::string name;
-		Label() = default;
+		explicit Label(addr_t addr=0) : addr(new addr_t(addr)) {}
 
-		Label(addr_t addr) : addr(addr) {}
-
-		Label(std::string name) : name(name) {}
+		explicit Label(std::string name) : name(std::move(name)) {}
 
 		void set(addr_t v) {
-			addr = v;
-			std::cout << name << "=" << v << std::endl;
+			*addr = v;
+			std::cout << "set  "  << addr << "(" << name << ")=" << *addr << std::endl;
+		}
+
+		Label(const Label &label) : addr(label.addr), name(label.name) {
+			std::cout << "copy " << addr << "(" << name << ")=" << *addr << std::endl;
 		}
 
 		op_t getByte(size_t i) {
-			return (addr >> (i * 8)) & 0xff;
+			//std::cout << "read " << addr << "(" << name << ")=" << *addr << std::endl;
+			return (*addr >> (i * 8)) & 0xff;
 		}
 	};
+	using code_t = Util::flat_vector<std::variant<op_t, lazy_t, Label>>;
 
 #define OP0(op) op::id::setAs<MARG::opcode,op_t>()
 #define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
@@ -77,18 +81,18 @@ namespace BreadBoardCPU::ASM {
 	};
 
 	struct ASM {
-		code_t codes;
-		static struct end_t {
-		} END;
+		using data_t = std::vector<std::variant<op_t, lazy_t>>;
+		data_t data;
+		static struct end_t {} END;
 
-		size_t size() {
-			return codes.size();
+		size_t pc() const {
+			return data.size();
 		}
 
 		ops_t resolve() {
 			ops_t ops;
-			ops.reserve(codes.size());
-			for (auto &code:codes) {
+			ops.reserve(pc());
+			for (auto &code:data) {
 				ops.emplace_back(std::visit(Util::lambda_compose{
 						[&](const lazy_t &fn) { return fn(ops.size()); },
 						[&](op_t op) { return op; },
@@ -97,13 +101,19 @@ namespace BreadBoardCPU::ASM {
 			return ops;
 		}
 
-		ASM &operator<<(code_t code) {
-			codes.insert(codes.end(), code.begin(), code.end());
+		ASM &operator<<(const code_t& codes) {
+			for (auto &code:codes) {
+				std::visit(Util::lambda_compose{
+						[&](const lazy_t &fn) { data.emplace_back(fn); },
+						[&](op_t op) {  data.emplace_back(op); },
+						[&](Label label) { label.set(pc()); },
+				}, code);
+			}
 			return *this;
 		}
 
 		ASM &operator>>(Label &label) {
-			label.set(size());
+			label.set(pc());
 			return *this;
 		}
 
