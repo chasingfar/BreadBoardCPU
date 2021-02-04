@@ -161,9 +161,9 @@ namespace BreadBoardCPU::ASM {
 		code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
 		code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
 
-#define DEFINE_0(type, name, FN)                \
+#define DEFINE_0(type, name, _FN)                \
         code_t name(){                          \
-            return {OP1(type,fn,type::fn::FN)}; \
+            return {OP1(type,fn,type::FN::_FN)}; \
         }
 #define DEFINE_1(type, name, FN)                \
         DEFINE_0(type,name,FN)                  \
