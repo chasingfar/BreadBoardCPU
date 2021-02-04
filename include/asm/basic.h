@@ -19,6 +19,8 @@ namespace BreadBoardCPU::ASM {
 	using addr_t = uint16_t;
 	using lazy_t = std::function<op_t(addr_t)>;
 	using ops_t = std::vector<op_t>;
+	using Reg=Regs::UReg;
+	using Reg16=Regs::UReg16;
 
 	std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
 		std::string name;
@@ -61,20 +63,10 @@ namespace BreadBoardCPU::ASM {
 #define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
 #define OP2(op, n1, v1, n2, v2) op::n2::setAs<MARG::opcode>(OP1(op,n1,v1),v2)
 #define LAZY(fn) [=](addr_t pc){return fn;}
-#define ADDR_HL(addr) LAZY(addr.getByte(1)),LAZY(addr.getByte(0))
-#define ADDR_LH(addr) LAZY(addr.getByte(0)),LAZY(addr.getByte(1))
-	enum struct Reg : op_t {
-		A, B,
-		C, D,
-		E, F,
-		L, H,
-	};
-	enum struct Reg16 : op_t {
-		IMM, TMP,
-		SP, PC,
-		BA, DC,
-		FE, HL,
-	};
+#define GET_H(addr) LAZY(addr.getByte(1))
+#define GET_L(addr) LAZY(addr.getByte(0))
+#define ADDR_HL(addr) GET_H(addr),GET_L(addr)
+#define ADDR_LH(addr) GET_L(addr),GET_H(addr)
 
 	struct ASM {
 		using data_t = std::vector<std::variant<op_t, lazy_t>>;
@@ -102,13 +94,13 @@ namespace BreadBoardCPU::ASM {
 				std::visit(Util::lambda_compose{
 						[&](const lazy_t &fn) { data.emplace_back(fn); },
 						[&](op_t op) {  data.emplace_back(op); },
-						[&](Label label) { label.set(pc()); },
+						[&](const Label& label) { label.set(pc()); },
 				}, code);
 			}
 			return *this;
 		}
 
-		ASM &operator>>(Label label) {
+		ASM &operator>>(const Label& label) {
 			label.set(pc());
 			return *this;
 		}
@@ -125,37 +117,49 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	namespace Ops {
-		code_t push(Reg fromReg) {return {OP1(Push, from, fromReg)};}
-		code_t pop (Reg toReg)   {return {OP1(Pop, to, toReg)};}
-		code_t load(Label addr) {return {OP1(Load, from, Reg16::IMM), ADDR_HL(addr)};}
-		code_t load(Reg16 addr)  {return {OP1(Load, from, addr)};}
-		code_t save(Label addr) {return {OP1(Save, to, Reg16::IMM), ADDR_HL(addr)};}
-		code_t save(Reg16 addr)  {return {OP1(Save, to, addr)};}
-		code_t imm (op_t value)  {return {OP0(ImmVal), value};}
-		code_t brz (Label addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
-		code_t brc (Label addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
-		code_t jmp (Label addr) {return {OP0(Jump), ADDR_HL(addr)};}
-		code_t call(Label addr) {return {OP0(Call), ADDR_HL(addr)};}
-		code_t ret ()            {return {OP0(Return)};}
-		code_t halt()            {return {OP0(Halt)};}
-		code_t ent (op_t size)   {return {OP0(Enter), size};}
-		code_t adj (op_t size)   {return {OP0(Adjust), size};}
-		code_t lev ()            {return {OP0(Leave)};}
-		code_t lea (op_t offset) {return {OP0(Local), offset};}
+		code_t load(Reg16 addr,int8_t offset=0)  {return {OP1(Load, from, addr),offset};}
+		code_t save(Reg16 addr,int8_t offset=0)  {return {OP1(Save, to, addr),offset};}
+		code_t push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
+		code_t pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
+		code_t imm (op_t value)        {return {OP0(ImmVal), value};}
+		code_t imm (const Label& addr) {return {OP0(ImmVal), GET_L(addr),OP0(ImmVal), GET_H(addr)};}
+		code_t brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
+		code_t brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
+		code_t jmp (const Label& addr) {return {OP0(Jump), ADDR_HL(addr)};}
+		code_t call(const Label& addr) {return {OP0(Call), ADDR_HL(addr)};}
+		code_t ret ()                  {return {OP0(Return)};}
+		code_t halt()                  {return {OP0(Halt)};}
+		code_t adj (int8_t size)       {return {OP0(Adjust), size};}
+		code_t pushSP()                {return {OP0(PushSP)};}
+		code_t popSP ()                {return {OP0(PopSP)};}
 
-		code_t load(Label addr, Reg value) {return {load(addr), pop(value)};}
+
+		code_t push(Reg16 from)        {return {push(from.L()),push(from.H())};}
+		code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
+		code_t push(op_t v)            {return imm(v);}
+		code_t push(const Label& v)    {return imm(v);}
+		//code_t load(Label addr, Reg16 tmpReg) {return {imm(std::move(addr)), load()};}
+		//code_t save(Label addr, Reg16 tmpReg) {return {OP1(Save, to, Reg16::IMM), ADDR_HL(addr)};}
+		//code_t load(Label addr, Reg value) {return {load(addr), pop(value)};}
 		code_t load(Reg16 addr, Reg value)  {return {load(addr), pop(value)};}
-		code_t load()                       {return load(Reg16::TMP);}//address from stack
-		code_t save()                       {return save(Reg16::TMP);}//address from stack
-		code_t save(Label addr, Reg value) {return {push(value), save(addr)};}
+		//code_t save(Label addr, Reg value) {return {push(value), save(addr)};}
 		code_t save(Reg16 addr, Reg value)  {return {push(value), save(addr)};}
 		code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
-		code_t push(op_t v)                 {return imm(v);}
-		code_t brz (Label addr, Reg reg)   {return {push(reg), brz(addr)};}
-		code_t load_local(op_t offset)            {return {lea(offset), load()};}
-		code_t load_local(op_t offset, Reg to)    {return {load_local(offset), pop(to)};}
-		code_t save_local(op_t offset)            {return {lea(offset), save()};}
-		code_t save_local(op_t offset, Reg value) {return {push(value), save_local(offset)};}
+		code_t imm (Reg16 reg, const Label& addr)    {return {imm(addr), pop(reg)};}
+		code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
+
+		code_t ent (Reg16 BP,op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
+		code_t lev (Reg16 BP)             {return {push(BP),popSP(),pop(BP),ret()};}
+		code_t load_local(Reg16 BP,op_t offset)            {return load(BP,offset);}
+		code_t load_local(Reg16 BP,op_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
+		code_t save_local(Reg16 BP,op_t offset)            {return save(BP,offset);}
+		code_t save_local(Reg16 BP,op_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
+		code_t ent (op_t size)                    {return ent(Reg16::HL,size);}
+		code_t lev ()                             {return lev(Reg16::HL);}
+		code_t load_local(op_t offset)            {return load_local(Reg16::HL,offset);}
+		code_t load_local(op_t offset, Reg to)    {return load_local(Reg16::HL,offset,to);}
+		code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
+		code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
 
 #define DEFINE_0(type, name, FN)                \
         code_t name(){                          \

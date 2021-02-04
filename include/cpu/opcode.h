@@ -19,30 +19,24 @@ namespace BreadBoardCPU::OpCode {
 		static Reg16 getReg16(MCode ctx){ return static_cast<Reg16>(T::get(ctx.marg));}
 		template <typename T>
 		static UReg getUReg(MCode ctx){ return static_cast<UReg>(T::get(ctx.marg));}
+		template <typename T>
+		static UReg16 getUReg16(MCode ctx){ return static_cast<UReg16>(T::get(ctx.marg));}
 	};
 
 	template <auto V>
-	struct Load:Base{//load value(8) from address(16) and push to stack
+	struct Load:Base{//load value(8) from address(16) with offset(8) and push to stack
 		inline static const std::string name="Load";
-		using id    = OPID<5,Base,V>;
-		using from  = OPField<3,id>;
+		using id    = OPID<6,Base,V>;
+		using from  = OPField<2,id>;
 		static layout_t parse(MCode ctx){
-			Reg16 addr=getReg16<from>(ctx);
-			return {
-				name+" "+(addr==Reg16::TMP?"stack":std::string(addr)),
-				addr==Reg16::IMM?3:1,
-			};
+			return {name+" "+std::string(getUReg16<from>(ctx)),2};
 		}
 		static void gen(MCode& ctx){
 			LOG("LOAD");
-			Reg16 addr=getReg16<from>(ctx);
-			if(addr==Reg16::IMM){//address from immediate value
-				ctx.load_imm16(Reg16::TMP);
-				addr=Reg16::TMP;
-			}else if(addr==Reg16::TMP){//address from stack
-				ctx.stack_pop16(Reg16::TMP);
-			}
-			ctx.load(addr,Reg::TMA);
+			UReg16 addr=getUReg16<from>(ctx);
+			ctx.load_imm(Reg::TMA);
+			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
+			ctx.load(Reg16::TMP,Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
 		}
@@ -50,26 +44,18 @@ namespace BreadBoardCPU::OpCode {
 	template <auto V>
 	struct Save:Base{//pop value(8) from stack and save to address(16)
 		inline static const std::string name="Save";
-		using id    = OPID<5,Base,V>;
-		using to    = OPField<3,id>;
+		using id    = OPID<6,Base,V>;
+		using to    = OPField<2,id>;
 		static layout_t parse(MCode ctx){
-			Reg16 addr=getReg16<to>(ctx);
-			return {
-				name+" "+(addr==Reg16::TMP?"stack":std::string(addr)),
-				addr==Reg16::IMM?3:1,
-			};
+			return {name+" "+std::string(getUReg16<to>(ctx)),2};
 		}
 		static void gen(MCode& ctx){
 			LOG("Save");
-			Reg16 addr=getReg16<to>(ctx);
-			if(addr==Reg16::IMM){//address from immediate value
-				ctx.load_imm16(Reg16::TMP);
-				addr=Reg16::TMP;
-			}else if(addr==Reg16::TMP){//address from stack
-				ctx.stack_pop16(Reg16::TMP);
-			}
+			UReg16 addr=getUReg16<to>(ctx);
+			ctx.load_imm(Reg::TMA);
+			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
 			ctx.stack_pop(Reg::TMA);
-			ctx.save(Reg::TMA,addr);
+			ctx.save(Reg::TMA,Reg16::TMP);
 			ctx.next_op();
 		}
 	};
@@ -368,6 +354,32 @@ namespace BreadBoardCPU::OpCode {
 			ctx.next_op();
 		}
 	};
+	template <auto V>
+	struct PushSP:Base{
+		inline static const std::string name="Push SP";
+		using id    = OPID<8,Base,V>;
+		static layout_t parse(MCode ctx){
+			return {name,1};
+		}
+		static void gen(MCode& ctx){
+			LOG("PushSP");
+			ctx.stack_push16(Reg16::SP);
+			ctx.next_op();
+		}
+	};
+	template <auto V>
+	struct PopSP:Base{
+		inline static const std::string name="Pop SP";
+		using id    = OPID<8,Base,V>;
+		static layout_t parse(MCode ctx){
+			return {name,1};
+		}
+		static void gen(MCode& ctx){
+			LOG("PopSP");
+			ctx.stack_pop16(Reg16::SP);
+			ctx.next_op();
+		}
+	};
 
 	template <auto V>
 	struct Interrupt:Base{
@@ -464,8 +476,8 @@ namespace BreadBoardCPU::OpCode {
 	};
 	
 	namespace Ops{
-		using Load       = Load       <0b11111>;
-		using Save       = Save       <0b11110>;
+		using Load       = Load       <0b111111>;
+		using Save       = Save       <0b111110>;
 		using Push       = Push       <0b11101>;
 		using Pop        = Pop        <0b11100>;
 		using Calc       = Calc       <0b11011>;
@@ -478,10 +490,13 @@ namespace BreadBoardCPU::OpCode {
 		using Return     = Return     <0b11001110>;
 		using Halt       = Halt       <0b11001101>;
 
-		using Enter      = Enter      <0b11001100>;
+		using Adjust     = Adjust     <0b11001100>;
+		using PushSP     = PushSP     <0b11001011>;
+		using PopSP      = PopSP      <0b11001010>;
+		/*using Enter    = Enter      <0b11001100>;
 		using Adjust     = Adjust     <0b11001011>;
 		using Leave      = Leave      <0b11001010>;
-		using Local      = Local      <0b11001001>;
+		using Local      = Local      <0b11001001>;*/
 
 		using INT0       = Interrupt  <0b00001000>;
 		using INT1       = Interrupt  <0b00001001>;
@@ -499,7 +514,7 @@ namespace BreadBoardCPU::OpCode {
 				BranchCF,BranchZero,
 				ImmVal,
 				Jump,Call,Return,
-				Enter,Adjust,Leave,Local,
+				Adjust,PushSP,PopSP,
 				Halt,
 				INT0,INT1,INT2,INT3,
 				INT4,INT5,INT6,INT7,

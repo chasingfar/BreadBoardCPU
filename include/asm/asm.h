@@ -48,10 +48,10 @@ namespace BreadBoardCPU::ASM {
 		ASM program{};
 		Label b,c{0xFFFF-5};
 		return program
-			<<load(b,Reg::A)
+		//	<<load(b,Reg::A)
 			<<imm(Reg::B,16)
 			<<add(Reg::A,Reg::A,Reg::B)
-			<<save(c,Reg::A)
+		//	<<save(c,Reg::A)
 			<<halt()
 			>>b
 			<<code_t{42}
