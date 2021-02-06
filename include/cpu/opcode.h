@@ -117,40 +117,30 @@ namespace BreadBoardCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("Calc");
-			using Carry=MCTRL::alu::Carry;
 			auto f = fn::get(ctx.marg);
-
-			ctx.stack_pop(Reg::TML);
-			if(f>=FN::ADD){
-				ctx.stack_pop(Reg::TMH);
-			}
+#define ARG_1 ctx.stack_pop(Reg::TML);
+#define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
+#define CALC_1(fn,name)  case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA,0);break;
+#define CALC_1C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));break;
+#define CALC_2(fn,name)  case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA);break;
+#define CALC_2C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));break;
 
 			switch (f){
-				case FN::SHL:
-					ctx.shift_left(Reg::TML,Reg::TMA,0);
-					break;
-				case FN::SHR:
-					ctx.shift_right(Reg::TML,Reg::TMA,0);
-					break;
-				case FN::RCL:
-					ctx.shift_left(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case FN::RCR:
-					ctx.shift_right(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case FN::ADD:
-					ctx.add(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case FN::SUB:
-					ctx.sub(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case FN::ADC:
-					ctx.add(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case FN::SUC:
-					ctx.sub(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
+				CALC_1( SHL,shift_left)
+				CALC_1( SHR,shift_right)
+				CALC_1C(RCL,shift_left)
+				CALC_1C(RCR,shift_right)
+				CALC_2( ADD,add)
+				CALC_2( SUB,sub)
+				CALC_2C(ADC,add)
+				CALC_2C(SUC,sub)
 			}
+#undef ARG_1
+#undef ARG_2
+#undef CALC_1
+#undef CALC_1C
+#undef CALC_2
+#undef CALC_2C
 			ctx.save_carry();
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
@@ -194,24 +184,21 @@ namespace BreadBoardCPU::OpCode {
 			LOG("Logic");
 			auto f = fn::get(ctx.marg);
 
-			ctx.stack_pop(Reg::TML);
-			if(f>=FN::AND){
-				ctx.stack_pop(Reg::TMH);
-			}
+#define ARG_1 ctx.stack_pop(Reg::TML);
+#define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
+#define LOGIC_1(fn,name)  case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA);break;
+#define LOGIC_2(fn,name)  case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA);break;
 			switch (f){
-				case FN::NOT:
-					ctx.logic_not(Reg::TML,Reg::TMA);
-					break;
-				case FN::AND:
-					ctx.logic_and(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case FN::OR:
-					ctx.logic_or(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case FN::XOR:
-					ctx.logic_xor(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
+				LOGIC_1(NOT,logic_not)
+				LOGIC_2(AND,logic_and)
+				LOGIC_2(OR ,logic_or )
+				LOGIC_2(XOR,logic_xor)
 			}
+#undef ARG_1
+#undef ARG_2
+#undef LOGIC_1
+#undef LOGIC_2
+
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
 		}
