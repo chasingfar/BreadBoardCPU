@@ -36,13 +36,13 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using from  = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<from>(ctx).str(),2};
+			return {name+" "+getUReg16<from>(ctx).str(),3};
 		}
 		static void gen(MCode& ctx){
 			LOG("LOAD");
 			UReg16 addr=getUReg16<from>(ctx);
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
 			ctx.load(Reg16::TMP,Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
@@ -54,13 +54,13 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using to    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<to>(ctx).str(),2};
+			return {name+" "+getUReg16<to>(ctx).str(),3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Save");
 			UReg16 addr=getUReg16<to>(ctx);
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
 			ctx.stack_pop(Reg::TMA);
 			ctx.save(Reg::TMA,Reg16::TMP);
 			ctx.next_op();
@@ -275,14 +275,14 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Enter";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Enter");
 			ctx.stack_push16(Reg16::HL);
 			ctx.copy16(Reg16::SP,Reg16::HL);
-			ctx.load_imm(Reg::TMA);
-			ctx.sub16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.sub16(Reg16::SP,Reg16::TMP,Reg16::SP);
 			ctx.next_op();
 		}
 	};
@@ -291,12 +291,12 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Adjust";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Adjust");
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(Reg16::SP,Reg16::TMP,Reg16::SP);
 			ctx.next_op();
 		}
 	};
@@ -320,12 +320,12 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Local";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Local");
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(Reg16::HL,Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(Reg16::HL,Reg16::TMP,Reg16::TMP);
 			ctx.stack_push16(Reg16::TMP);
 			ctx.next_op();
 		}

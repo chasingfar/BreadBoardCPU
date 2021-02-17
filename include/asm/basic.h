@@ -56,17 +56,27 @@ namespace BreadBoardCPU::ASM {
 			//std::cout << "read " << addr << "(" << name << ")=" << *addr << std::endl;
 			return (*addr >> (i * 8)) & 0xff;
 		}
+		addr_t& operator*() const{
+			return *addr;
+		}
+		addr_t* operator->() const{
+			return addr.get();
+		}
 	};
 	using code_t = Util::flat_vector<std::variant<op_t, lazy_t, Label>>;
 
 #define OP0(op) op::id::setAs<MARG::opcode,op_t>()
 #define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
 #define OP2(op, n1, v1, n2, v2) op::n2::setAs<MARG::opcode>(OP1(op,n1,v1),v2)
+#define GET_H(v) static_cast<op_t>(((v) >> 8) & 0xff)
+#define GET_L(v) static_cast<op_t>((v)  & 0xff)
+#define GET_HL(v) GET_H(v),GET_L(v)
+#define GET_LH(v) GET_L(v),GET_H(v)
 #define LAZY(fn) [=](addr_t pc){return fn;}
-#define GET_H(addr) LAZY(addr.getByte(1))
-#define GET_L(addr) LAZY(addr.getByte(0))
-#define ADDR_HL(addr) GET_H(addr),GET_L(addr)
-#define ADDR_LH(addr) GET_L(addr),GET_H(addr)
+#define LAZY_H(addr) LAZY(GET_H(*addr))
+#define LAZY_L(addr) LAZY(GET_L(*addr))
+#define ADDR_HL(addr) LAZY_H(addr),LAZY_L(addr)
+#define ADDR_LH(addr) LAZY_L(addr),LAZY_H(addr)
 
 	struct ASM {
 		using data_t = std::vector<std::variant<op_t, lazy_t>>;
@@ -117,19 +127,19 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	namespace Ops {
-		code_t load(Reg16 addr,int8_t offset=0)  {return {OP1(Load, from, addr),offset};}
-		code_t save(Reg16 addr,int8_t offset=0)  {return {OP1(Save, to, addr),offset};}
+		code_t load(Reg16 addr,int16_t offset=0)  {return {OP1(Load, from, addr),GET_HL(offset)};}
+		code_t save(Reg16 addr,int16_t offset=0)  {return {OP1(Save, to, addr),GET_HL(offset)};}
 		code_t push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
 		code_t pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
 		code_t imm (op_t value)        {return {OP0(ImmVal), value};}
-		code_t imm (const Label& addr) {return {OP0(ImmVal), GET_L(addr),OP0(ImmVal), GET_H(addr)};}
+		code_t imm (const Label& addr) {return {OP0(ImmVal), LAZY_L(addr),OP0(ImmVal), LAZY_H(addr)};}
 		code_t brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
 		code_t brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
 		code_t jmp (const Label& addr) {return {OP0(Jump), ADDR_HL(addr)};}
 		code_t call(const Label& addr) {return {OP0(Call), ADDR_HL(addr)};}
 		code_t ret ()                  {return {OP0(Return)};}
 		code_t halt()                  {return {OP0(Halt)};}
-		code_t adj (int8_t size)       {return {OP0(Adjust), size};}
+		code_t adj (int16_t offset)    {return {OP0(Adjust), GET_HL(offset)};}
 		code_t pushSP()                {return {OP0(PushSP)};}
 		code_t popSP ()                {return {OP0(PopSP)};}
 
@@ -167,12 +177,21 @@ namespace BreadBoardCPU::ASM {
         }
 #define DEFINE_1(type, name, FN)                \
         DEFINE_0(type,name,FN)                  \
-        code_t name(Reg res, auto lhs) {        \
+        code_t name(Reg res, Reg lhs) {         \
+            return {push(lhs),name(),pop(res)}; \
+        }                                       \
+        code_t name(Reg res, int8_t lhs) {        \
             return {push(lhs),name(),pop(res)}; \
         }
 #define DEFINE_2(type, name, FN)                          \
         DEFINE_0(type,name,FN)                            \
-        code_t name(Reg res, auto lhs, auto rhs) {        \
+        code_t name(Reg res, Reg lhs, Reg rhs) {          \
+            return {push(rhs),push(lhs),name(),pop(res)}; \
+        }                                                 \
+        code_t name(Reg res, Reg lhs, int8_t rhs) {       \
+            return {push(rhs),push(lhs),name(),pop(res)}; \
+        }                                                 \
+        code_t name(Reg res, int8_t lhs, Reg rhs) {       \
             return {push(rhs),push(lhs),name(),pop(res)}; \
         }
 
@@ -197,6 +216,8 @@ namespace BreadBoardCPU::ASM {
 #undef OP1
 #undef OP2
 #undef LAZY
+#undef LAZY_H
+#undef LAZY_L
 #undef ADDR_HL
 #undef ADDR_LH
 	}

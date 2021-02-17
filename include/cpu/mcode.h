@@ -112,11 +112,6 @@ namespace BreadBoardCPU{
 			add(lhs.L(),rhs.L(),dest.L());
 			add(lhs.H(),rhs.H(),dest.H(),MARG::getCarry(marg));
 		}
-		void add16(Reg16 lhs,Reg rhs,Reg16 dest){
-			LOG(lhs,rhs,dest);
-			add(lhs.L(),rhs,dest.L());
-			inc(lhs.H(),dest.H(),MARG::getCarry(marg));
-		}
 		void sub(Reg lhs,Reg rhs,Reg dest,Carry carry){
 			LOG(lhs,rhs,dest,carry);
 			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::sub<MCTRL::type>;
@@ -131,11 +126,6 @@ namespace BreadBoardCPU{
 			LOG(lhs,rhs,dest);
 			sub(lhs.L(),rhs.L(),dest.L());
 			sub(lhs.H(),rhs.H(),dest.H(),MARG::getCarry(marg));
-		}
-		void sub16(Reg16 lhs,Reg rhs,Reg16 dest){
-			LOG(lhs,rhs,dest);
-			sub(lhs.L(),rhs,dest.L());
-			dec(lhs.H(),dest.H(),MARG::getCarry(marg));
 		}
 		void shift_left(Reg lhs,Reg dest,unsigned pad){
 			LOG(lhs,dest,pad);
