@@ -172,12 +172,12 @@ namespace Util {
 
 				template<typename T, typename U>
 				static T set(T o, U v) {
-					o ^= ((T(v) & BitMaskFill<T, size>)^get(o)) << low;
+					o ^= ((static_cast<T>(v) & BitMaskFill<T, size>)^get(o)) << low;
 					return o;
 				}
 				template<typename nRef,typename T, typename U>
 				static T setAs(T o, U v) {
-					o ^= ((T(v) & BitMaskFill<T, nRef::size>)^get(o)) << low-nRef::low;
+					o ^= ((static_cast<T>(v) & BitMaskFill<T, nRef::size>)^get(o)) << low-nRef::low;
 					return o;
 				}
 
@@ -203,7 +203,7 @@ namespace Util {
 				}
 				template<typename T>
 				static bool test(T o) {
-					return BaseField::get(o)==T(id);
+					return BaseField::get(o)==static_cast<T>(id);
 				}
 			};
 

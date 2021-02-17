@@ -36,7 +36,7 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using from  = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(getUReg16<from>(ctx)),2};
+			return {name+" "+getUReg16<from>(ctx).str(),2};
 		}
 		static void gen(MCode& ctx){
 			LOG("LOAD");
@@ -54,7 +54,7 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using to    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(getUReg16<to>(ctx)),2};
+			return {name+" "+getUReg16<to>(ctx).str(),2};
 		}
 		static void gen(MCode& ctx){
 			LOG("Save");
@@ -85,32 +85,15 @@ namespace BreadBoardCPU::OpCode {
 	struct Calc:Base{
 		inline static const std::string name="Calc";
 		using id    = OPID<5,Base,V>;
-		struct FN{
-			using base_t=unsigned;
-			#define TABLE \
-				X(SHL) X(SHR) \
-				X(RCL) X(RCR) \
-				X(ADD) X(SUB) \
-				X(ADC) X(SUC) \
-			
-			enum Value:unsigned{
-				#define X(a) a,
-					TABLE
-				#undef X
-			};
-			inline static const std::string str[]={
-				#define X(a) #a,
-					TABLE
-				#undef X
-			};
-			#undef TABLE
-			Value v;
-			FN() = default;
-			constexpr FN(Value v) : v(v) { }
-			explicit constexpr FN(base_t v) : v(static_cast<Value>(v)) { }
-			explicit operator std::string() const {return str[v];}
-			operator base_t() const {return v;}
-		};
+#define ENUM_HIDE_TYPE struct
+#define ENUM_NAME(...) FN##__VA_ARGS__
+#define ENUM_TABLE \
+		X(SHL) X(SHR) \
+		X(RCL) X(RCR) \
+		X(ADD) X(SUB) \
+		X(ADC) X(SUC) \
+
+#include "define_enum_x.h"
 		using fn = OPField<3,FN,id>;
 		static layout_t parse(MCode ctx){
 			return {name+" "+std::string(fn::get(ctx.marg)),1};
@@ -150,39 +133,22 @@ namespace BreadBoardCPU::OpCode {
 	struct Logic:Base{
 		inline static const std::string name="Logic";
 		using id    = OPID<6,Base,V>;
-		struct FN{
-			using base_t=unsigned;
-			#define TABLE \
-				X(NOT) \
-				X(AND) \
-				X(OR ) \
-				X(XOR) \
-			
-			enum Value{
-				#define X(a) a,
-					TABLE
-				#undef X
-			};
-			inline static const std::string str[]={
-				#define X(a) #a,
-					TABLE
-				#undef X
-			};
-			#undef TABLE
-			Value v;
-			FN() = default;
-			constexpr FN(Value v) : v(v) { }
-			explicit constexpr FN(base_t v) : v(static_cast<Value>(v)) { }
-			explicit operator std::string() const {return str[v];}
-			operator base_t() const {return v;}
-		};
+#define ENUM_HIDE_TYPE struct
+#define ENUM_NAME(...) FN##__VA_ARGS__
+#define ENUM_TABLE \
+		X(NOT) \
+		X(AND) \
+		X(OR ) \
+		X(XOR) \
+
+#include "define_enum_x.h"
 		using fn = OPField<2,FN, id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(fn::get(ctx.marg)),1};
+			return {name+" "+fn::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Logic");
-			auto f = fn::get(ctx.marg);
+			FN f = fn::get(ctx.marg);
 
 #define ARG_1 ctx.stack_pop(Reg::TML);
 #define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
@@ -210,7 +176,7 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<5,Base,V>;
 		using from  = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+UReg::str[from::get(ctx.marg)],1};
+			return {name+" "+from::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Push");
@@ -224,7 +190,7 @@ namespace BreadBoardCPU::OpCode {
 		using id    = OPID<5,Base,V>;
 		using to    = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+UReg::str[to::get(ctx.marg)],1};
+			return {name+" "+to::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Pop");
