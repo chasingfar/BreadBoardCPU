@@ -148,12 +148,12 @@ namespace BreadBoardCPU::ASM {
 		code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
 		code_t push(op_t v)            {return imm(v);}
 		code_t push(const Label& v)    {return imm(v);}
-		//code_t load(Label addr, Reg16 tmpReg) {return {imm(std::move(addr)), load()};}
-		//code_t save(Label addr, Reg16 tmpReg) {return {OP1(Save, to, Reg16::IMM), ADDR_HL(addr)};}
-		//code_t load(Label addr, Reg value) {return {load(addr), pop(value)};}
-		code_t load(Reg16 addr, Reg value)  {return {load(addr), pop(value)};}
-		//code_t save(Label addr, Reg value) {return {push(value), save(addr)};}
-		code_t save(Reg16 addr, Reg value)  {return {push(value), save(addr)};}
+		code_t load(Reg16 addr, Reg value,int16_t offset=0)  {return {load(addr,offset), pop(value)};}
+		code_t save(Reg16 addr, Reg value,int16_t offset=0)  {return {push(value), save(addr,offset)};}
+		code_t load(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
+		code_t save(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), save(tmp,offset)};}
+		code_t load(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {load(tmp,addr,offset), pop(value)};}
+		code_t save(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {push(value), save(tmp,addr,offset)};}
 		code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
 		code_t imm (Reg16 reg, const Label& addr)    {return {imm(addr), pop(reg)};}
 		code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
@@ -170,6 +170,8 @@ namespace BreadBoardCPU::ASM {
 		code_t load_local(op_t offset, Reg to)    {return load_local(Reg16::HL,offset,to);}
 		code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
 		code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
+		code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(Reg16::FE,addr,value,offset);}
+		code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(Reg16::FE,addr,value,offset);}
 
 #define DEFINE_0(type, name, _FN)                \
         code_t name(){                          \
