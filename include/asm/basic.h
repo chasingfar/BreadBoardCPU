@@ -173,28 +173,33 @@ namespace BreadBoardCPU::ASM {
 		code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(Reg16::FE,addr,value,offset);}
 		code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(Reg16::FE,addr,value,offset);}
 
+		template <typename T>
+		using Pushable=std::enable_if_t<std::disjunction<std::is_convertible<T,Reg>,std::is_convertible<T,int8_t>>::value, bool>;
 #define DEFINE_0(type, name, _FN)                \
-        code_t name(){                          \
+        code_t name(){                           \
             return {OP1(type,fn,type::FN::_FN)}; \
         }
-#define DEFINE_1(type, name, FN)                \
-        DEFINE_0(type,name,FN)                  \
-        code_t name(Reg res, Reg lhs) {         \
-            return {push(lhs),name(),pop(res)}; \
-        }                                       \
-        code_t name(Reg res, int8_t lhs) {        \
-            return {push(lhs),name(),pop(res)}; \
+#define DEFINE_1(type, name, FN)                 \
+        DEFINE_0(type,name,FN)                   \
+        template<typename L,Pushable<L> =true>   \
+        code_t name(L lhs) {                     \
+            return {push(lhs),name()};           \
+        }                                        \
+        template<typename L,Pushable<L> =true>   \
+        code_t name(Reg res, L lhs) {            \
+            return {name(lhs),pop(res)};         \
         }
-#define DEFINE_2(type, name, FN)                          \
-        DEFINE_0(type,name,FN)                            \
-        code_t name(Reg res, Reg lhs, Reg rhs) {          \
-            return {push(rhs),push(lhs),name(),pop(res)}; \
-        }                                                 \
-        code_t name(Reg res, Reg lhs, int8_t rhs) {       \
-            return {push(rhs),push(lhs),name(),pop(res)}; \
-        }                                                 \
-        code_t name(Reg res, int8_t lhs, Reg rhs) {       \
-            return {push(rhs),push(lhs),name(),pop(res)}; \
+#define DEFINE_2(type, name, FN)                 \
+        DEFINE_0(type,name,FN)                   \
+        template<typename L,typename R,          \
+            Pushable<L> =true,Pushable<R> =true> \
+        code_t name(L lhs, R rhs) {              \
+            return {push(rhs),push(lhs),name()}; \
+        }                                        \
+        template<typename L,typename R,          \
+            Pushable<L> =true,Pushable<R> =true> \
+        code_t name(Reg res, L lhs, R rhs) {     \
+            return {name(lhs,rhs),pop(res)};     \
         }
 
 		DEFINE_1(Calc, shl, SHL)
