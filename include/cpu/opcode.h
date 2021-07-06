@@ -9,8 +9,15 @@
 namespace BreadBoardCPU::OpCode {
 	template <size_t Size,typename Ref,auto Id>
 	using OPID=BitId<Id,BitField<Size,Ref,FollowMode::innerHigh> >;
-	template <size_t Size,typename Ref>
-	using OPField=BitField<Size,Ref,FollowMode::outerLow>;
+	template <size_t Size,typename As,typename Ref,typename Base=BitField<Size,Ref,FollowMode::outerLow>>
+	struct OPField:Base{
+		static auto set(auto o,As v){
+			return Base::set(o,static_cast<decltype(o)>(v));
+		}
+		static auto get(auto o){
+			return static_cast<As>(Base::get(o));
+		}
+	};
 
 	using layout_t=std::pair<std::string,size_t>;
 
@@ -27,15 +34,15 @@ namespace BreadBoardCPU::OpCode {
 	struct Load:Base{//load value(8) from address(16) with offset(8) and push to stack
 		inline static const std::string name="Load";
 		using id    = OPID<6,Base,V>;
-		using from  = OPField<2,id>;
+		using from  = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(getUReg16<from>(ctx)),2};
+			return {name+" "+getUReg16<from>(ctx).str(),3};
 		}
 		static void gen(MCode& ctx){
 			LOG("LOAD");
 			UReg16 addr=getUReg16<from>(ctx);
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
 			ctx.load(Reg16::TMP,Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
@@ -45,15 +52,15 @@ namespace BreadBoardCPU::OpCode {
 	struct Save:Base{//pop value(8) from stack and save to address(16)
 		inline static const std::string name="Save";
 		using id    = OPID<6,Base,V>;
-		using to    = OPField<2,id>;
+		using to    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(getUReg16<to>(ctx)),2};
+			return {name+" "+getUReg16<to>(ctx).str(),3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Save");
 			UReg16 addr=getUReg16<to>(ctx);
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(addr.toReg16(),Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
 			ctx.stack_pop(Reg::TMA);
 			ctx.save(Reg::TMA,Reg16::TMP);
 			ctx.next_op();
@@ -78,64 +85,45 @@ namespace BreadBoardCPU::OpCode {
 	struct Calc:Base{
 		inline static const std::string name="Calc";
 		using id    = OPID<5,Base,V>;
-		struct fn:OPField<3,id>{
-			#define TABLE \
-				X(SHL) X(SHR) \
-				X(RCL) X(RCR) \
-				X(ADD) X(SUB) \
-				X(ADC) X(SUC) \
-			
-			enum fn_t{
-				#define X(a) a,
-					TABLE
-				#undef X
-			};
-			inline static const std::string str[]={
-				#define X(a) #a,
-					TABLE
-				#undef X
-			};
-			#undef TABLE
-		};
+#define ENUM_HIDE_TYPE struct
+#define ENUM_NAME(...) FN##__VA_ARGS__
+#define ENUM_TABLE \
+		X(SHL) X(SHR) \
+		X(RCL) X(RCR) \
+		X(ADD) X(SUB) \
+		X(ADC) X(SUC) \
+
+#include "define_enum_x.h"
+		using fn = OPField<3,FN,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+fn::str[fn::get(ctx.marg)],1};
+			return {name+" "+std::string(fn::get(ctx.marg)),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Calc");
-			using Carry=MCTRL::alu::Carry;
-			auto f = fn::template getAs<typename fn::fn_t>(ctx.marg);
-
-			ctx.stack_pop(Reg::TML);
-			if(f>=fn::ADD){
-				ctx.stack_pop(Reg::TMH);
-			}
+			auto f = fn::get(ctx.marg);
+#define ARG_1 ctx.stack_pop(Reg::TML);
+#define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
+#define CALC_1(fn,name)  case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA,0);break;
+#define CALC_1C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));break;
+#define CALC_2(fn,name)  case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA);break;
+#define CALC_2C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));break;
 
 			switch (f){
-				case fn::SHL:
-					ctx.shift_left(Reg::TML,Reg::TMA,0);
-					break;
-				case fn::SHR:
-					ctx.shift_right(Reg::TML,Reg::TMA,0);
-					break;
-				case fn::RCL:
-					ctx.shift_left(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case fn::RCR:
-					ctx.shift_right(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case fn::ADD:
-					ctx.add(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case fn::SUB:
-					ctx.sub(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case fn::ADC:
-					ctx.add(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
-				case fn::SUC:
-					ctx.sub(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));
-					break;
+				CALC_1( SHL,shift_left)
+				CALC_1( SHR,shift_right)
+				CALC_1C(RCL,shift_left)
+				CALC_1C(RCR,shift_right)
+				CALC_2( ADD,add)
+				CALC_2( SUB,sub)
+				CALC_2C(ADC,add)
+				CALC_2C(SUC,sub)
 			}
+#undef ARG_1
+#undef ARG_2
+#undef CALC_1
+#undef CALC_1C
+#undef CALC_2
+#undef CALC_2C
 			ctx.save_carry();
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
@@ -145,50 +133,38 @@ namespace BreadBoardCPU::OpCode {
 	struct Logic:Base{
 		inline static const std::string name="Logic";
 		using id    = OPID<6,Base,V>;
-		struct fn:OPField<2,id>{
-			#define TABLE \
-				X(NOT) \
-				X(AND) \
-				X(OR ) \
-				X(XOR) \
-			
-			enum fn_t{
-				#define X(a) a,
-					TABLE
-				#undef X
-			};
-			inline static const std::string str[]={
-				#define X(a) #a,
-					TABLE
-				#undef X
-			};
-			#undef TABLE
-		};
+#define ENUM_HIDE_TYPE struct
+#define ENUM_NAME(...) FN##__VA_ARGS__
+#define ENUM_TABLE \
+		X(NOT) \
+		X(AND) \
+		X(OR ) \
+		X(XOR) \
+
+#include "define_enum_x.h"
+		using fn = OPField<2,FN, id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+fn::str[fn::get(ctx.marg)],1};
+			return {name+" "+fn::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Logic");
-			auto f = fn::template getAs<typename fn::fn_t>(ctx.marg);
+			FN f = fn::get(ctx.marg);
 
-			ctx.stack_pop(Reg::TML);
-			if(f>=fn::AND){
-				ctx.stack_pop(Reg::TMH);
-			}
+#define ARG_1 ctx.stack_pop(Reg::TML);
+#define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
+#define LOGIC_1(fn,name)  case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA);break;
+#define LOGIC_2(fn,name)  case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA);break;
 			switch (f){
-				case fn::NOT:
-					ctx.logic_not(Reg::TML,Reg::TMA);
-					break;
-				case fn::AND:
-					ctx.logic_and(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case fn::OR:
-					ctx.logic_or(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
-				case fn::XOR:
-					ctx.logic_xor(Reg::TML,Reg::TMH,Reg::TMA);
-					break;
+				LOGIC_1(NOT,logic_not)
+				LOGIC_2(AND,logic_and)
+				LOGIC_2(OR ,logic_or )
+				LOGIC_2(XOR,logic_xor)
 			}
+#undef ARG_1
+#undef ARG_2
+#undef LOGIC_1
+#undef LOGIC_2
+
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
 		}
@@ -198,9 +174,9 @@ namespace BreadBoardCPU::OpCode {
 	struct Push:Base{
 		inline static const std::string name="Push";
 		using id    = OPID<5,Base,V>;
-		using from  = OPField<3,id>;
+		using from  = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+UReg::str[from::get(ctx.marg)],1};
+			return {name+" "+from::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Push");
@@ -212,9 +188,9 @@ namespace BreadBoardCPU::OpCode {
 	struct Pop:Base{
 		inline static const std::string name="Pop";
 		using id    = OPID<5,Base,V>;
-		using to    = OPField<3,id>;
+		using to    = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+UReg::str[to::get(ctx.marg)],1};
+			return {name+" "+to::get(ctx.marg).str(),1};
 		}
 		static void gen(MCode& ctx){
 			LOG("Pop");
@@ -299,14 +275,14 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Enter";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Enter");
 			ctx.stack_push16(Reg16::HL);
 			ctx.copy16(Reg16::SP,Reg16::HL);
-			ctx.load_imm(Reg::TMA);
-			ctx.sub16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.sub16(Reg16::SP,Reg16::TMP,Reg16::SP);
 			ctx.next_op();
 		}
 	};
@@ -315,12 +291,12 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Adjust";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Adjust");
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(Reg16::SP,Reg::TMA,Reg16::SP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(Reg16::SP,Reg16::TMP,Reg16::SP);
 			ctx.next_op();
 		}
 	};
@@ -344,12 +320,12 @@ namespace BreadBoardCPU::OpCode {
 		inline static const std::string name="Local";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,3};
 		}
 		static void gen(MCode& ctx){
 			LOG("Local");
-			ctx.load_imm(Reg::TMA);
-			ctx.add16(Reg16::HL,Reg::TMA,Reg16::TMP);
+			ctx.load_imm16(Reg16::TMP);
+			ctx.add16(Reg16::HL,Reg16::TMP,Reg16::TMP);
 			ctx.stack_push16(Reg16::TMP);
 			ctx.next_op();
 		}
