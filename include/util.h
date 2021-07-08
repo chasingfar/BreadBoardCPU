@@ -7,6 +7,8 @@
 
 #include <variant>
 #include <functional>
+#include <iostream>
+#include <fstream>
 
 namespace Util{
 	// helper type for the std::variant visitor
