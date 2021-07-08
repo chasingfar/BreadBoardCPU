@@ -18,7 +18,7 @@ ARG USER_GID=$USER_UID
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG LLVM_VERSION=11
+ARG LLVM_VERSION=12
 ARG LLVM_GPG_FINGERPRINT=6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
 
 # Configure apt and install packages
@@ -55,6 +55,7 @@ RUN apt-get update \
         clangd-${LLVM_VERSION} \
     && ln -s /usr/bin/clang-tidy-${LLVM_VERSION} /usr/bin/clang-tidy \
     && ln -s /usr/bin/lldb-${LLVM_VERSION} /usr/bin/lldb \
+    && ln -s /lib/llvm-${LLVM_VERSION}/bin/clangd /usr/bin/clangd \
     && ln -sf /usr/bin/lldb-server-${LLVM_VERSION} /usr/lib/llvm-${LLVM_VERSION}/bin/lldb-server-${LLVM_VERSION} \
     # Fixes clangd
     && ln -sf /usr/lib/llvm-${LLVM_VERSION}/include/c++/v1 /usr/include/c++/v1

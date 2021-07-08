@@ -339,7 +339,8 @@ namespace BreadBoardCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("PushSP");
-			ctx.stack_push16(Reg16::SP);
+			ctx.copy16(Reg16::SP,Reg16::TMP);
+			ctx.stack_push16(Reg16::TMP);
 			ctx.next_op();
 		}
 	};
@@ -352,7 +353,8 @@ namespace BreadBoardCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("PopSP");
-			ctx.stack_pop16(Reg16::SP);
+			ctx.stack_pop16(Reg16::TMP);
+			ctx.copy16(Reg16::TMP,Reg16::SP);
 			ctx.next_op();
 		}
 	};
