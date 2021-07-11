@@ -56,7 +56,7 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 
-	auto test_if(){
+	inline auto test_if(){
 		ASM program{};
 		return program
 			<<IF{{imm(0)},

@@ -500,7 +500,7 @@ namespace BreadBoardCPU::OpCode {
 		>;
 	}
 
-	void generateOPROM(){
+	inline void generateOPROM(){
 		std::ofstream fout("oprom.txt");
 		if(!fout) {return;}
 		Ops::all::imax=0;

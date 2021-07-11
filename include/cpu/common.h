@@ -13,7 +13,7 @@ enum struct LogState{
 };
 inline LogState state = LogState::Stop;
 template<typename T0,typename... T>
-std::string log_arg(T0 v0, T... value){
+inline std::string log_arg(T0 v0, T... value){
 	std::stringstream ss;
 	ss<<"("<<v0<<((ss << ',' << value), ...,")");
 	return ss.str();

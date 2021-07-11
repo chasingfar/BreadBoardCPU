@@ -5,19 +5,22 @@
 #ifndef BREADBOARDCPU_ALU_H
 #define BREADBOARDCPU_ALU_H
 
+#include <bitset>
+#include <iostream>
+
 namespace ALU74181 {
 	enum struct Carry{
 		yes = 0,
 		no = 1,
 	};
-	std::ostream &operator<<(std::ostream &os, Carry carry) {
+	inline std::ostream &operator<<(std::ostream &os, Carry carry) {
 		return os<<(carry==Carry::yes?"carry":"no_carry");
 	}
 	enum struct Method{
 		arithmetic = 0,
 		logic = 1,
 	};
-	std::ostream &operator<<(std::ostream &os, Method method) {
+	inline std::ostream &operator<<(std::ostream &os, Method method) {
 		return os<<(method==Method::arithmetic?"arithmetic":"logic");
 	}
 	struct Logic{

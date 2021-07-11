@@ -78,7 +78,7 @@ namespace BreadBoardCPU::RegPair {
 			return rpctrl;
 		}
 	};
-	void generateRPROM(){
+	inline void generateRPROM(){
 		std::ofstream fout("rprom.txt");
 		if(!fout) {return;}
 		fout<<ROM(TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[](RPARG::type in){

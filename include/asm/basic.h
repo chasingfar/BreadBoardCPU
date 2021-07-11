@@ -22,7 +22,7 @@ namespace BreadBoardCPU::ASM {
 	using Reg=Regs::UReg;
 	using Reg16=Regs::UReg16;
 
-	std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
+	inline std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
 		std::string name;
 		size_t size = 0, i = 0;
 		for (auto op:ops) {
@@ -127,79 +127,79 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	namespace Ops {
-		code_t load(Reg16 addr,int16_t offset=0)  {return {OP1(Load, from, addr),GET_HL(offset)};}
-		code_t save(Reg16 addr,int16_t offset=0)  {return {OP1(Save, to, addr),GET_HL(offset)};}
-		code_t push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
-		code_t pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
-		code_t imm (op_t value)        {return {OP0(ImmVal), value};}
-		code_t imm (const Label& addr) {return {OP0(ImmVal), LAZY_L(addr),OP0(ImmVal), LAZY_H(addr)};}
-		code_t brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
-		code_t brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
-		code_t jmp (const Label& addr) {return {OP0(Jump), ADDR_HL(addr)};}
-		code_t call(const Label& addr) {return {OP0(Call), ADDR_HL(addr)};}
-		code_t ret ()                  {return {OP0(Return)};}
-		code_t halt()                  {return {OP0(Halt)};}
-		code_t adj (int16_t offset)    {return {OP0(Adjust), GET_HL(offset)};}
-		code_t pushSP()                {return {OP0(PushSP)};}
-		code_t popSP ()                {return {OP0(PopSP)};}
+		inline code_t load(Reg16 addr,int16_t offset=0)  {return {OP1(Load, from, addr),GET_HL(offset)};}
+		inline code_t save(Reg16 addr,int16_t offset=0)  {return {OP1(Save, to, addr),GET_HL(offset)};}
+		inline code_t push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
+		inline code_t pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
+		inline code_t imm (op_t value)        {return {OP0(ImmVal), value};}
+		inline code_t imm (const Label& addr) {return {OP0(ImmVal), LAZY_L(addr),OP0(ImmVal), LAZY_H(addr)};}
+		inline code_t brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
+		inline code_t brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
+		inline code_t jmp (const Label& addr) {return {OP0(Jump), ADDR_HL(addr)};}
+		inline code_t call(const Label& addr) {return {OP0(Call), ADDR_HL(addr)};}
+		inline code_t ret ()                  {return {OP0(Return)};}
+		inline code_t halt()                  {return {OP0(Halt)};}
+		inline code_t adj (int16_t offset)    {return {OP0(Adjust), GET_HL(offset)};}
+		inline code_t pushSP()                {return {OP0(PushSP)};}
+		inline code_t popSP ()                {return {OP0(PopSP)};}
 
 
-		code_t push(Reg16 from)        {return {push(from.L()),push(from.H())};}
-		code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
-		code_t push(op_t v)            {return imm(v);}
-		code_t push(const Label& v)    {return imm(v);}
-		code_t load(Reg16 addr, Reg value,int16_t offset=0)  {return {load(addr,offset), pop(value)};}
-		code_t save(Reg16 addr, Reg value,int16_t offset=0)  {return {push(value), save(addr,offset)};}
-		code_t load(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
-		code_t save(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), save(tmp,offset)};}
-		code_t load(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {load(tmp,addr,offset), pop(value)};}
-		code_t save(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {push(value), save(tmp,addr,offset)};}
-		code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
-		code_t imm (Reg16 reg, const Label& addr)    {return {imm(addr), pop(reg)};}
-		code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
+		inline code_t push(Reg16 from)        {return {push(from.L()),push(from.H())};}
+		inline code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
+		inline code_t push(op_t v)            {return imm(v);}
+		inline code_t push(const Label& v)    {return imm(v);}
+		inline code_t load(Reg16 addr, Reg value,int16_t offset=0)  {return {load(addr,offset), pop(value)};}
+		inline code_t save(Reg16 addr, Reg value,int16_t offset=0)  {return {push(value), save(addr,offset)};}
+		inline code_t load(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
+		inline code_t save(Reg16 tmp, const Label &addr,int16_t offset=0) {return {imm(addr), pop(tmp), save(tmp,offset)};}
+		inline code_t load(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {load(tmp,addr,offset), pop(value)};}
+		inline code_t save(Reg16 tmp, const Label& addr, Reg value,int16_t offset=0) {return {push(value), save(tmp,addr,offset)};}
+		inline code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
+		inline code_t imm (Reg16 reg, const Label& addr)    {return {imm(addr), pop(reg)};}
+		inline code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
 
-		code_t ent (Reg16 BP,op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
-		code_t lev (Reg16 BP)             {return {push(BP),popSP(),pop(BP),ret()};}
-		code_t load_local(Reg16 BP,op_t offset)            {return load(BP,offset);}
-		code_t load_local(Reg16 BP,op_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
-		code_t save_local(Reg16 BP,op_t offset)            {return save(BP,offset);}
-		code_t save_local(Reg16 BP,op_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
-		code_t ent (op_t size)                    {return ent(Reg16::HL,size);}
-		code_t lev ()                             {return lev(Reg16::HL);}
-		code_t load_local(op_t offset)            {return load_local(Reg16::HL,offset);}
-		code_t load_local(op_t offset, Reg to)    {return load_local(Reg16::HL,offset,to);}
-		code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
-		code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
-		code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(Reg16::FE,addr,value,offset);}
-		code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(Reg16::FE,addr,value,offset);}
+		inline code_t ent (Reg16 BP,op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
+		inline code_t lev (Reg16 BP)             {return {push(BP),popSP(),pop(BP),ret()};}
+		inline code_t load_local(Reg16 BP,op_t offset)            {return load(BP,offset);}
+		inline code_t load_local(Reg16 BP,op_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
+		inline code_t save_local(Reg16 BP,op_t offset)            {return save(BP,offset);}
+		inline code_t save_local(Reg16 BP,op_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
+		inline code_t ent (op_t size)                    {return ent(Reg16::HL,size);}
+		inline code_t lev ()                             {return lev(Reg16::HL);}
+		inline code_t load_local(op_t offset)            {return load_local(Reg16::HL,offset);}
+		inline code_t load_local(op_t offset, Reg to)    {return load_local(Reg16::HL,offset,to);}
+		inline code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
+		inline code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
+		inline code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(Reg16::FE,addr,value,offset);}
+		inline code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(Reg16::FE,addr,value,offset);}
 
 		template <typename T>
 		using Pushable=std::enable_if_t<std::disjunction<std::is_convertible<T,Reg>,std::is_convertible<T,int8_t>>::value, bool>;
-#define DEFINE_0(type, name, _FN)                \
-        code_t name(){                           \
-            return {OP1(type,fn,type::FN::_FN)}; \
+#define DEFINE_0(type, name, _FN)                   \
+        inline code_t name(){                       \
+            return {OP1(type,fn,type::FN::_FN)};    \
         }
-#define DEFINE_1(type, name, FN)                 \
-        DEFINE_0(type,name,FN)                   \
-        template<typename L,Pushable<L> =true>   \
-        code_t name(L lhs) {                     \
-            return {push(lhs),name()};           \
-        }                                        \
-        template<typename L,Pushable<L> =true>   \
-        code_t name(Reg res, L lhs) {            \
-            return {name(lhs),pop(res)};         \
+#define DEFINE_1(type, name, FN)                    \
+        DEFINE_0(type,name,FN)                      \
+        template<typename L,Pushable<L> =true>      \
+        inline code_t name(L lhs) {                 \
+            return {push(lhs),name()};              \
+        }                                           \
+        template<typename L,Pushable<L> =true>      \
+        inline code_t name(Reg res, L lhs) {        \
+            return {name(lhs),pop(res)};            \
         }
-#define DEFINE_2(type, name, FN)                 \
-        DEFINE_0(type,name,FN)                   \
-        template<typename L,typename R,          \
-            Pushable<L> =true,Pushable<R> =true> \
-        code_t name(L lhs, R rhs) {              \
-            return {push(rhs),push(lhs),name()}; \
-        }                                        \
-        template<typename L,typename R,          \
-            Pushable<L> =true,Pushable<R> =true> \
-        code_t name(Reg res, L lhs, R rhs) {     \
-            return {name(lhs,rhs),pop(res)};     \
+#define DEFINE_2(type, name, FN)                    \
+        DEFINE_0(type,name,FN)                      \
+        template<typename L,typename R,             \
+            Pushable<L> =true,Pushable<R> =true>    \
+        inline code_t name(L lhs, R rhs) {          \
+            return {push(rhs),push(lhs),name()};    \
+        }                                           \
+        template<typename L,typename R,             \
+            Pushable<L> =true,Pushable<R> =true>    \
+        inline code_t name(Reg res, L lhs, R rhs) { \
+            return {name(lhs,rhs),pop(res)};        \
         }
 
 		DEFINE_1(Calc, shl, SHL)
