@@ -11,12 +11,12 @@
 
 namespace BreadBoardCPU::ASM {
 	using namespace StaticFn;
-	void generate(const std::string& name,auto program) {
+	inline void generate(const std::string& name,auto program) {
 		std::ofstream fout{name};
 		if (!fout) { return; }
 		fout<<ROM(program);
 	}
-	void simulate(const std::string& name,auto program) {
+	inline void simulate(const std::string& name,auto program) {
 		std::cout<<name<<std::endl;
 		CPU cpu;
 		cpu.load(program);
@@ -28,7 +28,7 @@ namespace BreadBoardCPU::ASM {
 			std::cout<<std::endl;
 		}
 	}
-	ops_t test_loop_sum() {
+	inline ops_t test_loop_sum() {
 		ASM program{};
 		Label a{"a"},b{"b"};
 		return program
@@ -44,7 +44,7 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
-	ops_t test_save_load() {
+	inline ops_t test_save_load() {
 		ASM program{};
 		Label b,c{0xFFFF-5};
 		return program
@@ -58,7 +58,7 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
-	ops_t test_call_ret() {
+	inline ops_t test_call_ret() {
 		ASM program{};
 		Label start,fn_start;
 		return program
@@ -74,7 +74,7 @@ namespace BreadBoardCPU::ASM {
 			<<ASM::END
 		;
 	}
-	ops_t test_function() {
+	inline ops_t test_function() {
 		ASM program{};
 		Label main{"main"};
 		FnDecl<2> fn{"fn(c,d)"};
@@ -100,7 +100,7 @@ namespace BreadBoardCPU::ASM {
 		;
 
 	}
-	void generateASMROM() {
+	inline void generateASMROM() {
 		//simulate("test_loop_sum",test_loop_sum());
 		std::cout<<test_function();
 		simulate("test_function",test_function());
