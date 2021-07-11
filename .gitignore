@@ -1,2 +1,2 @@
-/cmake-build-debug-wsl/
-/build/
+build/
+.cache/
