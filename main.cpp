@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 
+#define CPU_DEBUG 1
 #include "include/cpu/cpu.h"
 #include "include/asm/asm.h"
 int main() {

@@ -35,10 +35,17 @@ struct Logger{
 	static void stop(){state=LogState::Stop;}
 	static void step(){state=LogState::Step;}
 };
+#if CPU_DEBUG
 #define LOG(...) Logger __{__func__+log_arg(__VA_ARGS__)};
 #define LOG_START() Logger::start();
 #define LOG_STOP() Logger::stop();
 #define LOG_STEP() Logger::step();
+#else
+#define LOG(...)
+#define LOG_START()
+#define LOG_STOP()
+#define LOG_STEP()
+#endif
 namespace BreadBoardCPU {
 	using namespace Util::Bitwise::BitField;
 	using Util::TruthTable;
