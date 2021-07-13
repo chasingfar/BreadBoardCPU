@@ -21,11 +21,10 @@ namespace BreadBoardCPU{
 			}
 			marg=0;
 		}
-		void load(auto data){
-			uint16_t i=0;
+		void load(auto data,uint16_t addr=0){
 			for (auto op:data){
-				RAM[i]=op;
-				i++;
+				RAM[addr]=op;
+				addr++;
 			}
 		}
 		void print_reg(){
