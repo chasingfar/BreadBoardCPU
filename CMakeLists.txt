@@ -7,4 +7,5 @@ include_directories(include)
 add_executable(BreadBoardCPU main.cpp)
 add_executable(tests test/main.cpp
         test/opcode.cpp
+        test/basic.cpp
         )
