@@ -8,8 +8,13 @@
 #include "regpair.h"
 namespace BreadBoardCPU{
 	struct CPU{
-		uint8_t REG[16]{};
-		uint8_t RAM[1u<<16u]{};
+		using Reg = Regs::Reg;
+		using Reg16 = Regs::Reg16;
+		using op_t = uint8_t;
+		using addr_t = uint16_t;
+
+		op_t REG[16]{};
+		op_t RAM[1u<<16u]{};
 		MARG::type marg=0;
 		MCTRL::type mctrl=0;
 		void clear(){
@@ -21,7 +26,7 @@ namespace BreadBoardCPU{
 			}
 			marg=0;
 		}
-		void load(auto data,uint16_t addr=0){
+		void load(auto data,addr_t addr=0){
 			for (auto op:data){
 				RAM[addr]=op;
 				addr++;
@@ -54,8 +59,8 @@ namespace BreadBoardCPU{
 		std::string get_ram_str(size_t i){
 			return "RAM["+std::to_string(i)+"]("+std::to_string(RAM[i])+")";
 		}
-		uint16_t get_addr(auto v){
-			return (((uint16_t)REG[v+1])<<8u)|((uint16_t)REG[v]);
+		addr_t get_addr(auto v){
+			return (static_cast<addr_t>(REG[v+1])<<8u)|REG[v];
 		}
 		bool isHalt(){
 			return MCTRL::sig::isHalt(mctrl);
@@ -67,7 +72,7 @@ namespace BreadBoardCPU{
 			if(debug){std::cout<<std::endl;}
 			auto dir=static_cast<DirMode>(MCTRL::io::dir::get(mctrl));
 
-			uint8_t A;
+			op_t A;
 			if(dir==DirMode::MemToReg){
 				A=RAM[get_addr(MCTRL::io::fromA::get(mctrl))];
 				A_str=get_ram_str(get_addr(MCTRL::io::fromA::get(mctrl)));
@@ -76,7 +81,7 @@ namespace BreadBoardCPU{
 				A_str=get_reg_str(MCTRL::io::fromA::get(mctrl));
 			}
 
-			uint8_t B=REG[MCTRL::io::fromB::get(mctrl)];
+			op_t B=REG[MCTRL::io::fromB::get(mctrl)];
 			B_str=get_reg_str(MCTRL::io::fromB::get(mctrl));
 
 			auto [carry,O]=MCTRL::alu::run<8>(mctrl,A,B);
