@@ -62,6 +62,17 @@ namespace BreadBoardCPU{
 		addr_t get_addr(auto v){
 			return (static_cast<addr_t>(REG[v+1])<<8u)|REG[v];
 		}
+		addr_t get_pair(Reg16 reg16){
+			return get_addr(pair(reg16).v());
+		}
+		op_t* get_pointer(Reg16 reg16,addr_t offset=0){
+			return &RAM[get_pair(reg16)+offset];
+		}
+		void load_op(auto op){
+			load(op, get_pair(Reg16::PC));
+			REG[Reg::OPR.v()]=op[0];
+			marg=MARG::opcode::set(marg,op[0]);
+		}
 		bool isHalt(){
 			return MCTRL::sig::isHalt(mctrl);
 		}
@@ -106,6 +117,9 @@ namespace BreadBoardCPU{
 			do{
 				tick(debug);
 			}while(MARG::getIndex(marg)!=0);
+			if(debug){
+				std::cout<<std::endl;
+			}
 		}
 	};
 }
