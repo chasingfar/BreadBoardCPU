@@ -36,7 +36,9 @@ TEST_CASE("push and pop","[asm][basic]"){
     CPU cpu;
     cpu.tick_op();
 
-    run_op(cpu,push(123));
+	cpu.REG[CPU::Reg::B.v()]=123;
+
+    run_op(cpu,push(Reg::B));
     REQUIRE(*cpu.get_pointer(CPU::Reg16::SP,1) == 123);
 	run_op(cpu,pop(Reg::A));
     REQUIRE(cpu.REG[CPU::Reg::A.v()]==123);
