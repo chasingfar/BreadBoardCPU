@@ -55,3 +55,28 @@ TEST_CASE("immediate value","[asm][basic]"){
 	cpu.tick_op();
 	REQUIRE(*cpu.get_pointer(CPU::Reg16::SP,1) == 0xAB);
 }
+
+TEST_CASE("jump and branch","[asm][basic]"){
+	using BreadBoardCPU::MARG;
+	using ALU74181::Carry;
+	CPU cpu;
+	cpu.tick_op();
+
+	run_op(cpu,jmp(Label{0xABCD}));
+	REQUIRE(cpu.get_pair(CPU::Reg16::PC) == 0xABCD);
+
+	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::yes);
+	run_op(cpu,brc(Label{0xBBCD}));
+	REQUIRE(cpu.get_pair(CPU::Reg16::PC) == 0xBBCD);
+	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::no);
+	run_op(cpu,brc(Label{0xCBCD}));
+	REQUIRE(cpu.get_pair(CPU::Reg16::PC) == 0xBBCD+3);
+
+
+	run_op(cpu,imm(0));
+	run_op(cpu,brz(Label{0x1234}));
+	REQUIRE(cpu.get_pair(CPU::Reg16::PC) == 0x1234);
+	run_op(cpu,imm(1));
+	run_op(cpu,brz(Label{0x2234}));
+	REQUIRE(cpu.get_pair(CPU::Reg16::PC) == 2+0x1234+3);
+}
