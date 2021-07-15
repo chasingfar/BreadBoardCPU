@@ -240,7 +240,6 @@ namespace BreadBoardCPU{
 		}
 		void branch(Reg16 addr,Carry cond=Carry::yes){
 			LOG(addr);
-			save_carry();
 			if(MARG::getCF(marg)==cond){
 				jump(addr);
 			}
@@ -248,11 +247,13 @@ namespace BreadBoardCPU{
 		void branch_zero(Reg16 addr,Reg lhs,Reg dest){
 			LOG(addr);
 			test_zero(lhs,dest);
+			save_carry();
 			branch(addr,MCTRL::alu::ifAeqZero);
 		}
 		void branch_less(Reg16 addr,Reg lhs,Reg rhs,Reg dest){
 			LOG(addr);
 			test_less(lhs,rhs,dest);
+			save_carry();
 			branch(addr,MCTRL::alu::ifALessB);
 		}
 		bool isINT(){
