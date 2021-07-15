@@ -43,3 +43,15 @@ TEST_CASE("push and pop","[asm][basic]"){
 	run_op(cpu,pop(Reg::A));
     REQUIRE(cpu.REG[CPU::Reg::A.v()]==123);
 }
+
+TEST_CASE("immediate value","[asm][basic]"){
+	CPU cpu;
+	cpu.tick_op();
+
+	run_op(cpu,imm(123));
+	REQUIRE(*cpu.get_pointer(CPU::Reg16::SP,1) == 123);
+	run_op(cpu,imm(Label{0xABCD}));
+	REQUIRE(*cpu.get_pointer(CPU::Reg16::SP,1) == 0xCD);
+	cpu.tick_op();
+	REQUIRE(*cpu.get_pointer(CPU::Reg16::SP,1) == 0xAB);
+}
