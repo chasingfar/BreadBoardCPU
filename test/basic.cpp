@@ -1,6 +1,7 @@
 //
 // Created by chasingfar on 2021/7/9.
 //
+#include "asm/basic.h"
 #include "catch.hpp"
 #include "asm/asm.h"
 
@@ -62,23 +63,25 @@ TEST_CASE("jump and branch","[asm][basic]"){
 	CPU cpu;
 	cpu.tick_op();
 
-	_RUN_OP(jmp(Label{0xABCD}));
-	REQUIRE(_REG16(PC) == 0xABCD);
+	Label a{0xABCD};
+	_RUN_OP(jmp(a));
+	REQUIRE(_REG16(PC) == *a.addr);
 
+	Label b{0xBBCD},c{0xCBCD};
 	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::yes);
-	_RUN_OP(brc(Label{0xBBCD}));
-	REQUIRE(_REG16(PC)  == 0xBBCD);
+	_RUN_OP(brc(b));
+	REQUIRE(_REG16(PC)  == *b.addr);
 	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::no);
-	_RUN_OP(brc(Label{0xCBCD}));
-	REQUIRE(_REG16(PC)  == 0xBBCD+3);
+	_RUN_OP(brc(c));
+	REQUIRE(_REG16(PC)  == (*b.addr)+3);
 
-
+	Label d{0x1234},e{0x2234};
 	_RUN_OP(imm(0));
-	_RUN_OP(brz(Label{0x1234}));
-	REQUIRE(_REG16(PC) == 0x1234);
+	_RUN_OP(brz(d));
+	REQUIRE(_REG16(PC) == *d.addr);
 	_RUN_OP(imm(1));
-	_RUN_OP(brz(Label{0x2234}));
-	REQUIRE(_REG16(PC) == 2+0x1234+3);
+	_RUN_OP(brz(e));
+	REQUIRE(_REG16(PC) == 2+(*d.addr)+3);
 }
 
 #undef _REG
