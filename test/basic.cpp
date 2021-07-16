@@ -84,7 +84,74 @@ TEST_CASE("jump and branch","[asm][basic]"){
 	_RUN_OP(brz(e));
 	REQUIRE(_REG16(PC) == 2+(*d.addr)+3);
 }
-
+TEST_CASE("calculation","[asm][basic]"){
+	CPU cpu;
+	cpu.tick_op();
+	SECTION("shift"){
+		_RUN_OP(imm(0b1011'0110));
+		SECTION("shift left"){
+			_RUN_OP(shl());
+			REQUIRE(_STACK_TOP == 0b0110'1100);
+		}
+		SECTION("rotate left with carry=no"){
+			_SET_FLAG(CF,Carry::no);
+			_RUN_OP(rcl());
+			REQUIRE(_STACK_TOP == 0b0110'1100);
+		}
+		SECTION("rotate left with carry=yes"){
+			_SET_FLAG(CF,Carry::yes);
+			_RUN_OP(rcl());
+			REQUIRE(_STACK_TOP == 0b0110'1101);
+		}
+		SECTION("shift right"){
+			_RUN_OP(shr());
+			REQUIRE(_STACK_TOP == 0b0101'1011);
+		}
+		SECTION("rotate right with carry=no"){
+			_SET_FLAG(CF,Carry::no);
+			_RUN_OP(rcr());
+			REQUIRE(_STACK_TOP == 0b0101'1011);
+		}
+		SECTION("rotate right with carry=yes"){
+			_SET_FLAG(CF,Carry::yes);
+			_RUN_OP(rcr());
+			REQUIRE(_STACK_TOP == 0b1101'1011);
+		}
+	}
+	SECTION("arithmetic"){
+		uint8_t a=123,b=100;
+		_RUN_OP(imm(b));
+		_RUN_OP(imm(a));
+		SECTION("addition"){
+			_RUN_OP(add());
+			REQUIRE(_STACK_TOP == a+b);
+		}
+		SECTION("subtraction"){
+			_RUN_OP(sub());
+			REQUIRE(_STACK_TOP == a-b);
+		}
+		SECTION("addition with carry=no"){
+			_SET_FLAG(CF,Carry::no);
+			_RUN_OP(adc());
+			REQUIRE(_STACK_TOP == a+b+0);
+		}
+		SECTION("addition with carry=yes"){
+			_SET_FLAG(CF,Carry::yes);
+			_RUN_OP(adc());
+			REQUIRE(_STACK_TOP == a+b+1);
+		}
+		SECTION("subtraction with carry=no"){
+			_SET_FLAG(CF,Carry::no);
+			_RUN_OP(suc());
+			REQUIRE(_STACK_TOP == a-b-1);
+		}
+		SECTION("subtraction with carry=yes"){
+			_SET_FLAG(CF,Carry::yes);
+			_RUN_OP(suc());
+			REQUIRE(_STACK_TOP == a-b-0);
+		}
+	}
+}
 #undef _REG
 #undef _REG16
 #undef _STACK_TOP
