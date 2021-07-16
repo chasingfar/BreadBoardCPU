@@ -104,7 +104,7 @@ namespace BreadBoardCPU::OpCode {
 #define ARG_1 ctx.stack_pop(Reg::TML);
 #define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
 #define CALC_1(fn,name)  case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA,0);break;
-#define CALC_1C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));break;
+#define CALC_1C(fn,name) case FN::fn: ARG_1 ctx.name(Reg::TML,Reg::TMA,MARG::getCF(ctx.marg));break;
 #define CALC_2(fn,name)  case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA);break;
 #define CALC_2C(fn,name) case FN::fn: ARG_2 ctx.name(Reg::TML,Reg::TMH,Reg::TMA,MARG::getCF(ctx.marg));break;
 
