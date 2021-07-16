@@ -7,12 +7,15 @@
 
 using namespace BreadBoardCPU::ASM;
 using BreadBoardCPU::CPU;
+using BreadBoardCPU::MARG;
+using ALU74181::Carry;
 
 #define _REG(name) cpu.REG[CPU::Reg::name.v()]
 #define _REG16(name) cpu.get_pair(CPU::Reg16::name)
 #define _STACK_TOP *cpu.get_pointer(CPU::Reg16::SP,1)
 #define _STACK_INSERT *cpu.get_pointer(CPU::Reg16::SP)
 #define _RUN_OP(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
+#define _SET_FLAG(flag,value) cpu.marg=MARG::state::flag::set(cpu.marg,value);
 
 TEST_CASE("load and save","[asm][basic]"){
 	CPU cpu;
@@ -58,8 +61,6 @@ TEST_CASE("immediate value","[asm][basic]"){
 }
 
 TEST_CASE("jump and branch","[asm][basic]"){
-	using BreadBoardCPU::MARG;
-	using ALU74181::Carry;
 	CPU cpu;
 	cpu.tick_op();
 
@@ -68,10 +69,10 @@ TEST_CASE("jump and branch","[asm][basic]"){
 	REQUIRE(_REG16(PC) == *a.addr);
 
 	Label b{0xBBCD},c{0xCBCD};
-	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::yes);
+	_SET_FLAG(CF,Carry::yes);
 	_RUN_OP(brc(b));
 	REQUIRE(_REG16(PC)  == *b.addr);
-	cpu.marg=MARG::state::CF::set(cpu.marg,Carry::no);
+	_SET_FLAG(CF,Carry::no);
 	_RUN_OP(brc(c));
 	REQUIRE(_REG16(PC)  == (*b.addr)+3);
 
@@ -89,3 +90,4 @@ TEST_CASE("jump and branch","[asm][basic]"){
 #undef _STACK_TOP
 #undef _STACK_INSERT
 #undef _RUN_OP
+#undef _SET_FLAG
