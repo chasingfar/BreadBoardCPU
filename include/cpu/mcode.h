@@ -141,7 +141,7 @@ namespace BreadBoardCPU{
 			LOG(lhs,dest,pad);
 			shift_left(lhs,dest,pad);
 			auto carry=MARG::getCarry(marg);
-			for(int j=0;j<6;j++){
+			for(int j=0;j<7;j++){
 				shift_left(dest,dest,carry);
 			}
 		}
@@ -149,7 +149,7 @@ namespace BreadBoardCPU{
 			LOG(lhs,dest,CF);
 			shift_left(lhs,dest,CF);
 			auto carry=MARG::getCarry(marg);
-			for(int j=0;j<6;j++){
+			for(int j=0;j<7;j++){
 				shift_left(dest,dest,carry);
 			}
 		}
