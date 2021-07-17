@@ -151,6 +151,27 @@ TEST_CASE("calculation","[asm][basic]"){
 			REQUIRE(_STACK_TOP == a-b-0);
 		}
 	}
+	SECTION("logic"){
+		uint8_t a=0b1100'0101,b=0b1010'1100;
+		_RUN_OP(imm(b));
+		_RUN_OP(imm(a));
+		SECTION("not"){
+			_RUN_OP(NOT());
+			REQUIRE(_STACK_TOP == (uint8_t)(~a));
+		}
+		SECTION("and"){
+			_RUN_OP(AND());
+			REQUIRE(_STACK_TOP == (a&b));
+		}
+		SECTION("or"){
+			_RUN_OP(OR());
+			REQUIRE(_STACK_TOP == (a|b));
+		}
+		SECTION("xor"){
+			_RUN_OP(XOR());
+			REQUIRE(_STACK_TOP == (a^b));
+		}
+	}
 }
 #undef _REG
 #undef _REG16
