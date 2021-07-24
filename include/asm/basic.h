@@ -164,14 +164,18 @@ namespace BreadBoardCPU::ASM {
 		inline code_t load_local(Reg16 BP,op_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
 		inline code_t save_local(Reg16 BP,op_t offset)            {return save(BP,offset);}
 		inline code_t save_local(Reg16 BP,op_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
-		inline code_t ent (op_t size)                    {return ent(Reg16::HL,size);}
-		inline code_t lev ()                             {return lev(Reg16::HL);}
-		inline code_t load_local(op_t offset)            {return load_local(Reg16::HL,offset);}
-		inline code_t load_local(op_t offset, Reg to)    {return load_local(Reg16::HL,offset,to);}
-		inline code_t save_local(op_t offset)            {return save_local(Reg16::HL,offset);}
-		inline code_t save_local(op_t offset, Reg value) {return save_local(Reg16::HL,offset,value);}
-		inline code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(Reg16::FE,addr,value,offset);}
-		inline code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(Reg16::FE,addr,value,offset);}
+#define DEFAULT_BP Reg16::HL
+#define DEFAULT_TMP Reg16::FE
+		inline code_t ent (op_t size)                    {return ent(DEFAULT_BP,size);}
+		inline code_t lev ()                             {return lev(DEFAULT_BP);}
+		inline code_t load_local(op_t offset)            {return load_local(DEFAULT_BP,offset);}
+		inline code_t load_local(op_t offset, Reg to)    {return load_local(DEFAULT_BP,offset,to);}
+		inline code_t save_local(op_t offset)            {return save_local(DEFAULT_BP,offset);}
+		inline code_t save_local(op_t offset, Reg value) {return save_local(DEFAULT_BP,offset,value);}
+		inline code_t load(const Label& addr, Reg value,int16_t offset=0) {return load(DEFAULT_TMP,addr,value,offset);}
+		inline code_t save(const Label& addr, Reg value,int16_t offset=0) {return save(DEFAULT_TMP,addr,value,offset);}
+#undef DEFAULT_BP
+#undef DEFAULT_TMP
 
 		template <typename T>
 		using Pushable=std::enable_if_t<std::disjunction<std::is_convertible<T,Reg>,std::is_convertible<T,int8_t>>::value, bool>;
