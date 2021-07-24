@@ -1,38 +1,8 @@
 //
 // Created by chasingfar on 2021/7/23.
 //
-#include "catch.hpp"
-#include "asm/asm.h"
-#include "cpu/cpu.h"
-#include <cstddef>
+#include "asm_test_util.h"
 
-using namespace BreadBoardCPU::ASM;
-using BreadBoardCPU::CPU;
-
-#define _REG(name) cpu.REG[CPU::Reg::name.v()]
-#define _REG16(name) cpu.get_pair(CPU::Reg16::name)
-#define _STACK_TOP *cpu.get_pointer(CPU::Reg16::SP,1)
-#define _STACK_INSERT *cpu.get_pointer(CPU::Reg16::SP)
-
-inline CPU run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=1024){
-	for (size_t i = 0; i < max_iter; ++i) {
-		cpu.tick_op();
-		if(cpu.isHalt()){
-			return cpu;
-		}
-		for (const auto& label:pause_at){
-			if (_REG16(PC)==*label){
-				return cpu;
-			}
-		}
-	}
-	return cpu;
-}
-inline CPU run(const code_t& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
-	CPU cpu;
-	cpu.load(ASM{}<<program<<halt()<<ASM::END);
-	return run(cpu,pause_at,max_iter);
-}
 
 TEST_CASE("block","[asm][advance]"){
 	Label a,b;

@@ -1,21 +1,7 @@
 //
 // Created by chasingfar on 2021/7/9.
 //
-#include "asm/basic.h"
-#include "catch.hpp"
-#include "asm/asm.h"
-
-using namespace BreadBoardCPU::ASM;
-using BreadBoardCPU::CPU;
-using BreadBoardCPU::MARG;
-using ALU74181::Carry;
-
-#define _REG(name) cpu.REG[CPU::Reg::name.v()]
-#define _REG16(name) cpu.get_pair(CPU::Reg16::name)
-#define _STACK_TOP *cpu.get_pointer(CPU::Reg16::SP,1)
-#define _STACK_INSERT *cpu.get_pointer(CPU::Reg16::SP)
-#define _RUN_OP(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
-#define _SET_FLAG(flag,value) cpu.marg=MARG::state::flag::set(cpu.marg,value);
+#include "asm_test_util.h"
 
 TEST_CASE("load and save","[asm][basic]"){
 	CPU cpu;
