@@ -14,20 +14,40 @@ using BreadBoardCPU::CPU;
 #define _STACK_TOP *cpu.get_pointer(CPU::Reg16::SP,1)
 #define _STACK_INSERT *cpu.get_pointer(CPU::Reg16::SP)
 
-inline CPU run(code_t program,size_t max_iter=1024){
-	CPU cpu;
-	cpu.load(ASM{}<<program<<halt()<<ASM::END);
-	for (size_t i = 0; i < max_iter && !cpu.isHalt(); ++i) {
+inline CPU run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=1024){
+	for (size_t i = 0; i < max_iter; ++i) {
 		cpu.tick_op();
+		if(cpu.isHalt()){
+			return cpu;
+		}
+		for (const auto& label:pause_at){
+			if (_REG16(PC)==*label){
+				return cpu;
+			}
+		}
 	}
 	return cpu;
 }
+inline CPU run(const code_t& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
+	CPU cpu;
+	cpu.load(ASM{}<<program<<halt()<<ASM::END);
+	return run(cpu,pause_at,max_iter);
+}
 
 TEST_CASE("block","[asm][advance]"){
-	CPU cpu=run(
-		Block{imm(Reg::A,5)}
-	);
+	Label a,b;
+	CPU cpu=run(Block{{
+		imm(Reg::A,5),
+		a,
+		imm(Reg::A,10),
+		b,
+		imm(Reg::A,15),
+	}},{a,b});
 	REQUIRE(_REG(A)==5);
+	run(cpu,{a,b});
+	REQUIRE(_REG(A)==10);
+	run(cpu,{a,b});
+	REQUIRE(_REG(A)==15);
 }
 
 TEST_CASE("if","[asm][advance]"){
