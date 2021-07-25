@@ -50,11 +50,12 @@ namespace BreadBoardCPU::ASM {
 
 		void set(addr_t v) const {
 			*addr = v;
+#if ASM_DEBUG
 			std::cout << "set  "  << addr << "(" << name << ")=" << *addr << std::endl;
+#endif
 		}
 
 		op_t getByte(size_t i) const {
-			//std::cout << "read " << addr << "(" << name << ")=" << *addr << std::endl;
 			return (*addr >> (i * 8)) & 0xff;
 		}
 		addr_t& operator*() const{
