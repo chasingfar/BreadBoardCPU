@@ -65,20 +65,20 @@ namespace ALU74181 {
 	struct Arith{
 		#define FN_TABLE \
 			X(A                ,= 0b0000u,"$A"               ) \
-			X(AorB             ,= 0b0001u,"$A|B"             ) \
-			X(AornotB          ,= 0b0010u,"$A|(~B)"          ) \
+			X(AorB             ,= 0b0001u,"$A|$B"             ) \
+			X(AornotB          ,= 0b0010u,"$A|(~$B)"          ) \
 			X(minus1           ,= 0b0011u,"-1"               ) \
-			X(AplusAandnotB    ,= 0b0100u,"$A+($A&(~B))"     ) \
-			X(AorBplusAandnotB ,= 0b0101u,"($A|B)+($A&(~B))" ) \
-			X(AminusBminus1    ,= 0b0110u,"$A-B-1"           ) \
-			X(AandnotBminus1   ,= 0b0111u,"($A&(~B))-1"      ) \
-			X(AplusAandB       ,= 0b1000u,"$A+($A&B)"        ) \
-			X(AplusB           ,= 0b1001u,"$A+B"             ) \
-			X(AornotBplusAandB ,= 0b1010u,"($A|(~B))+($A&B)" ) \
-			X(AandBminus1      ,= 0b1011u,"($A&B)-1"         ) \
+			X(AplusAandnotB    ,= 0b0100u,"$A+($A&(~$B))"     ) \
+			X(AorBplusAandnotB ,= 0b0101u,"($A|B)+($A&(~$B))" ) \
+			X(AminusBminus1    ,= 0b0110u,"$A-$B-1"           ) \
+			X(AandnotBminus1   ,= 0b0111u,"($A&(~$B))-1"      ) \
+			X(AplusAandB       ,= 0b1000u,"$A+($A&$B)"        ) \
+			X(AplusB           ,= 0b1001u,"$A+$B"             ) \
+			X(AornotBplusAandB ,= 0b1010u,"($A|(~$B))+($A&$B)" ) \
+			X(AandBminus1      ,= 0b1011u,"($A&$B)-1"         ) \
 			X(AplusA           ,= 0b1100u,"$A+$A"            ) \
-			X(AorBplusA        ,= 0b1101u,"($A|B)+$A"        ) \
-			X(AornotBplusA     ,= 0b1110u,"($A|(~B))+$A"     ) \
+			X(AorBplusA        ,= 0b1101u,"($A|$B)+$A"        ) \
+			X(AornotBplusA     ,= 0b1110u,"($A|(~$B))+$A"     ) \
 			X(Aminus1          ,= 0b1111u,"$A-1"             ) \
 
 		enum fn{
