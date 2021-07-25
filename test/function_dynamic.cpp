@@ -115,3 +115,56 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	run(cpu);
 	REQUIRE(_REG(A)==22);
 }
+
+TEST_CASE("function recursion","[asm][function][dynamic]"){
+	/*
+	fib(i){
+		if(i!=0){
+		}else{
+			return 0
+		}
+		i=i-1
+		if(i!=0){
+		}else{
+			return 1
+		}
+		a=fib(i)
+		i=i-1
+		return fib(i)+a
+	}
+	fib(6)
+	*/
+	FnDecl fib{"fib(i)",{"i"}};
+	auto i=fib["i"];//args
+	auto a=fib["a"];//vars
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		fib.impl({
+			i.load(Reg::B),
+			IF{{push(Reg::B)},{},{{
+				imm(Reg::A, 0),
+				lev(),
+			}}},
+			imm(Reg::C, 1),
+			sub(Reg::B,Reg::B,Reg::C),
+			IF{{push(Reg::B)},{},{{
+				imm(Reg::A, 1),
+				lev(),
+			}}},
+			i.save(Reg::B),
+			fib.call({Reg::B}),
+			a.save(Reg::A),
+			i.load(Reg::B),
+			imm(Reg::C, 1),
+			sub(Reg::B,Reg::B,Reg::C),
+			fib.call({Reg::B}),
+			a.load(Reg::B),
+			add(Reg::A,Reg::A,Reg::B),
+			lev(),
+		}),
+		main,
+		fib.call({imm(6)}),
+	});
+	REQUIRE(_REG(A)==8);
+}
