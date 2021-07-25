@@ -9,4 +9,5 @@ add_executable(tests test/main.cpp
         test/opcode.cpp
         test/basic.cpp
         test/advance.cpp
+        test/function_dynamic.cpp
         )
