@@ -65,8 +65,8 @@ namespace BreadBoardCPU{
 		addr_t get_pair(Reg16 reg16){
 			return get_addr(pair(reg16).v());
 		}
-		op_t* get_pointer(Reg16 reg16,addr_t offset=0){
-			return &RAM[get_pair(reg16)+offset];
+		op_t read_pair(Reg16 reg16, int16_t offset= 0){
+			return RAM[get_pair(reg16)+offset];
 		}
 		void load_op(auto op){
 			load(op, get_pair(Reg16::PC));

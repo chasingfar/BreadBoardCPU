@@ -15,8 +15,8 @@ using ALU74181::Carry;
 
 #define _REG(name) cpu.REG[CPU::Reg::name.v()]
 #define _REG16(name) cpu.get_pair(CPU::Reg16::name)
-#define _STACK_TOP *cpu.get_pointer(CPU::Reg16::SP,1)
-#define _STACK_INSERT *cpu.get_pointer(CPU::Reg16::SP)
+#define _STACK_TOP cpu.read_pair(CPU::Reg16::SP,1)
+#define _STACK_INSERT cpu.read_pair(CPU::Reg16::SP)
 #define _RUN_OP(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
 #define _SET_FLAG(flag,value) cpu.marg=MARG::state::flag::set(cpu.marg,value);
 
