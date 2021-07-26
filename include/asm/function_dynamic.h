@@ -10,10 +10,16 @@ namespace BreadBoardCPU::ASM::DynamicFn{
 		offset_t offset=0;
 		FnLocal()= default;
 		explicit FnLocal(offset_t offset):offset(offset){}
-		code_t load(Reg to){
+		code_t load() const{
+			return load_local(offset);
+		}
+		code_t load(Reg to) const{
 			return load_local(offset,to);
 		}
-		code_t save(Reg value){
+		code_t save() const{
+			return save_local(offset);
+		}
+		code_t save(Reg value) const{
 			return save_local(offset,value);
 		}
 	};
