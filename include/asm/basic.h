@@ -174,6 +174,8 @@ namespace BreadBoardCPU::ASM {
 		inline code_t save_local(offset_t offset)            {return save_local(DEFAULT_BP,offset);}
 		inline code_t load_local(offset_t offset, Reg to)    {return load_local(DEFAULT_BP,offset,to);}
 		inline code_t save_local(offset_t offset, Reg value) {return save_local(DEFAULT_BP,offset,value);}
+		inline code_t load(const Label& addr, offset_t offset=0) {return load(DEFAULT_TMP,addr,offset);}
+		inline code_t save(const Label& addr, offset_t offset=0) {return save(DEFAULT_TMP,addr,offset);}
 		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(DEFAULT_TMP,addr,value,offset);}
 		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(DEFAULT_TMP,addr,value,offset);}
 #undef DEFAULT_BP
