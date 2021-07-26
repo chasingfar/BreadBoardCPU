@@ -44,8 +44,8 @@ namespace BreadBoardCPU::ASM {
 	struct Label {
 		std::shared_ptr<addr_t> addr;
 		std::string name;
-		explicit Label(addr_t addr=0) : addr(new addr_t(addr)) {}
 
+		explicit Label(addr_t addr=0) : addr(new addr_t(addr)) {}
 		explicit Label(std::string name,addr_t addr=0) : name(std::move(name)),addr(new addr_t(addr)) {}
 
 		void set(addr_t v) const {
@@ -94,8 +94,8 @@ namespace BreadBoardCPU::ASM {
 			ops.reserve(pc());
 			for (auto &code:data) {
 				ops.emplace_back(std::visit(Util::lambda_compose{
-						[&](const lazy_t &fn) { return fn(ops.size()); },
-						[&](op_t op) { return op; },
+					[&](const lazy_t &fn) { return fn(ops.size()); },
+					[&](op_t op) { return op; },
 				}, code));
 			}
 			return ops;
@@ -104,9 +104,9 @@ namespace BreadBoardCPU::ASM {
 		ASM &operator<<(const code_t& codes) {
 			for (auto &code:codes) {
 				std::visit(Util::lambda_compose{
-						[&](const lazy_t &fn) { data.emplace_back(fn); },
-						[&](op_t op) {  data.emplace_back(op); },
-						[&](const Label& label) { label.set(pc()); },
+					[&](const lazy_t &fn) { data.emplace_back(fn); },
+					[&](op_t op) {  data.emplace_back(op); },
+					[&](const Label& label) { label.set(pc()); },
 				}, code);
 			}
 			return *this;
@@ -129,8 +129,8 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	namespace Ops {
-		inline code_t load(Reg16 addr,offset_t offset=0)  {return {OP1(Load, from, addr),GET_HL(offset)};}
-		inline code_t save(Reg16 addr,offset_t offset=0)  {return {OP1(Save, to, addr),GET_HL(offset)};}
+		inline code_t load(Reg16 addr, offset_t offset=0)  {return {OP1(Load, from, addr),GET_HL(offset)};}
+		inline code_t save(Reg16 addr, offset_t offset=0)  {return {OP1(Save, to, addr),GET_HL(offset)};}
 		inline code_t push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
 		inline code_t pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
 		inline code_t imm (op_t value)        {return {OP0(ImmVal), value};}
@@ -141,7 +141,7 @@ namespace BreadBoardCPU::ASM {
 		inline code_t call(const Label& addr) {return {OP0(Call), ADDR_HL(addr)};}
 		inline code_t ret ()                  {return {OP0(Return)};}
 		inline code_t halt()                  {return {OP0(Halt)};}
-		inline code_t adj (offset_t offset)    {return {OP0(Adjust), GET_HL(offset)};}
+		inline code_t adj (offset_t offset)   {return {OP0(Adjust), GET_HL(offset)};}
 		inline code_t pushSP()                {return {OP0(PushSP)};}
 		inline code_t popSP ()                {return {OP0(PopSP)};}
 
@@ -150,32 +150,32 @@ namespace BreadBoardCPU::ASM {
 		inline code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
 		inline code_t push(op_t v)            {return imm(v);}
 		inline code_t push(const Label& v)    {return imm(v);}
-		inline code_t load(Reg16 addr, Reg value,offset_t offset=0)  {return {load(addr,offset), pop(value)};}
-		inline code_t save(Reg16 addr, Reg value,offset_t offset=0)  {return {push(value), save(addr,offset)};}
-		inline code_t load(Reg16 tmp, const Label &addr,offset_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
-		inline code_t save(Reg16 tmp, const Label &addr,offset_t offset=0) {return {imm(addr), pop(tmp), save(tmp,offset)};}
-		inline code_t load(Reg16 tmp, const Label& addr, Reg value,offset_t offset=0) {return {load(tmp,addr,offset), pop(value)};}
-		inline code_t save(Reg16 tmp, const Label& addr, Reg value,offset_t offset=0) {return {push(value), save(tmp,addr,offset)};}
-		inline code_t imm (Reg reg, op_t value)    {return {imm(value), pop(reg)};}
-		inline code_t imm (Reg16 reg, const Label& addr)    {return {imm(addr), pop(reg)};}
+		inline code_t load(Reg16 addr, Reg value, offset_t offset=0)  {return {load(addr,offset), pop(value)};}
+		inline code_t save(Reg16 addr, Reg value, offset_t offset=0)  {return {push(value), save(addr,offset)};}
+		inline code_t load(Reg16 tmp, const Label& addr, offset_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
+		inline code_t save(Reg16 tmp, const Label& addr, offset_t offset=0) {return {imm(addr), pop(tmp), save(tmp,offset)};}
+		inline code_t load(Reg16 tmp, const Label& addr, Reg value, offset_t offset=0) {return {load(tmp,addr,offset), pop(value)};}
+		inline code_t save(Reg16 tmp, const Label& addr, Reg value, offset_t offset=0) {return {push(value), save(tmp,addr,offset)};}
+		inline code_t imm (Reg reg, op_t value)          {return {imm(value), pop(reg)};}
+		inline code_t imm (Reg16 reg, const Label& addr) {return {imm(addr), pop(reg)};}
 		inline code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
 
-		inline code_t ent (Reg16 BP,op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
-		inline code_t lev (Reg16 BP)             {return {push(BP),popSP(),pop(BP),ret()};}
-		inline code_t load_local(Reg16 BP,offset_t offset)            {return load(BP,offset);}
-		inline code_t load_local(Reg16 BP,offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
-		inline code_t save_local(Reg16 BP,offset_t offset)            {return save(BP,offset);}
-		inline code_t save_local(Reg16 BP,offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
+		inline code_t ent (Reg16 BP, op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
+		inline code_t lev (Reg16 BP)              {return {push(BP),popSP(),pop(BP),ret()};}
+		inline code_t load_local(Reg16 BP, offset_t offset)            {return load(BP,offset);}
+		inline code_t save_local(Reg16 BP, offset_t offset)            {return save(BP,offset);}
+		inline code_t load_local(Reg16 BP, offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
+		inline code_t save_local(Reg16 BP, offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
 #define DEFAULT_BP Reg16::HL
 #define DEFAULT_TMP Reg16::FE
-		inline code_t ent (op_t size)                    {return ent(DEFAULT_BP,size);}
-		inline code_t lev ()                             {return lev(DEFAULT_BP);}
+		inline code_t ent (op_t size)                        {return ent(DEFAULT_BP,size);}
+		inline code_t lev ()                                 {return lev(DEFAULT_BP);}
 		inline code_t load_local(offset_t offset)            {return load_local(DEFAULT_BP,offset);}
-		inline code_t load_local(offset_t offset, Reg to)    {return load_local(DEFAULT_BP,offset,to);}
 		inline code_t save_local(offset_t offset)            {return save_local(DEFAULT_BP,offset);}
+		inline code_t load_local(offset_t offset, Reg to)    {return load_local(DEFAULT_BP,offset,to);}
 		inline code_t save_local(offset_t offset, Reg value) {return save_local(DEFAULT_BP,offset,value);}
-		inline code_t load(const Label& addr, Reg value,offset_t offset=0) {return load(DEFAULT_TMP,addr,value,offset);}
-		inline code_t save(const Label& addr, Reg value,offset_t offset=0) {return save(DEFAULT_TMP,addr,value,offset);}
+		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(DEFAULT_TMP,addr,value,offset);}
+		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(DEFAULT_TMP,addr,value,offset);}
 #undef DEFAULT_BP
 #undef DEFAULT_TMP
 
