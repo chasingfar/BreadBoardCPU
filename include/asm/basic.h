@@ -166,20 +166,18 @@ namespace BreadBoardCPU::ASM {
 		inline code_t save_local(Reg16 BP, offset_t offset)            {return save(BP,offset);}
 		inline code_t load_local(Reg16 BP, offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
 		inline code_t save_local(Reg16 BP, offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
-#define DEFAULT_BP Reg16::HL
-#define DEFAULT_TMP Reg16::FE
-		inline code_t ent (op_t size)                        {return ent(DEFAULT_BP,size);}
-		inline code_t lev ()                                 {return lev(DEFAULT_BP);}
-		inline code_t load_local(offset_t offset)            {return load_local(DEFAULT_BP,offset);}
-		inline code_t save_local(offset_t offset)            {return save_local(DEFAULT_BP,offset);}
-		inline code_t load_local(offset_t offset, Reg to)    {return load_local(DEFAULT_BP,offset,to);}
-		inline code_t save_local(offset_t offset, Reg value) {return save_local(DEFAULT_BP,offset,value);}
-		inline code_t load(const Label& addr, offset_t offset=0) {return load(DEFAULT_TMP,addr,offset);}
-		inline code_t save(const Label& addr, offset_t offset=0) {return save(DEFAULT_TMP,addr,offset);}
-		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(DEFAULT_TMP,addr,value,offset);}
-		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(DEFAULT_TMP,addr,value,offset);}
-#undef DEFAULT_BP
-#undef DEFAULT_TMP
+#define ASM_BP Reg16::HL
+#define ASM_TMP Reg16::FE
+		inline code_t ent (op_t size)                        {return ent(ASM_BP,size);}
+		inline code_t lev ()                                 {return lev(ASM_BP);}
+		inline code_t load_local(offset_t offset)            {return load_local(ASM_BP,offset);}
+		inline code_t save_local(offset_t offset)            {return save_local(ASM_BP,offset);}
+		inline code_t load_local(offset_t offset, Reg to)    {return load_local(ASM_BP,offset,to);}
+		inline code_t save_local(offset_t offset, Reg value) {return save_local(ASM_BP,offset,value);}
+		inline code_t load(const Label& addr, offset_t offset=0) {return load(ASM_TMP,addr,offset);}
+		inline code_t save(const Label& addr, offset_t offset=0) {return save(ASM_TMP,addr,offset);}
+		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(ASM_TMP,addr,value,offset);}
+		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(ASM_TMP,addr,value,offset);}
 
 		template <typename T>
 		using Pushable=std::enable_if_t<std::disjunction<std::is_convertible<T,Reg>,std::is_convertible<T,int8_t>>::value, bool>;
