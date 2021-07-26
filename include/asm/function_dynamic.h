@@ -6,22 +6,9 @@
 #define BREADBOARDCPU_FUNCTION_DYNAMIC_H
 #include "advance.h"
 namespace BreadBoardCPU::ASM::DynamicFn{
-	struct FnLocal{
+	struct FnLocal:Var{
 		offset_t offset=0;
-		FnLocal()= default;
-		explicit FnLocal(offset_t offset):offset(offset){}
-		code_t load() const{
-			return load_local(offset);
-		}
-		code_t load(Reg to) const{
-			return load_local(offset,to);
-		}
-		code_t save() const{
-			return save_local(offset);
-		}
-		code_t save(Reg value) const{
-			return save_local(offset,value);
-		}
+		explicit FnLocal(offset_t offset):offset(offset),Var{load_local(offset), save_local(offset)}{}
 	};
 	struct FnDecl{
 		using locals_t = std::unordered_map<std::string,FnLocal>;
