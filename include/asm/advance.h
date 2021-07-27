@@ -10,16 +10,6 @@
 #include "basic.h"
 
 namespace BreadBoardCPU::ASM {
-	struct Var{
-		code_t push;
-		code_t pop;
-		code_t load(Reg to) const{
-			return {push,Ops::pop(to)};
-		}
-		code_t save(Reg value) const{
-			return {Ops::push(value),pop};
-		}
-	};
 	struct Block {
 		Label start;
 		code_t body{};
