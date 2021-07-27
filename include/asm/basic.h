@@ -150,6 +150,8 @@ namespace BreadBoardCPU::ASM {
 		inline code_t pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
 		inline code_t push(op_t v)            {return imm(v);}
 		inline code_t push(const Label& v)    {return imm(v);}
+		inline code_t push(code_t from)       {return from;}
+		inline code_t pop (code_t to)         {return to;}
 		inline code_t load(Reg16 addr, Reg value, offset_t offset=0)  {return {load(addr,offset), pop(value)};}
 		inline code_t save(Reg16 addr, Reg value, offset_t offset=0)  {return {push(value), save(addr,offset)};}
 		inline code_t load(Reg16 tmp, const Label& addr, offset_t offset=0) {return {imm(addr), pop(tmp), load(tmp,offset)};}
@@ -194,9 +196,9 @@ namespace BreadBoardCPU::ASM {
 	template <typename T,typename ...Ts>
 	using Convertible=std::enable_if_t<std::disjunction_v<std::is_convertible<T,Ts>...>, bool>;
 	template <typename T>
-	using Pushable=Convertible<T,Var,Reg,int8_t>;
+	using Pushable=Convertible<T,code_t,Var,Reg,int8_t>;
 	template <typename T>
-	using Popable=Convertible<T,Var,Reg>;
+	using Popable=Convertible<T,code_t,Var,Reg>;
 
 	namespace Ops {
 		inline code_t push(const Var& from) {return from.push;}
