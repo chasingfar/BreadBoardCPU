@@ -6,9 +6,9 @@
 using namespace DynamicFn;
 
 TEST_CASE("function dynamic args and vars","[asm][function][dynamic]"){
-	FnDecl fn{"fn(a,b)",{"a","b"}};
-	auto a=fn["a"],b=fn["b"];//args
-	auto c=fn["c"],d=fn["d"];//vars
+	FnDecl fn{"fn(a,b)",2};
+	auto [a,b]=fn.getVars<FnArg, FnArg>();//args
+	auto [c,d]=fn.getVars<FnVar, FnVar>();//locals
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
@@ -62,10 +62,10 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	}
 	foo(8)
 	*/
-	FnDecl foo{"foo(a)",{"a"}};
-	FnDecl bar{"bar(b)",{"b"}};
-	auto a=foo["a"],b=bar["b"];//args
-	auto c=foo["c"],d=bar["d"];//vars
+	FnDecl foo{"foo(a)",1};
+	FnDecl bar{"bar(b)",1};
+	auto [a,c]=foo.getVars<FnArg,FnVar>();
+	auto [b,d]=bar.getVars<FnArg,FnVar>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
@@ -134,9 +134,9 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	}
 	fib(6)
 	*/
-	FnDecl fib{"fib(i)",{"i"}};
-	auto i=fib["i"];//args
-	auto a=fib["a"];//vars
+	FnDecl fib{"fib(i)",1};
+	auto [i,a]=fib.getVars<FnArg,FnVar>();
+
 	Label main;
 	CPU cpu=run({
 		jmp(main),

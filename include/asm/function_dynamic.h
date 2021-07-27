@@ -6,22 +6,67 @@
 #define BREADBOARDCPU_FUNCTION_DYNAMIC_H
 #include "advance.h"
 namespace BreadBoardCPU::ASM::DynamicFn{
-	struct FnLocal:Var{
+/*
+sub_function(arg1, arg2, arg3);
+
+|    ....       | high address
++---------------+
+| arg1          |    new BP + 7
++---------------+
+| arg2          |    new BP + 6
++---------------+
+| arg3          |    new BP + 5
++---------------+
+|     low       |    new BP + 4
++return address +
+|     high      |    new BP + 3
++---------------+
+|     low       |    new BP + 2
++ old BP        +
+|     high      |    new BP + 1
++---------------+
+| local var 1   | <- new BP
++---------------+
+| local var 2   |    new BP - 1
++---------------+
+|    ....       |  low address
+
+*/
+	struct FnVar: Var{
 		offset_t offset=0;
-		explicit FnLocal(offset_t offset):offset(offset),Var{load_local(offset), save_local(offset)}{}
-	};
-	struct FnDecl{
-		using locals_t = std::unordered_map<std::string,FnLocal>;
-		Label start;
-		const locals_t args;
-		locals_t vars;
-		FnDecl(std::string name,const std::vector<std::string>& arg_names):start(std::move(name)),args(make_args(arg_names)){}
-		code_t call(){
-			return {Ops::call(start),adj(args.size())};
+		explicit FnVar(offset_t& _offset)
+		:offset(_offset),Var{load_local(_offset), save_local(_offset)}{
+			_offset-=1;
 		}
-		code_t call(std::vector<std::variant<Reg,code_t>> arg){
+	};
+	using FnArg=FnVar;
+	struct FnDecl{
+		Label start;
+		const offset_t ArgNum;
+		offset_t offset;
+
+		explicit FnDecl(addr_t ArgNum=0):FnDecl("",ArgNum){}
+		explicit FnDecl(std::string name,addr_t ArgNum=0)
+		:start(std::move(name)),ArgNum(ArgNum),offset(ArgNum+4){}
+
+		template<typename Var,typename ...Rest>
+		std::tuple<Var,Rest...> getVars(){
+			if(offset==4) {
+				offset = 0;//jump over return addr(2byte)+old BP(2byte)
+			}
+			std::tuple<Var> var{offset};
+			if constexpr (sizeof...(Rest)==0){
+				return var;
+			}else{
+				return std::tuple_cat(var, getVars<Rest...>());
+			}
+		}
+		code_t call() const{
+			return {Ops::call(start),adj(ArgNum)};
+		}
+		code_t call(std::vector<std::variant<Reg,code_t>> arg) const{
 			code_t codes{};
-			for (size_t i = 0; i < args.size(); ++i) {
+			for (size_t i = 0; i < ArgNum; ++i) {
 				if(auto reg=std::get_if<Reg>(&arg[i])){
 					codes<<push(*reg);
 				}
@@ -32,25 +77,9 @@ namespace BreadBoardCPU::ASM::DynamicFn{
 			return codes<<call();
 		}
 		code_t impl(code_t body,bool protect= false){
-			code_t fn{start,ent(vars.size()),body};
+			code_t fn{start,ent(1-offset),body};
 			Label end;
 			return protect?code_t{jmp(end),fn,lev(),end}:fn;
-		}
-		FnLocal operator[](const std::string& name){
-			if (args.contains(name)){
-				return args.at(name);
-			}
-			return vars.emplace(name,-static_cast<int16_t>(vars.size())).first->second;
-		}
-	private:
-		static locals_t make_args(const std::vector<std::string>& arg_names){
-			locals_t tmp;
-			int16_t i = 0;
-			for (const auto& name:arg_names) {
-				tmp.emplace(name,arg_names.size()-i+4);
-				++i;
-			}
-			return tmp;
 		}
 	};
 }
