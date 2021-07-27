@@ -57,3 +57,25 @@ TEST_CASE("while","[asm][advance]"){
 	});
 	REQUIRE(_REG(A)==6);
 }
+TEST_CASE("static variable","[asm][advance]"){
+	StaticVars vars;
+	auto [a]=vars.getVars<StaticVar>(0);
+	auto [b,c]=vars.getVars<StaticVar,StaticVar>(12,34);
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		vars,
+		main,
+		push(56),a.pop,
+		push(78),b.pop,
+		push(90),c.pop,
+	},{main});
+	REQUIRE(_STATIC(vars,a.offset)==0);
+	REQUIRE(_STATIC(vars,b.offset)==12);
+	REQUIRE(_STATIC(vars,c.offset)==34);
+	run(cpu);
+	REQUIRE(_STATIC(vars,a.offset)==56);
+	REQUIRE(_STATIC(vars,b.offset)==78);
+	REQUIRE(_STATIC(vars,c.offset)==90);
+
+}

@@ -62,5 +62,32 @@ namespace BreadBoardCPU::ASM {
 			};
 		}
 	};
+	struct StaticVar:Var{
+		using type = op_t;
+		offset_t offset=0;
+		explicit StaticVar(Block& block,type value)
+				:offset(block.body.size()),
+				Var{Ops::load(block.start,block.body.size()),
+					Ops::save(block.start,block.body.size())}{
+			block<<code_t{value};
+		}
+	};
+	struct StaticVars{
+		offset_t offset=0;
+		Block block;
+
+		template<typename Var,typename ...Rest>
+		std::tuple<Var,Rest...> getVars(typename Var::type value,typename Rest::type ... rest){
+			std::tuple<Var> var{Var{block, value}};
+			if constexpr (sizeof...(Rest)==0){
+				return var;
+			}else{
+				return std::tuple_cat(var, getVars<Rest...>(rest...));
+			}
+		}
+		operator code_t(){
+			return {block};
+		}
+	};
 }
 #endif //BREADBOARDCPU_ADVANCE_H
