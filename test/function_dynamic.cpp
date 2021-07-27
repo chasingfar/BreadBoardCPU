@@ -141,27 +141,15 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	CPU cpu=run({
 		jmp(main),
 		fib.impl({
-			i.load(Reg::B),
-			IF{{push(Reg::B)},{},{{
-				imm(Reg::A, 0),
-				lev(),
+			IF{i.push,{{}},{{
+				_return(0),
 			}}},
-			imm(Reg::C, 1),
-			sub(Reg::B,Reg::B,Reg::C),
-			IF{{push(Reg::B)},{},{{
-				imm(Reg::A, 1),
-				lev(),
+			sub(i,i,1),
+			IF{i.push,{{}},{{
+				_return(1),
 			}}},
-			i.save(Reg::B),
-			fib.call({Reg::B}),
-			a.save(Reg::A),
-			i.load(Reg::B),
-			imm(Reg::C, 1),
-			sub(Reg::B,Reg::B,Reg::C),
-			fib.call({Reg::B}),
-			a.load(Reg::B),
-			add(Reg::A,Reg::A,Reg::B),
-			lev(),
+			set(a,fib(i)),
+			_return(add(a,fib(sub(i,1)))),
 		}),
 		main,
 		fib.call({imm(6)}),

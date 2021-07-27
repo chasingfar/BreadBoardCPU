@@ -4,6 +4,7 @@
 
 #ifndef BREADBOARDCPU_FUNCTION_DYNAMIC_H
 #define BREADBOARDCPU_FUNCTION_DYNAMIC_H
+#include <utility>
 #include "advance.h"
 namespace BreadBoardCPU::ASM::DynamicFn{
 /*
@@ -76,11 +77,18 @@ sub_function(arg1, arg2, arg3);
 			}
 			return codes<<call();
 		}
+
+		template<typename ...Ts>
+		code_t operator()(Ts... arg) const{
+			return {call({push(arg)...}),push(Reg::A)};
+		}
 		code_t impl(code_t body,bool protect= false){
 			code_t fn{start,ent(1-offset),body};
 			Label end;
 			return protect?code_t{jmp(end),fn,lev(),end}:fn;
 		}
 	};
+	template<typename T,Pushable<T> = true>
+	inline code_t _return(T value){return {push(value),pop(Reg::A),lev()};}
 }
 #endif //BREADBOARDCPU_FUNCTION_DYNAMIC_H
