@@ -106,8 +106,8 @@ TEST_CASE("calculation","[asm][basic]"){
 	}
 	SECTION("arithmetic"){
 		uint8_t a=123,b=100;
-		_RUN_OP(imm(b));
 		_RUN_OP(imm(a));
+		_RUN_OP(imm(b));
 		SECTION("addition"){
 			_RUN_OP(add());
 			REQUIRE(_STACK_TOP == a+b);
@@ -139,11 +139,11 @@ TEST_CASE("calculation","[asm][basic]"){
 	}
 	SECTION("logic"){
 		uint8_t a=0b1100'0101,b=0b1010'1100;
-		_RUN_OP(imm(b));
 		_RUN_OP(imm(a));
+		_RUN_OP(imm(b));
 		SECTION("not"){
 			_RUN_OP(NOT());
-			REQUIRE(_STACK_TOP == (uint8_t)(~a));
+			REQUIRE(_STACK_TOP == (uint8_t)(~b));
 		}
 		SECTION("and"){
 			_RUN_OP(AND());

@@ -227,7 +227,7 @@ namespace BreadBoardCPU::ASM {
         template<typename L,typename R,             \
             Pushable<L> = true,Pushable<R> = true>  \
         inline code_t name(L lhs, R rhs) {          \
-            return {push(rhs),push(lhs),name()};    \
+            return {push(lhs),push(rhs),name()};    \
         }                                           \
         template<typename L,typename R,typename Res,\
             Pushable<L> = true,Pushable<R> = true,  \
