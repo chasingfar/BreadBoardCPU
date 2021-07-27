@@ -120,17 +120,14 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	/*
 	fib(i){
 		if(i!=0){
+			if(i-1!=0){
+				return fib(i-1)+fib(i-2)
+			}else{
+				return 1
+			}
 		}else{
 			return 0
 		}
-		i=i-1
-		if(i!=0){
-		}else{
-			return 1
-		}
-		a=fib(i)
-		i=i-1
-		return fib(i)+a
 	}
 	fib(6)
 	*/
@@ -141,15 +138,15 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	CPU cpu=run({
 		jmp(main),
 		fib.impl({
-			IF{i.push,{{}},{{
+			IF{i.push,{{
+				IF{sub(i,1),{{
+					_return(add(fib(sub(i,1)),fib(sub(i,2)))),
+				}},{{
+					_return(1),
+				}}},
+			}},{{
 				_return(0),
 			}}},
-			sub(i,i,1),
-			IF{i.push,{{}},{{
-				_return(1),
-			}}},
-			set(a,fib(i)),
-			_return(add(a,fib(sub(i,1)))),
 		}),
 		main,
 		fib.call({imm(6)}),
