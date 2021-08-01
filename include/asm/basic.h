@@ -162,14 +162,18 @@ namespace BreadBoardCPU::ASM {
 		inline code_t imm (Reg16 reg, const Label& addr) {return {imm(addr), pop(reg)};}
 		inline code_t brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
 
-		inline code_t ent (Reg16 BP, op_t size)   {return {push(BP),pushSP(),pop(BP),adj(-size)};}
-		inline code_t lev (Reg16 BP)              {return {push(BP),popSP(),pop(BP),ret()};}
+		inline code_t saveBP(Reg16 BP)            {return {push(BP),pushSP(),pop(BP)};}
+		inline code_t loadBP(Reg16 BP)            {return {push(BP),popSP(),pop(BP)};}
+		inline code_t ent (Reg16 BP, op_t size)   {return {saveBP(BP),adj(-size)};}
+		inline code_t lev (Reg16 BP)              {return {loadBP(BP),ret()};}
 		inline code_t load_local(Reg16 BP, offset_t offset)            {return load(BP,offset);}
 		inline code_t save_local(Reg16 BP, offset_t offset)            {return save(BP,offset);}
 		inline code_t load_local(Reg16 BP, offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
 		inline code_t save_local(Reg16 BP, offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
 #define ASM_BP Reg16::HL
 #define ASM_TMP Reg16::FE
+		inline code_t saveBP()                               {return saveBP(ASM_BP);}
+		inline code_t loadBP()                               {return loadBP(ASM_BP);}
 		inline code_t ent (op_t size)                        {return ent(ASM_BP,size);}
 		inline code_t lev ()                                 {return lev(ASM_BP);}
 		inline code_t load_local(offset_t offset)            {return load_local(ASM_BP,offset);}
@@ -180,75 +184,131 @@ namespace BreadBoardCPU::ASM {
 		inline code_t save(const Label& addr, offset_t offset=0) {return save(ASM_TMP,addr,offset);}
 		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(ASM_TMP,addr,value,offset);}
 		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(ASM_TMP,addr,value,offset);}
-	}
 
-	struct Var{
-		code_t push;
-		code_t pop;
-		code_t load(Reg to) const{
-			return {push,Ops::pop(to)};
-		}
-		code_t save(Reg value) const{
-			return {Ops::push(value),pop};
-		}
-	};
-
-	template <typename T,typename ...Ts>
-	using Convertible=std::enable_if_t<std::disjunction_v<std::is_convertible<T,Ts>...>, bool>;
-	template <typename T>
-	using Pushable=Convertible<T,code_t,Var,Reg,int8_t>;
-	template <typename T>
-	using Popable=Convertible<T,code_t,Var,Reg>;
-
-	namespace Ops {
-		inline code_t push(const Var& from) {return from.push;}
-		inline code_t pop (const Var& to)   {return to.pop;}
-
-		template<typename V,typename Res,Pushable<V> = true,Popable<Res> = true>
-		inline code_t set(Res res,V value) {return {push(value),pop(res)};}
-
+		struct RValue{
+			addr_t size=0;
+			code_t push{};
+			bool is_signed=false;
+			RValue extend(addr_t to_size) const{
+				RValue tmp{*this};
+				if(size<to_size){
+					tmp.size=to_size;
+					for(addr_t i=size;i<to_size;++i){
+						tmp.push<<imm(0);
+					}
+				}
+				return tmp;
+			}
+			operator code_t(){
+				return push;
+			}
+		};
+		struct LValue:RValue{
+			code_t pop;
+			LValue(addr_t size,code_t push,bool is_signed,code_t pop):RValue{size,std::move(push),is_signed},pop(std::move(pop)){}
+			code_t set(const RValue& rValue) const{
+				code_t tmp{rValue.extend(size).push};
+				if(rValue.size>size){
+					tmp<<adj(rValue.size-size);
+				}
+				return {tmp,pop};
+			}
+		};
+		struct Var:LValue{
+			Var(addr_t size,const code_t& a,const code_t& b,bool is_signed=false):LValue{size,a,is_signed,b}{}
+			explicit Var(Reg reg):LValue{1,Ops::push(reg),false,Ops::pop(reg)}{}
+			code_t load(Reg to) const{
+				return {push,Ops::pop(to)};
+			}
+			code_t save(Reg value) const{
+				return {Ops::push(value),pop};
+			}
+		};
+		template<typename T>
+		struct ImmNum:RValue{
+			T value;
+			explicit ImmNum(long long value):value(value),RValue{sizeof(T),{},std::is_signed_v<T>}{
+				for (size_t i=0;i<size;++i){
+					push<<imm((value>>i*8)&0xFF);
+				}
+			}
+			explicit ImmNum(unsigned long long value):value(value),RValue{sizeof(T),{},std::is_signed_v<T>}{
+				for (size_t i=0;i<size;++i){
+					push<<imm((value>>i*8)&0xFF);
+				}
+			}
+			auto operator-(){
+				return ImmNum<T>{-value};
+			}
+		};
+		inline auto operator""_i8 (unsigned long long val){return ImmNum<  int8_t>{val};}
+		inline auto operator""_u8 (unsigned long long val){return ImmNum< uint8_t>{val};}
+		inline auto operator""_i16(unsigned long long val){return ImmNum< int16_t>{val};}
+		inline auto operator""_u16(unsigned long long val){return ImmNum<uint16_t>{val};}
 #define DEFINE_0(type, name, _FN)                   \
         inline code_t name(){                       \
             return {OP1(type,fn,type::FN::_FN)};    \
         }
-#define DEFINE_1(type, name, FN)                    \
-        DEFINE_0(type,name,FN)                      \
-        template<typename L,Pushable<L> = true>     \
-        inline code_t name(L lhs) {                 \
-            return {push(lhs),name()};              \
-        }                                           \
-        template<typename L,typename Res,           \
-            Pushable<L> = true,Popable<Res> = true> \
-        inline code_t name(Res res, L lhs) {        \
-            return {name(lhs),pop(res)};            \
+#define DEFINE_1(type, name1, FN1, name2)                             \
+        DEFINE_0(type, name1, FN1)                                    \
+		inline RValue name1(const RValue& lhs) {                      \
+			RValue tmp{lhs};                                          \
+			if(tmp.size>1){                                           \
+				tmp.push<<saveBP();                                   \
+				for(addr_t i=0;i<tmp.size;++i){                       \
+					tmp.push<<load_local(tmp.size+2-i)                \
+					        <<((i==0)?name1():name2())                \
+					        <<save_local(tmp.size+2-i);               \
+				}                                                     \
+				tmp.push<<loadBP();                                   \
+			}else if(tmp.size==1){                                    \
+				tmp.push<<name1();                                    \
+			}                                                         \
+			return tmp;                                               \
         }
-#define DEFINE_2(type, name, FN)                    \
-        DEFINE_0(type,name,FN)                      \
-        template<typename L,typename R,             \
-            Pushable<L> = true,Pushable<R> = true>  \
-        inline code_t name(L lhs, R rhs) {          \
-            return {push(lhs),push(rhs),name()};    \
-        }                                           \
-        template<typename L,typename R,typename Res,\
-            Pushable<L> = true,Pushable<R> = true,  \
-            Popable<Res> = true>                    \
-        inline code_t name(Res res, L lhs, R rhs) { \
-            return {name(lhs,rhs),pop(res)};        \
+#define DEFINE_2(type, name1, FN1, name2)                             \
+        DEFINE_0(type, name1, FN1)                                    \
+		inline RValue name1(const RValue& lhs,const RValue& rhs) {    \
+			RValue tmp{lhs.extend(rhs.size)};                         \
+			if(rhs.size>lhs.size){                                    \
+				tmp.is_signed=rhs.is_signed;                          \
+			}                                                         \
+			if(lhs.size==rhs.size){                                   \
+				tmp.is_signed=lhs.is_signed&&rhs.is_signed;           \
+			}                                                         \
+			tmp.push<<rhs.extend(tmp.size).push;                      \
+			if(tmp.size>1){                                           \
+				tmp.push<<saveBP();                                   \
+				for(addr_t i=0;i<tmp.size;++i){                       \
+					tmp.push<<load_local(2*tmp.size+2-i)              \
+							<<load_local(tmp.size+2-i)                \
+					        <<((i==0)?name1():name2())                \
+					        <<save_local(2*tmp.size+2-i);             \
+				}                                                     \
+				tmp.push<<loadBP()                                    \
+						<<adj(tmp.size);                              \
+			}else if(tmp.size==1){                                    \
+				tmp.push<<name1();                                    \
+			}                                                         \
+			return tmp;                                               \
         }
 
-		DEFINE_1(Calc, shl, SHL)
-		DEFINE_1(Calc, shr, SHR)
-		DEFINE_1(Calc, rcl, RCL)
-		DEFINE_1(Calc, rcr, RCR)
-		DEFINE_2(Calc, add, ADD)
-		DEFINE_2(Calc, sub, SUB)
-		DEFINE_2(Calc, adc, ADC)
-		DEFINE_2(Calc, suc, SUC)
+#define DEFINE_1C(type, name1, FN1, name2, FN2) \
+		DEFINE_0(type,name2,FN2)                \
+		DEFINE_1(type,name1,FN1,name2)
+#define DEFINE_2C(type, name1, FN1, name2, FN2) \
+		DEFINE_0(type,name2,FN2)                \
+		DEFINE_2(type,name1,FN1,name2)
 
-		DEFINE_1(Logic, NOT, NOT)
-		DEFINE_2(Logic, AND, AND)
-		DEFINE_2(Logic, OR , OR )
-		DEFINE_2(Logic, XOR, XOR)
+		DEFINE_1C(Calc, shl, SHL, rcl, RCL)
+		DEFINE_1C(Calc, shr, SHR, rcr, RCR)
+		DEFINE_2C(Calc, add, ADD, adc, ADC)
+		DEFINE_2C(Calc, sub, SUB, suc, SUC)
+
+		DEFINE_1(Logic, NOT, NOT, NOT)
+		DEFINE_2(Logic, AND, AND, AND)
+		DEFINE_2(Logic,  OR,  OR,  OR)
+		DEFINE_2(Logic, XOR, XOR, XOR)
 
 #undef DEFINE_0
 #undef DEFINE_1

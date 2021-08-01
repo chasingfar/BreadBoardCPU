@@ -23,7 +23,7 @@ TEST_CASE("block","[asm][advance]"){
 TEST_CASE("if","[asm][advance]"){
 	SECTION("if true"){
 		CPU cpu=run(
-			IF{{imm(1)},
+			IF{1_u8,
 				{imm(Reg::A,5)},
 				{imm(Reg::A,6)}
 			}
@@ -32,7 +32,7 @@ TEST_CASE("if","[asm][advance]"){
 	}
 	SECTION("if false"){
 		CPU cpu=run(
-			IF{{imm(0)},
+			IF{0_u8,
 				{imm(Reg::A,5)},
 				{imm(Reg::A,6)}
 			}
@@ -48,27 +48,28 @@ TEST_CASE("while","[asm][advance]"){
 		b-=1;
 	}
 	*/
+	Var a{Reg::A},b{Reg::B};
 	CPU cpu=run({
 		imm(Reg::A,0),imm(Reg::B,3),
-		While{{push(Reg::B)},{{
-			add(Reg::A,Reg::A,Reg::B),
-			sub(Reg::B,Reg::B,1),
+		While{b,{{
+			a.set(add(a,b)),
+			b.set(sub(b,1_u8)),
 		}}},
 	});
 	REQUIRE(_REG(A)==6);
 }
 TEST_CASE("static variable","[asm][advance]"){
 	StaticVars vars;
-	auto [a]=vars.getVars<StaticVar>(0);
-	auto [b,c]=vars.getVars<StaticVar,StaticVar>(12,34);
+	auto [a]=vars.getVars<uint8_t>(0);
+	auto [b,c]=vars.getVars<uint8_t,uint8_t>(12,34);
 	Label main;
 	CPU cpu=run({
 		jmp(main),
 		vars,
 		main,
-		push(56),a.pop,
-		push(78),b.pop,
-		push(90),c.pop,
+		a.set(56_u8),
+		b.set(78_u8),
+		c.set(90_u8),
 	},{main});
 	REQUIRE(_STATIC(vars,a.offset)==0);
 	REQUIRE(_STATIC(vars,b.offset)==12);
@@ -78,4 +79,13 @@ TEST_CASE("static variable","[asm][advance]"){
 	REQUIRE(_STATIC(vars,b.offset)==78);
 	REQUIRE(_STATIC(vars,c.offset)==90);
 
+}
+TEST_CASE("big variable","[asm][advance]"){
+	/*CPU cpu=run({
+		add2(code_t{imm(0xf3),imm(0x12)},code_t{imm(0xcc),imm(0x32)}),
+		pop(Reg::B),
+		pop(Reg::A),
+	});
+	REQUIRE(_REG(B)==0x45);
+	REQUIRE(_REG(A)==0xbf);*/
 }

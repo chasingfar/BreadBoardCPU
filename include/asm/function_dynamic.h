@@ -12,6 +12,8 @@ sub_function(arg1, arg2, arg3);
 
 |    ....       | high address
 +---------------+
+| return value  |    new BP + 8
++---------------+
 | arg1          |    new BP + 7
 +---------------+
 | arg2          |    new BP + 6
@@ -33,22 +35,31 @@ sub_function(arg1, arg2, arg3);
 |    ....       |  low address
 
 */
+	template<addr_t _Size=0,bool Signed=false>
 	struct FnVar: Var{
+		inline static addr_t Size=_Size;
 		offset_t offset=0;
-		explicit FnVar(offset_t& _offset)
-		:offset(_offset),Var{load_local(_offset), save_local(_offset)}{
-			_offset-=1;
+		explicit FnVar(offset_t offset,addr_t size=_Size,bool is_signed=Signed)
+		:offset(offset),Var{size,{},{},is_signed}{
+			for(addr_t i = 0; i < size; ++i) {
+				push<<load_local(offset-i);
+				pop<<save_local(offset-(size-1-i));
+			}
 		}
 	};
-	using FnArg=FnVar;
+	using FnU8=FnVar<1,false>;
+
+	template<typename Ret=FnVar<0,false> >
 	struct FnDecl{
 		Label start;
-		const offset_t ArgNum;
+		const addr_t RetSize;
+		const addr_t ArgSize;
 		offset_t offset;
+		Ret ret;
 
-		explicit FnDecl(addr_t ArgNum=0):FnDecl("",ArgNum){}
-		explicit FnDecl(std::string name,addr_t ArgNum=0)
-		:start(std::move(name)),ArgNum(ArgNum),offset(ArgNum+4){}
+		explicit FnDecl(addr_t RetSize=0,addr_t ArgSize=0):FnDecl("",RetSize,ArgSize){}
+		explicit FnDecl(std::string name,addr_t RetSize=Ret::Size,addr_t ArgSize=0)
+		:start(std::move(name)),RetSize(RetSize),ArgSize(ArgSize),offset(ArgSize+4),ret(RetSize+ArgSize+4,RetSize){}
 
 		template<typename Var,typename ...Rest>
 		std::tuple<Var,Rest...> getVars(){
@@ -56,39 +67,33 @@ sub_function(arg1, arg2, arg3);
 				offset = 0;//jump over return addr(2byte)+old BP(2byte)
 			}
 			std::tuple<Var> var{offset};
+			offset-=std::get<0>(var).size;
 			if constexpr (sizeof...(Rest)==0){
 				return var;
 			}else{
 				return std::tuple_cat(var, getVars<Rest...>());
 			}
 		}
-		code_t call() const{
-			return {Ops::call(start),adj(ArgNum)};
-		}
-		code_t call(std::vector<std::variant<Reg,code_t>> arg) const{
-			code_t codes{};
-			for (size_t i = 0; i < ArgNum; ++i) {
-				if(auto reg=std::get_if<Reg>(&arg[i])){
-					codes<<push(*reg);
-				}
-				if(auto code=std::get_if<code_t>(&arg[i])){
-					codes<<*code;
-				}
+		code_t call(const std::vector<RValue*>& args) const{
+			code_t codes{adj(-RetSize)};
+			for(const auto& arg:args){
+				codes<<arg->push;
 			}
-			return codes<<call();
+			return codes<<Ops::call(start)<<adj(ArgSize);
 		}
 
-		template<typename ...Ts>
-		code_t operator()(Ts... arg) const{
-			return {call({push(arg)...}),push(Reg::A)};
+		template<typename ...Args>
+		RValue operator()(Args...args) const{
+			code_t codes{adj(-RetSize)};
+			(codes<<...<<args.push)<<Ops::call(start)<<adj(ArgSize);
+			return {RetSize,codes,ret.is_signed};
 		}
 		code_t impl(code_t body,bool protect= false){
 			code_t fn{start,ent(1-offset),body};
 			Label end;
 			return protect?code_t{jmp(end),fn,lev(),end}:fn;
 		}
+		inline code_t _return(const RValue& value){return {ret.set(value),lev()};}
 	};
-	template<typename T,Pushable<T> = true>
-	inline code_t _return(T value){return {push(value),pop(Reg::A),lev()};}
 }
 #endif //BREADBOARDCPU_FUNCTION_DYNAMIC_H

@@ -27,12 +27,12 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	struct IF{
-		code_t cond;
+		const RValue& cond;
 		Block if_true;
 		Block if_false{};
 		operator code_t(){
 			return {
-				cond,
+				cond.push,
 				brz(if_false.start),
 				if_true,
 				jmp(if_false.end),
@@ -41,34 +41,39 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	struct While{
-		Block cond;
+		const RValue& cond;
 		Block body{};
 		operator code_t(){
+			Label start;
 			return {
-				cond,
+				start,
+				cond.push,
 				brz(body.end),
 				body,
-				jmp(cond.start),
+				jmp(start),
 			};
 		}
 	};
-	struct StaticVar:Var{
-		using type = op_t;
+
+	template<typename Type=op_t>
+	struct StaticVar: Var{
+		using type = Type;
 		offset_t offset=0;
 		explicit StaticVar(Block& block,type value)
-				:offset(block.body.size()),
-				Var{Ops::load(block.start,block.body.size()),
-					Ops::save(block.start,block.body.size())}{
-			block<<code_t{value};
+				:offset(block.body.size()),Var{sizeof(Type),{},{},std::is_signed_v<Type>}{
+			for(addr_t i = 0; i < size; ++i) {
+				push<<Ops::load(block.start,offset+i);
+				pop<<Ops::save(block.start,offset+(size-1-i));
+				block<<code_t{(value>>i*8)&0xFF};
+			}
 		}
 	};
 	struct StaticVars{
-		offset_t offset=0;
 		Block block;
 
 		template<typename Var,typename ...Rest>
-		std::tuple<Var,Rest...> getVars(typename Var::type value,typename Rest::type ... rest){
-			std::tuple<Var> var{Var{block, value}};
+		auto getVars(Var value, Rest ... rest){
+			std::tuple<StaticVar<Var>> var{StaticVar<Var>{block, value}};
 			if constexpr (sizeof...(Rest)==0){
 				return var;
 			}else{

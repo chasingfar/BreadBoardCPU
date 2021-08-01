@@ -6,27 +6,27 @@
 using namespace DynamicFn;
 
 TEST_CASE("function dynamic args and vars","[asm][function][dynamic]"){
-	FnDecl fn{"fn(a,b)",2};
-	auto [a,b]=fn.getVars<FnArg, FnArg>();//args
-	auto [c,d]=fn.getVars<FnVar, FnVar>();//locals
+	FnDecl fn{"fn(a,b)",0,2};
+	auto [a,b]=fn.getVars<FnU8, FnU8>();//args
+	auto [c,d]=fn.getVars<FnU8, FnU8>();//locals
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
 			aa,
-			a.load(Reg::A),
-			b.load(Reg::B),
+			Var(Reg::A).set(a),
+			Var(Reg::B).set(b),
 			bb,
-			add(Reg::C,Reg::A,Reg::B),
-			sub(Reg::D,Reg::A,Reg::B),
+			Var(Reg::C).set(add(a,b)),
+			Var(Reg::D).set(sub(a,b)),
 			cc,
-			c.save(Reg::C),
-			d.save(Reg::D),
+			c.set(Var(Reg::C)),
+			d.set(Var(Reg::D)),
 			dd,
 			lev(),
 		}),
 		main,
-		fn.call({imm(8),imm(3)}),
+		fn(8_u8,3_u8),
 	}, {aa});
 
 	REQUIRE(_LOCAL(a.offset)==8);
@@ -62,58 +62,36 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	}
 	foo(8)
 	*/
-	FnDecl foo{"foo(a)",1};
-	FnDecl bar{"bar(b)",1};
-	auto [a,c]=foo.getVars<FnArg,FnVar>();
-	auto [b,d]=bar.getVars<FnArg,FnVar>();
+	FnDecl foo{"foo(a)",1,1};
+	FnDecl bar{"bar(b)",1,1};
+	auto [a,c]=foo.getVars<FnU8,FnU8>();
+	auto [b,d]=bar.getVars<FnU8,FnU8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
 		foo.impl({
-			a.load(Reg::A),
-			imm(Reg::B,2),
-			add(Reg::A,Reg::A,Reg::B),
-			c.save(Reg::A),
+			c.set(add(a,2_u8)),
 			aa,
-			bar.call({Reg::A}),
-			cc,
-			c.load(Reg::B),
-			add(Reg::A,Reg::A,Reg::B),
-			dd,
-			lev(),
+			foo._return(add(bar(c),c))
 		}),
 		bar.impl({
-			b.load(Reg::A),
-			imm(Reg::B,2),
-			add(Reg::A,Reg::A,Reg::B),
-			d.save(Reg::A),
+			d.set(add(b,6_u8)),
 			bb,
-			lev(),
+			bar._return(d),
 		}),
 		main,
-		foo.call({imm(8)}),
+		foo(8_u8),
 	}, {aa});
 
 	REQUIRE(_LOCAL(a.offset)==8);
-	REQUIRE(_REG(A)==10);
 	REQUIRE(_LOCAL(c.offset)==10);
 
 	run(cpu,{bb});
 	REQUIRE(_LOCAL(b.offset)==10);
-	REQUIRE(_REG(A)==12);
-	REQUIRE(_LOCAL(d.offset)==12);
-
-	run(cpu,{cc});
-	REQUIRE(_LOCAL(a.offset)==8);
-	REQUIRE(_REG(A)==12);
-	REQUIRE(_LOCAL(c.offset)==10);
-
-	run(cpu,{dd});
-	REQUIRE(_REG(B)==10);
-	REQUIRE(_REG(A)==22);
+	REQUIRE(_LOCAL(d.offset)==16);
 
 	run(cpu);
-	REQUIRE(_REG(A)==22);
+	REQUIRE(_STACK_TOP==26);
 }
 
 TEST_CASE("function recursion","[asm][function][dynamic]"){
@@ -131,25 +109,25 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	}
 	fib(6)
 	*/
-	FnDecl fib{"fib(i)",1};
-	auto [i,a]=fib.getVars<FnArg,FnVar>();
+	FnDecl fib{"fib(i)",1,1};
+	auto [i,a]=fib.getVars<FnU8,FnU8>();
 
 	Label main;
 	CPU cpu=run({
 		jmp(main),
 		fib.impl({
-			IF{i.push,{{
-				IF{sub(i,1),{{
-					_return(add(fib(sub(i,1)),fib(sub(i,2)))),
+			IF{i,{{
+				IF{sub(i,1_u8),{{
+					fib._return(add(fib(sub(i,1_u8)),fib(sub(i,2_u8)))),
 				}},{{
-					_return(1),
+					fib._return(1_u8),
 				}}},
 			}},{{
-				_return(0),
+				fib._return(0_u8),
 			}}},
 		}),
 		main,
-		fib.call({imm(6)}),
+		fib(6_u8),
 	});
-	REQUIRE(_REG(A)==8);
+	REQUIRE(_STACK_TOP==8);
 }
