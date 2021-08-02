@@ -81,11 +81,11 @@ TEST_CASE("static variable","[asm][advance]"){
 
 }
 TEST_CASE("big variable","[asm][advance]"){
-	/*CPU cpu=run({
-		add2(code_t{imm(0xf3),imm(0x12)},code_t{imm(0xcc),imm(0x32)}),
+	CPU cpu=run({
+		add(0x12f3_u16,0x32cc_u16),
 		pop(Reg::B),
 		pop(Reg::A),
 	});
 	REQUIRE(_REG(B)==0x45);
-	REQUIRE(_REG(A)==0xbf);*/
+	REQUIRE(_REG(A)==0xbf);
 }
