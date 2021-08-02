@@ -89,3 +89,110 @@ TEST_CASE("big variable","[asm][advance]"){
 	REQUIRE(_REG(B)==0x45);
 	REQUIRE(_REG(A)==0xbf);
 }
+TEST_CASE("if cmp","[asm][advance]"){
+	op_t T=7,F=6;
+	auto _if=[=](const RValue& cond){
+		return IF{cond,
+			{imm(Reg::A,T)},
+	        {imm(Reg::A,F)}
+		};
+	};
+	SECTION("if !") {
+		SECTION("if !0") {
+			CPU cpu = run(_if(!0_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if !123") {
+			CPU cpu = run(_if(!123_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if !255") {
+			CPU cpu = run(_if(!255_u8));
+			REQUIRE(_REG(A) == F);
+		}
+	}
+	SECTION("if !=") {
+		SECTION("if 3!=5") {
+			CPU cpu = run(_if(3_u8 != 5_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 3!=3") {
+			CPU cpu = run(_if(3_u8 != 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 5!=3") {
+			CPU cpu = run(_if(5_u8 != 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+	}
+	SECTION("if ==") {
+		SECTION("if 3==5") {
+			CPU cpu = run(_if(3_u8 == 5_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 3==3") {
+			CPU cpu = run(_if(3_u8 == 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 5==3") {
+			CPU cpu = run(_if(5_u8 == 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+	}
+	SECTION("if >=") {
+		SECTION("if 3>=5") {
+			CPU cpu = run(_if(3_u8 >= 5_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 3>=3") {
+			CPU cpu = run(_if(3_u8 >= 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 5>=3") {
+			CPU cpu = run(_if(5_u8 >= 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+	}
+	SECTION("if <") {
+		SECTION("if 3<5") {
+			CPU cpu = run(_if(3_u8 < 5_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 3<3") {
+			CPU cpu = run(_if(3_u8 < 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 5<3") {
+			CPU cpu = run(_if(5_u8 < 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+	}
+	SECTION("if <=") {
+		SECTION("if 3<=5") {
+			CPU cpu = run(_if(3_u8 <= 5_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 3<=3") {
+			CPU cpu = run(_if(3_u8 <= 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+		SECTION("if 5<=3") {
+			CPU cpu = run(_if(5_u8 <= 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+	}
+	SECTION("if >") {
+		SECTION("if 3>5") {
+			CPU cpu = run(_if(3_u8 > 5_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 3>3") {
+			CPU cpu = run(_if(3_u8 > 3_u8));
+			REQUIRE(_REG(A) == F);
+		}
+		SECTION("if 5>3") {
+			CPU cpu = run(_if(5_u8 > 3_u8));
+			REQUIRE(_REG(A) == T);
+		}
+	}
+}
