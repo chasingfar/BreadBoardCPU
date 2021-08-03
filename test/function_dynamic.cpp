@@ -70,12 +70,12 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	CPU cpu=run({
 		jmp(main),
 		foo.impl({
-			c.set(add(a,2_u8)),
+			c.set(a+2_u8),
 			aa,
-			foo._return(add(bar(c),c))
+			foo._return(bar(c)+c)
 		}),
 		bar.impl({
-			d.set(add(b,6_u8)),
+			d.set(b+6_u8),
 			bb,
 			bar._return(d),
 		}),
@@ -97,34 +97,26 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 TEST_CASE("function recursion","[asm][function][dynamic]"){
 	/*
 	fib(i){
-		if(i!=0){
-			if(i-1!=0){
-				return fib(i-1)+fib(i-2)
-			}else{
-				return 1
-			}
+		if(i<2){
+			return i
 		}else{
-			return 0
-		}
+			return fib(i-1)+fib(i-2)
+	    }
 	}
 	fib(6)
 	*/
 	FnDecl fib{"fib(i)",1,1};
-	auto [i,a]=fib.getVars<FnU8,FnU8>();
+	auto [i]=fib.getVars<FnU8>();
 
 	Label main;
 	CPU cpu=run({
 		jmp(main),
 		fib.impl({
-			IF{i,{{
-				IF{sub(i,1_u8),{{
-					fib._return(add(fib(sub(i,1_u8)),fib(sub(i,2_u8)))),
-				}},{{
-					fib._return(1_u8),
-				}}},
-			}},{{
-				fib._return(0_u8),
-			}}},
+			IF{i<2_u8, {
+				fib._return(i),
+			}, {
+				fib._return(fib(i - 1_u8) + fib(i - 2_u8)),
+			}},
 		}),
 		main,
 		fib(6_u8),
