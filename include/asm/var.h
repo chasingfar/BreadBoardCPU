@@ -69,59 +69,52 @@ namespace BreadBoardCPU::ASM {
 	inline auto operator""_i16(unsigned long long val){return ImmNum< int16_t>{val};}
 	inline auto operator""_u16(unsigned long long val){return ImmNum<uint16_t>{val};}
 
-#define DEFINE_1(name1, name2)                                        \
-		inline RValue name1(const RValue& lhs) {                      \
-			RValue tmp{lhs};                                          \
-			if(tmp.size>1){                                           \
-				tmp.push<<saveBP();                                   \
-				for(addr_t i=0;i<tmp.size;++i){                       \
-					tmp.push<<load_local(tmp.size+2-i)                \
-					        <<((i==0)?name1():name2())                \
-					        <<save_local(tmp.size+2-i);               \
-				}                                                     \
-				tmp.push<<loadBP();                                   \
-			}else if(tmp.size==1){                                    \
-				tmp.push<<name1();                                    \
-			}                                                         \
-			return tmp;                                               \
-        }
-#define DEFINE_2(name1, name2)                                        \
-		inline RValue name1(const RValue& lhs,const RValue& rhs) {    \
-			RValue tmp{lhs.extend(rhs.size)};                         \
-			if(rhs.size>lhs.size){                                    \
-				tmp.is_signed=rhs.is_signed;                          \
-			}                                                         \
-			if(lhs.size==rhs.size){                                   \
-				tmp.is_signed=lhs.is_signed&&rhs.is_signed;           \
-			}                                                         \
-			tmp.push<<rhs.extend(tmp.size).push;                      \
-			if(tmp.size>1){                                           \
-				tmp.push<<saveBP();                                   \
-				for(addr_t i=0;i<tmp.size;++i){                       \
-					tmp.push<<load_local(2*tmp.size+2-i)              \
-							<<load_local(tmp.size+2-i)                \
-					        <<((i==0)?name1():name2())                \
-					        <<save_local(2*tmp.size+2-i);             \
-				}                                                     \
-				tmp.push<<loadBP()                                    \
-						<<adj(tmp.size);                              \
-			}else if(tmp.size==1){                                    \
-				tmp.push<<name1();                                    \
-			}                                                         \
-			return tmp;                                               \
-        }
+	template<auto fn,auto fnc=fn>
+	inline RValue _calc(const RValue &lhs) {
+		RValue tmp{lhs};
+		if (tmp.size > 1) {
+			tmp.push << saveBP();
+			for (addr_t i = 0; i < tmp.size; ++i) {
+				tmp.push << load_local(tmp.size + 2 - i)
+						 << (i == 0 ? fn() : fnc())
+						 << save_local(tmp.size + 2 - i);
+			}
+			tmp.push << loadBP();
+		} else if (tmp.size == 1) {
+			tmp.push << shl();
+		}
+		return tmp;
+	}
 
-	DEFINE_1(shl, rcl)
-	DEFINE_1(shr, rcr)
-	DEFINE_2(add, adc)
-	DEFINE_2(sub, suc)
+	template<auto fn,auto fnc=fn>
+	inline RValue _calc(const RValue& lhs,const RValue& rhs) {
+		RValue tmp{lhs.extend(rhs.size)};
+		if (rhs.size > lhs.size) { tmp.is_signed = rhs.is_signed; }
+		if (lhs.size == rhs.size) { tmp.is_signed = lhs.is_signed && rhs.is_signed; }
+		tmp.push << rhs.extend(tmp.size).push;
+		if (tmp.size > 1) {
+			tmp.push << saveBP();
+			for (addr_t i = 0; i < tmp.size; ++i) {
+				tmp.push << load_local(2 * tmp.size + 2 - i)
+						 << load_local(tmp.size + 2 - i)
+				         << (i == 0 ? fn() : fnc())
+				         << save_local(2 * tmp.size + 2 - i);
+			}
+			tmp.push << loadBP() << adj(tmp.size);
+		} else if (tmp.size == 1) {
+			tmp.push << fn();
+		}
+		return tmp;
+	}
 
-	DEFINE_1(NOT, NOT)
-	DEFINE_2(AND, AND)
-	DEFINE_2( OR,  OR)
-	DEFINE_2(XOR, XOR)
+	inline RValue shl(const RValue& lhs)                   {return _calc<Ops::shl,Ops::rcl>(lhs);}
+	inline RValue shr(const RValue& lhs)                   {return _calc<Ops::shr,Ops::rcr>(lhs);}
+	inline RValue add(const RValue& lhs,const RValue& rhs) {return _calc<Ops::add,Ops::adc>(lhs,rhs);}
+	inline RValue sub(const RValue& lhs,const RValue& rhs) {return _calc<Ops::sub,Ops::suc>(lhs,rhs);}
 
-#undef DEFINE_1
-#undef DEFINE_2
+	inline RValue NOT(const RValue& lhs)                   {return _calc<Ops::NOT,Ops::NOT>(lhs);}
+	inline RValue AND(const RValue& lhs,const RValue& rhs) {return _calc<Ops::AND,Ops::AND>(lhs,rhs);}
+	inline RValue  OR(const RValue& lhs,const RValue& rhs) {return _calc<Ops:: OR,Ops:: OR>(lhs,rhs);}
+	inline RValue XOR(const RValue& lhs,const RValue& rhs) {return _calc<Ops::XOR,Ops::XOR>(lhs,rhs);}
 }
 #endif //BREADBOARDCPU_VAR_H
