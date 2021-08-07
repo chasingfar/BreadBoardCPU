@@ -85,7 +85,7 @@ namespace BreadBoardCPU::ASM {
 		inline code_t load_local(Reg16 BP, offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
 		inline code_t save_local(Reg16 BP, offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
 #define ASM_BP Reg16::HL
-#define ASM_TMP Reg16::FE
+#define ASM_PTR Reg16::FE
 		inline code_t saveBP()                               {return saveBP(ASM_BP);}
 		inline code_t loadBP()                               {return loadBP(ASM_BP);}
 		inline code_t ent (op_t size)                        {return ent(ASM_BP,size);}
@@ -94,10 +94,12 @@ namespace BreadBoardCPU::ASM {
 		inline code_t save_local(offset_t offset)            {return save_local(ASM_BP,offset);}
 		inline code_t load_local(offset_t offset, Reg to)    {return load_local(ASM_BP,offset,to);}
 		inline code_t save_local(offset_t offset, Reg value) {return save_local(ASM_BP,offset,value);}
-		inline code_t load(const Label& addr, offset_t offset=0) {return load(ASM_TMP,addr,offset);}
-		inline code_t save(const Label& addr, offset_t offset=0) {return save(ASM_TMP,addr,offset);}
-		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(ASM_TMP,addr,value,offset);}
-		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(ASM_TMP,addr,value,offset);}
+		inline code_t load(offset_t offset=0)                    {return {pop(ASM_PTR),load(ASM_PTR, offset)};}
+		inline code_t save(offset_t offset=0)                    {return {pop(ASM_PTR),save(ASM_PTR, offset)};}
+		inline code_t load(const Label& addr, offset_t offset=0) {return load(ASM_PTR, addr, offset);}
+		inline code_t save(const Label& addr, offset_t offset=0) {return save(ASM_PTR, addr, offset);}
+		inline code_t load(const Label& addr, Reg value, offset_t offset=0) {return load(ASM_PTR, addr, value, offset);}
+		inline code_t save(const Label& addr, Reg value, offset_t offset=0) {return save(ASM_PTR, addr, value, offset);}
 	}
 	using namespace Ops;
 }
