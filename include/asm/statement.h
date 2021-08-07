@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_ADVANCE_H
-#define BREADBOARDCPU_ADVANCE_H
+#ifndef BREADBOARDCPU_STATEMENT_H
+#define BREADBOARDCPU_STATEMENT_H
 
 #include <utility>
 
@@ -85,4 +85,4 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 }
-#endif //BREADBOARDCPU_ADVANCE_H
+#endif //BREADBOARDCPU_STATEMENT_H

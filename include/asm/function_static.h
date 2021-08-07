@@ -4,7 +4,7 @@
 
 #ifndef BREADBOARDCPU_FUNCTION_STATIC_H
 #define BREADBOARDCPU_FUNCTION_STATIC_H
-#include "advance.h"
+#include "statement.h"
 
 namespace BreadBoardCPU::ASM::StaticFn{
 	struct FnLocal{

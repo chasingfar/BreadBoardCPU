@@ -4,7 +4,7 @@
 
 #ifndef BREADBOARDCPU_OPERATOR_H
 #define BREADBOARDCPU_OPERATOR_H
-#include "basic.h"
+#include "var.h"
 namespace BreadBoardCPU::ASM {
 
 	inline RValue operator!(const RValue& lhs){

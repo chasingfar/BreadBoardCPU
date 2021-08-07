@@ -8,6 +8,6 @@ add_executable(BreadBoardCPU main.cpp)
 add_executable(tests test/main.cpp
         test/opcode.cpp
         test/basic.cpp
-        test/advance.cpp
+        test/statement.cpp
         test/function_dynamic.cpp
         )

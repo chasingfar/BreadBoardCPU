@@ -5,7 +5,7 @@
 #ifndef BREADBOARDCPU_FUNCTION_DYNAMIC_H
 #define BREADBOARDCPU_FUNCTION_DYNAMIC_H
 #include <utility>
-#include "advance.h"
+#include "statement.h"
 namespace BreadBoardCPU::ASM::DynamicFn{
 /*
 sub_function(arg1, arg2, arg3);
