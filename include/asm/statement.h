@@ -44,13 +44,14 @@ namespace BreadBoardCPU::ASM {
 		const RValue& cond;
 		Block body{};
 		operator code_t(){
-			Label start;
+			Label start,end;
 			return {
 				start,
 				cond.push,
-				brz(body.end),
+				brz(end),
 				body,
 				jmp(start),
+				end,
 			};
 		}
 	};
