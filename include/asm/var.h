@@ -4,117 +4,83 @@
 
 #ifndef BREADBOARDCPU_VAR_H
 #define BREADBOARDCPU_VAR_H
-#include "ops.h"
+#include <utility>
+#include "type.h"
 
 namespace BreadBoardCPU::ASM {
-
-	struct RValue{
-		addr_t size=0;
-		code_t push{};
-		bool is_signed=false;
-		RValue extend(addr_t to_size) const{
-			RValue tmp{*this};
-			if(size<to_size){
-				tmp.size=to_size;
-				for(addr_t i=size;i<to_size;++i){
-					tmp.push<<imm(0);
-				}
+	template<typename T>
+	struct Var:Value<T>{
+		virtual code_t load(offset_t index) const=0;
+		virtual code_t save(offset_t index) const=0;
+		virtual std::shared_ptr<Var<T>> shift(offset_t size) const=0;
+		code_t set(const Value<T>& value) const{
+			Expr<T> tmp{value};
+			for (offset_t i = 0; i < T::size; ++i) {
+				tmp.code<<save(T::size-1-i);
 			}
 			return tmp;
 		}
-		operator code_t(){
-			return push;
-		}
-	};
-	struct LValue:RValue{
-		code_t pop;
-		LValue(addr_t size,code_t push,bool is_signed,code_t pop):RValue{size,std::move(push),is_signed},pop(std::move(pop)){}
-		code_t set(const RValue& rValue) const{
-			code_t tmp{rValue.extend(size).push};
-			if(rValue.size>size){
-				tmp<<adj(rValue.size-size);
+		operator code_t() const override{
+			code_t tmp{};
+			for (offset_t i = 0; i < T::size; ++i) {
+				tmp<<load(i);
 			}
-			return {tmp,pop};
-		}
-	};
-	struct Var:LValue{
-		Var(addr_t size,const code_t& a,const code_t& b,bool is_signed=false):LValue{size,a,is_signed,b}{}
-		explicit Var(Reg reg):LValue{1,Ops::push(reg),false,Ops::pop(reg)}{}
-		code_t load(Reg to) const{
-			return {push,Ops::pop(to)};
-		}
-		code_t save(Reg value) const{
-			return {Ops::push(value),pop};
+			return tmp;
 		}
 	};
 	template<typename T>
-	struct ImmNum:RValue{
-		T value;
-		explicit ImmNum(long long value):value(value),RValue{sizeof(T),{},std::is_signed_v<T>}{
-			for (size_t i=0;i<size;++i){
-				push<<imm((value>>i*8)&0xFF);
-			}
+	struct LocalVar:Var<T>{
+		offset_t offset;
+		explicit LocalVar(offset_t offset):offset(offset){}
+		code_t load(offset_t index) const override{
+			return load_local(offset-index);
 		}
-		explicit ImmNum(unsigned long long value):value(value),RValue{sizeof(T),{},std::is_signed_v<T>}{
-			for (size_t i=0;i<size;++i){
-				push<<imm((value>>i*8)&0xFF);
-			}
+		code_t save(offset_t index) const override{
+			return save_local(offset-index);
 		}
-		auto operator-(){
-			return ImmNum<T>{-value};
+		std::shared_ptr<Var<T>> shift(offset_t size) const override {
+			return std::make_shared<LocalVar<T>>(offset - size);
 		}
 	};
-	inline auto operator""_i8 (unsigned long long val){return ImmNum<  int8_t>{val};}
-	inline auto operator""_u8 (unsigned long long val){return ImmNum< uint8_t>{val};}
-	inline auto operator""_i16(unsigned long long val){return ImmNum< int16_t>{val};}
-	inline auto operator""_u16(unsigned long long val){return ImmNum<uint16_t>{val};}
-
-	template<auto fn,auto fnc=fn>
-	inline RValue _calc(const RValue &lhs) {
-		RValue tmp{lhs};
-		if (tmp.size > 1) {
-			tmp.push << saveBP();
-			for (addr_t i = 0; i < tmp.size; ++i) {
-				tmp.push << load_local(tmp.size + 2 - i)
-						 << (i == 0 ? fn() : fnc())
-						 << save_local(tmp.size + 2 - i);
-			}
-			tmp.push << loadBP();
-		} else if (tmp.size == 1) {
-			tmp.push << shl();
+	template<typename T>
+	struct StaticVar:Var<T>{
+		Label label;
+		offset_t offset;
+		StaticVar(Label label,offset_t offset):label(std::move(label)),offset(offset){}
+		code_t load(offset_t index) const override{
+			return Ops::load(label,offset+index);
 		}
-		return tmp;
-	}
-
-	template<auto fn,auto fnc=fn>
-	inline RValue _calc(const RValue& lhs,const RValue& rhs) {
-		RValue tmp{lhs.extend(rhs.size)};
-		if (rhs.size > lhs.size) { tmp.is_signed = rhs.is_signed; }
-		if (lhs.size == rhs.size) { tmp.is_signed = lhs.is_signed && rhs.is_signed; }
-		tmp.push << rhs.extend(tmp.size).push;
-		if (tmp.size > 1) {
-			tmp.push << saveBP();
-			for (addr_t i = 0; i < tmp.size; ++i) {
-				tmp.push << load_local(2 * tmp.size + 2 - i)
-						 << load_local(tmp.size + 2 - i)
-				         << (i == 0 ? fn() : fnc())
-				         << save_local(2 * tmp.size + 2 - i);
-			}
-			tmp.push << loadBP() << adj(tmp.size);
-		} else if (tmp.size == 1) {
-			tmp.push << fn();
+		code_t save(offset_t index) const override{
+			return Ops::save(label,offset+index);
 		}
-		return tmp;
+		std::shared_ptr<Var<T>> shift(offset_t size) const override {
+			return std::make_shared<StaticVar>(label,offset + size);
+		}
+	};
+
+	struct RegVar:Var<UInt8>{
+		Reg reg;
+		explicit RegVar(Reg reg):reg(reg){}
+		code_t load(offset_t index) const override{
+			return push(reg);
+		}
+		code_t save(offset_t index) const override{
+			return pop(reg);
+		}
+		std::shared_ptr<Var<UInt8>> shift(offset_t size) const override {
+			return std::make_shared<RegVar>(Reg(reg.v()+size));
+		}
+
+	};
+	namespace RegVars{
+		inline static const RegVar A{Reg::A};
+		inline static const RegVar B{Reg::B};
+		inline static const RegVar C{Reg::C};
+		inline static const RegVar D{Reg::D};
+		inline static const RegVar E{Reg::E};
+		inline static const RegVar F{Reg::F};
+		inline static const RegVar L{Reg::L};
+		inline static const RegVar H{Reg::H};
 	}
-
-	inline RValue shl(const RValue& lhs)                   {return _calc<Ops::shl,Ops::rcl>(lhs);}
-	inline RValue shr(const RValue& lhs)                   {return _calc<Ops::shr,Ops::rcr>(lhs);}
-	inline RValue add(const RValue& lhs,const RValue& rhs) {return _calc<Ops::add,Ops::adc>(lhs,rhs);}
-	inline RValue sub(const RValue& lhs,const RValue& rhs) {return _calc<Ops::sub,Ops::suc>(lhs,rhs);}
-
-	inline RValue NOT(const RValue& lhs)                   {return _calc<Ops::NOT,Ops::NOT>(lhs);}
-	inline RValue AND(const RValue& lhs,const RValue& rhs) {return _calc<Ops::AND,Ops::AND>(lhs,rhs);}
-	inline RValue  OR(const RValue& lhs,const RValue& rhs) {return _calc<Ops:: OR,Ops:: OR>(lhs,rhs);}
-	inline RValue XOR(const RValue& lhs,const RValue& rhs) {return _calc<Ops::XOR,Ops::XOR>(lhs,rhs);}
 }
 #endif //BREADBOARDCPU_VAR_H

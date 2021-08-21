@@ -48,7 +48,7 @@ TEST_CASE("while","[asm][advance]"){
 		b-=1;
 	}
 	*/
-	Var a{Reg::A},b{Reg::B};
+	RegVar a{Reg::A},b{Reg::B};
 	CPU cpu=run({
 		imm(Reg::A,0),imm(Reg::B,3),
 		While{b,{{
@@ -59,6 +59,7 @@ TEST_CASE("while","[asm][advance]"){
 	REQUIRE(_REG(A)==6);
 	REQUIRE(cpu.isHalt()==true);
 }
+/*
 TEST_CASE("static variable","[asm][advance]"){
 	StaticVars vars;
 	auto [a]=vars.getVars<uint8_t>(0);
@@ -80,7 +81,7 @@ TEST_CASE("static variable","[asm][advance]"){
 	REQUIRE(_STATIC(vars,b.offset)==78);
 	REQUIRE(_STATIC(vars,c.offset)==90);
 
-}
+}*/
 TEST_CASE("big variable","[asm][advance]"){
 	CPU cpu=run({
 		add(0x12f3_u16,0x32cc_u16),
@@ -92,7 +93,7 @@ TEST_CASE("big variable","[asm][advance]"){
 }
 TEST_CASE("if cmp","[asm][advance]"){
 	op_t T=7,F=6;
-	auto _if=[=](const RValue& cond){
+	auto _if=[=](const Value<Bool>& cond){
 		return IF{cond,
 			{imm(Reg::A,T)},
 	        {imm(Reg::A,F)}

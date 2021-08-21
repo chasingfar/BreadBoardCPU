@@ -3,25 +3,25 @@
 //
 #include "asm_test_util.h"
 
-using namespace DynamicFn;
+using namespace Function;
 
 TEST_CASE("function dynamic args and vars","[asm][function][dynamic]"){
-	FnDecl fn{"fn(a,b)",0,2};
-	auto [a,b]=fn.getVars<FnU8, FnU8>();//args
-	auto [c,d]=fn.getVars<FnU8, FnU8>();//locals
+	Fn<Void,UInt8,UInt8> fn{"fn(a,b)"};
+	auto [a,b]=fn.args;
+	auto [c,d]=fn.local<UInt8, UInt8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
 			aa,
-			Var(Reg::A).set(a),
-			Var(Reg::B).set(b),
+			RegVars::A.set(a),
+			RegVars::B.set(b),
 			bb,
-			Var(Reg::C).set(add(a,b)),
-			Var(Reg::D).set(sub(a,b)),
+			RegVars::C.set(add(a,b)),
+			RegVars::D.set(sub(a,b)),
 			cc,
-			c.set(Var(Reg::C)),
-			d.set(Var(Reg::D)),
+			c.set(RegVars::C),
+			d.set(RegVars::D),
 			dd,
 			lev(),
 		}),
@@ -62,10 +62,12 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	}
 	foo(8)
 	*/
-	FnDecl foo{"foo(a)",1,1};
-	FnDecl bar{"bar(b)",1,1};
-	auto [a,c]=foo.getVars<FnU8,FnU8>();
-	auto [b,d]=bar.getVars<FnU8,FnU8>();
+	Fn<UInt8,UInt8> foo{"foo(a)"};
+	Fn<UInt8,UInt8> bar{"bar(b)"};
+	auto [a]=foo.args;
+	auto [c]=foo.local<UInt8>();
+	auto [b]=bar.args;
+	auto [d]=bar.local<UInt8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
@@ -105,18 +107,20 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	}
 	fib(6)
 	*/
-	FnDecl fib{"fib(i)",1,1};
-	auto [i]=fib.getVars<FnU8>();
+	Fn<UInt8,UInt8> fib{"fib(i)"};
+	//auto [i]=fib.args;
 
 	Label main;
 	CPU cpu=run({
 		jmp(main),
-		fib.impl({
-			IF{i<2_u8, {
-				fib._return(i),
-			}, {
-				fib._return(fib(i - 1_u8) + fib(i - 2_u8)),
-			}},
+		fib.impl([&](auto i){
+			return code_t{
+				IF{i<2_u8, {
+					fib._return(i),
+				}, {
+					fib._return(fib(i - 1_u8) + fib(i - 2_u8)),
+				}},
+			};
 		}),
 		main,
 		fib(6_u8),

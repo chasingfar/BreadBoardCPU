@@ -5,8 +5,8 @@
 #ifndef BREADBOARDCPU_ASM_ASM_H
 #define BREADBOARDCPU_ASM_ASM_H
 
-#include "function_dynamic.h"
-#include "function_static.h"
+#include "function.h"
+//#include "function_static.h"
 
 
 namespace BreadBoardCPU::ASM {

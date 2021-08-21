@@ -27,12 +27,12 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	struct IF{
-		const RValue& cond;
+		const Value<Bool>& cond;
 		Block if_true;
 		Block if_false{};
 		operator code_t(){
 			return {
-				cond.push,
+				cond,
 				brz(if_false.start),
 				if_true,
 				jmp(if_false.end),
@@ -41,13 +41,13 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 	struct While{
-		const RValue& cond;
+		const Value<Bool>& cond;
 		Block body{};
 		operator code_t(){
 			Label start,end;
 			return {
 				start,
-				cond.push,
+				cond,
 				brz(end),
 				body,
 				jmp(start),
@@ -55,7 +55,7 @@ namespace BreadBoardCPU::ASM {
 			};
 		}
 	};
-
+/*
 	template<typename Type=op_t>
 	struct StaticVar: Var{
 		using type = Type;
@@ -84,6 +84,6 @@ namespace BreadBoardCPU::ASM {
 		operator code_t(){
 			return {block};
 		}
-	};
+	};*/
 }
 #endif //BREADBOARDCPU_STATEMENT_H
