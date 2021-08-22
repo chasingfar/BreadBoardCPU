@@ -51,7 +51,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		template<typename ...Ts>
 		auto local(){
 			auto vars=localvars<Ts...>(-local_size);
-			local_size+=(Ts::size+...);
+			local_size+=(Ts::size+...+0);
 			return vars;
 		}
 
@@ -60,7 +60,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			expr<<adj(-Ret::size);
 			(expr<<...<<_args);
 			expr<<Ops::call(start)
-				<<adj((Args::size+...));
+				<<adj((Args::size+...+0));
 			return expr;
 		}
 		Fn<Ret,Args...>& impl(const code_t& code){
@@ -68,9 +68,9 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return *this;
 		}
 
-		template<typename F>requires std::is_invocable_r_v<code_t , F, LocalVar<Args>...>
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, LocalVar<Args>...,LocalVar<Ts>...>
 		Block impl(F&& fn){
-			code_t body=std::apply(fn,args);
+			code_t body=std::apply(fn,std::tuple_cat(args,local<Ts...>()));
 			return impl(body);
 		}
 		operator code_t(){
@@ -80,12 +80,20 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 
 	private:
 		template<typename Var,typename ...Rest>
-		std::tuple<LocalVar<Var>,LocalVar<Rest>...> localvars(offset_t start) const{
+		std::tuple<LocalVar<Var>,LocalVar<Rest>...> _localvars(offset_t start) const{
 			LocalVar<Var> var{start};
 			if constexpr (sizeof...(Rest)==0){
 				return std::make_tuple(var);
 			}else{
 				return std::tuple_cat(std::make_tuple(var), localvars<Rest...>(start-Var::size));
+			}
+		}
+		template<typename ...Var>
+		std::tuple<LocalVar<Var>...> localvars(offset_t start) const{
+			if constexpr (sizeof...(Var)==0){
+				return std::make_tuple();
+			}else{
+				return _localvars<Var...>(start);
 			}
 		}
 	};

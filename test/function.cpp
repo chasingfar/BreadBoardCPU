@@ -108,7 +108,6 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	fib(6)
 	*/
 	Fn<UInt8,UInt8> fib{"fib(i)"};
-	//auto [i]=fib.args;
 
 	Label main;
 	CPU cpu=run({
@@ -126,4 +125,36 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 		fib(6_u8),
 	});
 	REQUIRE(_STACK_TOP==8);
+}
+TEST_CASE("function sum","[asm][function][dynamic]"){
+	/*
+	sum(n){
+	    s=0
+	    while(n){
+	        s=s+n
+	        n=n-1
+	    }
+	    return s
+	}
+	sum(6)
+	*/
+	Fn<UInt8,UInt8> sum{"sum(n)"};
+
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		sum.impl<UInt8>([&](auto n,auto s){
+			return code_t{
+				s.set(0_u8),
+				While{n,{{
+					s.set(s+n),
+					n.set(n-1_u8),
+				}}},
+				sum._return(s),
+			};
+		}),
+		main,
+		sum(6_u8),
+	});
+	REQUIRE(_STACK_TOP==21);
 }
