@@ -64,7 +64,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return expr;
 		}
 		Fn<Ret,Args...>& impl(const code_t& code){
-			body=code_t{start,ent(1+local_size),code};
+			body=code_t{start,ent(local_size),code};
 			return *this;
 		}
 
