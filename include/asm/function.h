@@ -40,9 +40,28 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
-
+	struct FnBase:Block{
+		protected:
+		template<typename Var,typename ...Rest>
+		static std::tuple<LocalVar<Var>,LocalVar<Rest>...> _localvars(offset_t start) {
+			LocalVar<Var> var{start};
+			if constexpr (sizeof...(Rest)==0){
+				return std::make_tuple(var);
+			}else{
+				return std::tuple_cat(std::make_tuple(var), localvars<Rest...>(start-Var::size));
+			}
+		}
+		template<typename ...Var>
+		static std::tuple<LocalVar<Var>...> localvars(offset_t start) {
+			if constexpr (sizeof...(Var)==0){
+				return std::make_tuple();
+			}else{
+				return _localvars<Var...>(start);
+			}
+		}
+	};
 	template<typename Ret,typename ...Args>
-	struct Fn:Block{
+	struct Fn:FnBase{
 		offset_t local_size{0};
 		std::tuple<LocalVar<Args>...> args{localvars<Args...>((4+...+Args::size))};
 		LocalVar<Ret> ret{Ret::size+(4+...+Args::size)};
@@ -78,24 +97,55 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		}
 		inline code_t _return(const Value<Ret>& value){return {ret.set(value),lev()};}
 
-	private:
-		template<typename Var,typename ...Rest>
-		std::tuple<LocalVar<Var>,LocalVar<Rest>...> _localvars(offset_t start) const{
-			LocalVar<Var> var{start};
-			if constexpr (sizeof...(Rest)==0){
-				return std::make_tuple(var);
-			}else{
-				return std::tuple_cat(std::make_tuple(var), localvars<Rest...>(start-Var::size));
-			}
+/*
+
+int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
+
+|    ....       | high address
++---------------+---------------+
+| arg1          |     low       |    new BP + 6
++---------------+ return value  +
+|     low       |     high      |    new BP + 5
++ arg2          +---------------+
+|     high      |    new BP + 4
++---------------+
+| arg3          |    new BP + 3
++---------------+
+|     low       |    new BP + 2
++ old BP        +
+|     high      |    new BP + 1
++---------------+
+| local var 1   | <- new BP
++---------------+
+| local var 2   |    new BP - 1
++---------------+
+|    ....       |  low address
+
+*/
+		template<typename ...Ts,typename F>
+		requires std::is_invocable_r_v<code_t , F,
+			std::function<code_t(const Value<Ret>&)>,
+			LocalVar<Args>...,
+			LocalVar<Ts>...
+		>
+		inline static Expr<Ret> _inline(F&& fn){
+			Label end;
+			return Expr<Ret>{{
+				saveBP(),
+				adj(-(Ts::size+...+0)),
+				std::apply(fn,std::tuple_cat(
+					std::make_tuple([=](const Value<Ret>& value)->code_t{
+						LocalVar<Ret> ret_val{(Args::size+...+2)};
+						return {ret_val.set(value),jmp(end)};
+					}),
+					localvars<Args...>((Args::size+...+2)),
+					localvars<Ts...>(0)
+				)),
+				end,
+				loadBP(),
+				adj((Args::size+...+0)-Ret::size),
+			}};
 		}
-		template<typename ...Var>
-		std::tuple<LocalVar<Var>...> localvars(offset_t start) const{
-			if constexpr (sizeof...(Var)==0){
-				return std::make_tuple();
-			}else{
-				return _localvars<Var...>(start);
-			}
-		}
-	};
+	};	
 }
 #endif //BREADBOARDCPU_FUNCTION_H

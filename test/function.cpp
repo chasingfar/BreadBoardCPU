@@ -158,3 +158,22 @@ TEST_CASE("function sum","[asm][function][dynamic]"){
 	});
 	REQUIRE(_STACK_TOP==21);
 }
+TEST_CASE("inline function","[asm][function]"){
+	CPU cpu=run({
+		0x12f3_u16,
+		0x32cc_u16,
+		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::_inline<>(
+			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
+			return {
+				_return(Expr<UInt16>{code_t{
+					a,c,add(),
+					b,d,adc(),
+				}}),
+			};
+		}),
+		pop(Reg::B),
+		pop(Reg::A),
+	});
+	REQUIRE(_REG(B)==0x45);
+	REQUIRE(_REG(A)==0xbf);
+}

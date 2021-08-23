@@ -33,6 +33,7 @@ namespace BreadBoardCPU::ASM {
 	struct Expr:Value<T>{
 		code_t code{};
 		Expr() {}
+		explicit Expr(const code_t& value):code(value){}
 		explicit Expr(const Value<T>& value):code(value){}
 		operator code_t() const override{
 			return code;
