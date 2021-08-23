@@ -5,7 +5,7 @@
 
 using namespace Function;
 
-TEST_CASE("function dynamic args and vars","[asm][function][dynamic]"){
+TEST_CASE("function dynamic args and vars","[asm][function]"){
 	Fn<Void,UInt8,UInt8> fn{"fn(a,b)"};
 	auto [a,b]=fn.args;
 	auto [c,d]=fn.local<UInt8, UInt8>();
@@ -50,7 +50,7 @@ TEST_CASE("function dynamic args and vars","[asm][function][dynamic]"){
 	REQUIRE(_REG(C)==11);
 	REQUIRE(_REG(D)==5);
 }
-TEST_CASE("function nest call","[asm][function][dynamic]"){
+TEST_CASE("function nest call","[asm][function]"){
 	/*
 	foo(a){
 		c=a+2
@@ -96,7 +96,7 @@ TEST_CASE("function nest call","[asm][function][dynamic]"){
 	REQUIRE(_STACK_TOP==26);
 }
 
-TEST_CASE("function recursion","[asm][function][dynamic]"){
+TEST_CASE("function recursion","[asm][function]"){
 	/*
 	fib(i){
 		if(i<2){
@@ -126,7 +126,7 @@ TEST_CASE("function recursion","[asm][function][dynamic]"){
 	});
 	REQUIRE(_STACK_TOP==8);
 }
-TEST_CASE("function sum","[asm][function][dynamic]"){
+TEST_CASE("function sum","[asm][function]"){
 	/*
 	sum(n){
 	    s=0
@@ -158,14 +158,14 @@ TEST_CASE("function sum","[asm][function][dynamic]"){
 	});
 	REQUIRE(_STACK_TOP==21);
 }
-TEST_CASE("inline function","[asm][function]"){
+TEST_CASE("inplace function","[asm][function]"){
 	CPU cpu=run({
 		0x12f3_u16,
 		0x32cc_u16,
-		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::_inline<>(
+		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::_inplace<>(
 			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				_return(Expr<UInt16>{code_t{
+				_return(Expr<UInt16>{{
 					a,c,add(),
 					b,d,adc(),
 				}}),

@@ -128,7 +128,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			LocalVar<Args>...,
 			LocalVar<Ts>...
 		>
-		inline static Expr<Ret> _inline(F&& fn){
+		inline static Expr<Ret> _inplace(F&& fn){
 			Label end;
 			return Expr<Ret>{{
 				saveBP(),
