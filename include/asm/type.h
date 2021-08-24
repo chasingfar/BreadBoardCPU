@@ -13,19 +13,6 @@ namespace BreadBoardCPU::ASM {
 	};
 	using Void = Type<0>;
 
-
-	template<typename T,typename ...Ts>
-	struct Struct:Type<(T::size+...+Ts::size)>{
-		static constexpr size_t count=1+sizeof...(Ts);
-		template<addr_t Index,addr_t Offset>
-		struct SubType:Struct<Ts...>::template SubType<Index-1,Offset+T::size>{};
-		template<addr_t Offset>
-		struct SubType<0,Offset>:T{
-			using type = T;
-			static constexpr addr_t offset=Offset;
-		};
-	};
-
 	template<typename T>
 	struct Value:T{
 		virtual operator code_t() const=0;
@@ -47,6 +34,22 @@ namespace BreadBoardCPU::ASM {
 	struct Stmt:Expr<Void>{
 		template<typename T>
 		explicit Stmt(const Value<T>& value):Expr<Void>{{value, adj(T::size)}}{}
+	};
+
+	template<typename U,typename T,typename ...Ts>
+	struct Struct:Type<(T::size+...+Ts::size)>{
+		static constexpr size_t count=1+sizeof...(Ts);
+		template<addr_t Index,addr_t Offset>
+		struct SubType:Struct<U,Ts...>::template SubType<Index-1,Offset+T::size>{};
+		template<addr_t Offset>
+		struct SubType<0,Offset>:T{
+			using type = T;
+			static constexpr addr_t offset=Offset;
+		};
+		
+		inline static auto make(const Value<T>& val,const Value<Ts>& ...vals){
+			return Expr<U>{{val,vals...}};
+		}
 	};
 
 	template<addr_t Size,bool Signed=false>

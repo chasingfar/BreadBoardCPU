@@ -178,7 +178,7 @@ TEST_CASE("inplace function","[asm][function]"){
 	REQUIRE(_REG(A)==0xbf);
 }
 TEST_CASE("function with custom type","[asm][function]"){
-	struct Vec:Struct<UInt8,UInt8,UInt8>{};
+	struct Vec:Struct<Vec,UInt8,UInt8,UInt8>{};
 	Fn<Vec,Vec> fn{"fn(vec)"};
 	auto [vec]=fn.args;
 	auto [x,y,z]=vec.extract();
@@ -193,9 +193,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 			fn._return(vec),
 		}),
 		main,
-		fn(Expr<Vec>{{
-			3_u8,7_u8,11_u8,
-		}}),
+		fn(Vec::make(3_u8,7_u8,11_u8)),
 		pop(Reg::A),
 		pop(Reg::B),
 		pop(Reg::C),
