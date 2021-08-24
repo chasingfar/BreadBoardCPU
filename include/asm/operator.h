@@ -4,14 +4,14 @@
 
 #ifndef BREADBOARDCPU_OPERATOR_H
 #define BREADBOARDCPU_OPERATOR_H
-#include "var.h"
+#include "function.h"
 namespace BreadBoardCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline auto _calc(const Value<Int<Size,Signed>>& lhs) {
 		Expr<Int<Size,Signed>> tmp{lhs};
 		if (Size > 1) {
-			tmp.value << saveBP();
+			tmp << saveBP();
 			for (addr_t i = 0; i < Size; ++i) {
 				tmp << load_local(Size + 2 - i)
 				    << (i == 0 ? fn() : fnc())

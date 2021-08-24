@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "operator.h"
+#include "var.h"
 
 namespace BreadBoardCPU::ASM {
 	struct Block {

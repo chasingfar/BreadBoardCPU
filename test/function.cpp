@@ -162,7 +162,7 @@ TEST_CASE("inplace function","[asm][function]"){
 	CPU cpu=run({
 		0x12f3_u16,
 		0x32cc_u16,
-		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::_inplace<>(
+		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
 			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
 			return {
 				_return(Expr<UInt16>{{

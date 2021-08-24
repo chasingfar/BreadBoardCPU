@@ -4,7 +4,7 @@
 #include "asm_test_util.h"
 
 
-TEST_CASE("block","[asm][advance]"){
+TEST_CASE("block","[asm][statement]"){
 	Label a,b;
 	CPU cpu=run(Block{{
 		imm(Reg::A,5),
@@ -20,7 +20,7 @@ TEST_CASE("block","[asm][advance]"){
 	REQUIRE(_REG(A)==15);
 }
 
-TEST_CASE("if","[asm][advance]"){
+TEST_CASE("if","[asm][statement]"){
 	SECTION("if true"){
 		CPU cpu=run(
 			IF{1_u8,
@@ -40,7 +40,7 @@ TEST_CASE("if","[asm][advance]"){
 		REQUIRE(_REG(A)==6);
 	}
 }
-TEST_CASE("while","[asm][advance]"){
+TEST_CASE("while","[asm][statement]"){
 	/*
 	a=0,b=3;
 	while(b){
@@ -60,7 +60,7 @@ TEST_CASE("while","[asm][advance]"){
 	REQUIRE(cpu.isHalt()==true);
 }
 
-TEST_CASE("static variable","[asm][advance]"){
+TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
 	auto [a]=vars.get<UInt8>({0});
 	auto [b,c]=vars.get<UInt8,UInt8>({12},{34});
@@ -81,7 +81,7 @@ TEST_CASE("static variable","[asm][advance]"){
 	REQUIRE(_STATIC(vars,b.offset)==78);
 	REQUIRE(_STATIC(vars,c.offset)==90);
 }
-TEST_CASE("static variable with custom type","[asm][advance]"){
+TEST_CASE("static variable with custom type","[asm][statement]"){
 	struct Vec:Struct<Vec,UInt8,UInt8,UInt8>{};
 	StaticVars vars;
 	auto [vec]=vars.get<Vec>({3,7,11});
@@ -105,7 +105,7 @@ TEST_CASE("static variable with custom type","[asm][advance]"){
 	REQUIRE(_STATIC(vars,z.offset)==14);
 }
 
-TEST_CASE("big variable","[asm][advance]"){
+TEST_CASE("big variable","[asm][statement]"){
 	CPU cpu=run({
 		add(0x12f3_u16,0x32cc_u16),
 		pop(Reg::B),
@@ -114,7 +114,7 @@ TEST_CASE("big variable","[asm][advance]"){
 	REQUIRE(_REG(B)==0x45);
 	REQUIRE(_REG(A)==0xbf);
 }
-TEST_CASE("if cmp","[asm][advance]"){
+TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
 	auto _if=[=](const Value<Bool>& cond){
 		return IF{cond,
