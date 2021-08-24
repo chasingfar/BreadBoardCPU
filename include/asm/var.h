@@ -33,8 +33,8 @@ namespace BreadBoardCPU::ASM {
 			return [&]<size_t... I>(std::index_sequence<I...>){
 				return std::make_tuple(
 					static_cast<V<T>*>(this)->template shift<
-						typename T::template SubType<I,0>::type,
-						T::template SubType<I,0>::offset
+						typename T::template SubType<I>::type,
+						T::template SubType<I>::offset
 					>()...);
 			}(std::make_index_sequence<T::count>{});
 		}
