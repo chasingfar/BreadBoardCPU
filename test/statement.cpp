@@ -59,11 +59,11 @@ TEST_CASE("while","[asm][advance]"){
 	REQUIRE(_REG(A)==6);
 	REQUIRE(cpu.isHalt()==true);
 }
-/*
+
 TEST_CASE("static variable","[asm][advance]"){
 	StaticVars vars;
-	auto [a]=vars.getVars<uint8_t>(0);
-	auto [b,c]=vars.getVars<uint8_t,uint8_t>(12,34);
+	auto [a]=vars.get<UInt8>({0});
+	auto [b,c]=vars.get<UInt8,UInt8>({12},{34});
 	Label main;
 	CPU cpu=run({
 		jmp(main),
@@ -80,8 +80,8 @@ TEST_CASE("static variable","[asm][advance]"){
 	REQUIRE(_STATIC(vars,a.offset)==56);
 	REQUIRE(_STATIC(vars,b.offset)==78);
 	REQUIRE(_STATIC(vars,c.offset)==90);
+}
 
-}*/
 TEST_CASE("big variable","[asm][advance]"){
 	CPU cpu=run({
 		add(0x12f3_u16,0x32cc_u16),

@@ -55,35 +55,19 @@ namespace BreadBoardCPU::ASM {
 			};
 		}
 	};
-/*
-	template<typename Type=op_t>
-	struct StaticVar: Var{
-		using type = Type;
-		offset_t offset=0;
-		explicit StaticVar(Block& block,type value)
-				:offset(block.body.size()),Var{sizeof(Type),{},{},std::is_signed_v<Type>}{
-			for(addr_t i = 0; i < size; ++i) {
-				push<<Ops::load(block.start,offset+i);
-				pop<<Ops::save(block.start,offset+(size-1-i));
-				block<<code_t{(value>>i*8)&0xFF};
+	struct StaticVars:Block{
+		template<typename Var,typename ...Rest>
+		auto get(ops_t value={},typename std::pair<Rest,ops_t>::second_type ... rest){
+			StaticVar<Var> var{start, static_cast<offset_t>(body.size())};
+			for(addr_t i=0;i<Var::size;++i){
+				body.push_back(i<value.size()?value[i]:0);
+			}
+			if constexpr (sizeof...(Rest)==0){
+				return std::make_tuple(var);
+			}else{
+				return std::tuple_cat(std::make_tuple(var), get<Rest...>(rest...));
 			}
 		}
 	};
-	struct StaticVars{
-		Block block;
-
-		template<typename Var,typename ...Rest>
-		auto getVars(Var value, Rest ... rest){
-			std::tuple<StaticVar<Var>> var{StaticVar<Var>{block, value}};
-			if constexpr (sizeof...(Rest)==0){
-				return var;
-			}else{
-				return std::tuple_cat(var, getVars<Rest...>(rest...));
-			}
-		}
-		operator code_t(){
-			return {block};
-		}
-	};*/
 }
 #endif //BREADBOARDCPU_STATEMENT_H
