@@ -81,6 +81,29 @@ TEST_CASE("static variable","[asm][advance]"){
 	REQUIRE(_STATIC(vars,b.offset)==78);
 	REQUIRE(_STATIC(vars,c.offset)==90);
 }
+TEST_CASE("static variable with custom type","[asm][advance]"){
+	struct Vec:Struct<Vec,UInt8,UInt8,UInt8>{};
+	StaticVars vars;
+	auto [vec]=vars.get<Vec>({3,7,11});
+	auto [x,y,z]=vec.extract();
+	
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		vars,
+		main,
+		x.set(x+1_u8),
+		y.set(y+2_u8),
+		z.set(z+3_u8),
+	},{main});
+	REQUIRE(_STATIC(vars,x.offset)==3);
+	REQUIRE(_STATIC(vars,y.offset)==7);
+	REQUIRE(_STATIC(vars,z.offset)==11);
+	run(cpu);
+	REQUIRE(_STATIC(vars,x.offset)==4);
+	REQUIRE(_STATIC(vars,y.offset)==9);
+	REQUIRE(_STATIC(vars,z.offset)==14);
+}
 
 TEST_CASE("big variable","[asm][advance]"){
 	CPU cpu=run({
