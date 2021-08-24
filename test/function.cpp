@@ -177,3 +177,30 @@ TEST_CASE("inplace function","[asm][function]"){
 	REQUIRE(_REG(B)==0x45);
 	REQUIRE(_REG(A)==0xbf);
 }
+TEST_CASE("function with custom type","[asm][function]"){
+	struct Vec:Struct<UInt8,UInt8,UInt8>{};
+	Fn<Vec,Vec> fn{"fn(vec)"};
+	auto [vec]=fn.args;
+	auto [x,y,z]=vec.extract();
+	
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		fn.impl({
+			x.set(x+1_u8),
+			y.set(y+2_u8),
+			z.set(z+3_u8),
+			fn._return(vec),
+		}),
+		main,
+		fn(Expr<Vec>{{
+			3_u8,7_u8,11_u8,
+		}}),
+		pop(Reg::A),
+		pop(Reg::B),
+		pop(Reg::C),
+	});
+	REQUIRE(_REG(C)==4);
+	REQUIRE(_REG(B)==9);
+	REQUIRE(_REG(A)==14);
+}

@@ -16,6 +16,7 @@ namespace BreadBoardCPU::ASM {
 
 	template<typename T,typename ...Ts>
 	struct Struct:Type<(T::size+...+Ts::size)>{
+		static constexpr size_t count=1+sizeof...(Ts);
 		template<addr_t Index,addr_t Offset>
 		struct SubType:Struct<Ts...>::template SubType<Index-1,Offset+T::size>{};
 		template<addr_t Offset>
