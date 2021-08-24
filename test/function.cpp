@@ -1,6 +1,7 @@
 //
 // Created by chasingfar on 2021/7/24.
 //
+#include "asm/type.h"
 #include "asm_test_util.h"
 
 using namespace Function;
@@ -166,6 +167,25 @@ TEST_CASE("inplace function","[asm][function]"){
 			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
 			return {
 				_return(Expr<UInt16>{{
+					a,c,add(),
+					b,d,adc(),
+				}}),
+			};
+		}),
+		pop(Reg::B),
+		pop(Reg::A),
+	});
+	REQUIRE(_REG(B)==0x45);
+	REQUIRE(_REG(A)==0xbf);
+}
+TEST_CASE("inplace function 2","[asm][function]"){
+	CPU cpu=run({
+		0x12f3_u16,
+		0x32cc_u16,
+		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
+			[](const Label& end,auto ret,auto a,auto b,auto c,auto d)->code_t{
+			return {
+				ret.set(Expr<UInt16>{{
 					a,c,add(),
 					b,d,adc(),
 				}}),

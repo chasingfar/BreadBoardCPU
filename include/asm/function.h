@@ -124,7 +124,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 */
 		template<typename ...Ts,typename F>
 		requires std::is_invocable_r_v<code_t , F,
-			std::function<code_t(const Value<Ret>&)>,
+			const Label&,
+			LocalVar<Ret>,
 			LocalVar<Args>...,
 			LocalVar<Ts>...
 		>
@@ -134,10 +135,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 				saveBP(),
 				adj(-(Ts::size+...+0)),
 				std::apply(fn,std::tuple_cat(
-					std::make_tuple([=](const Value<Ret>& value)->code_t{
-						LocalVar<Ret> ret_val{(Args::size+...+2)};
-						return {ret_val.set(value),jmp(end)};
-					}),
+					std::make_tuple(end),
+					localvars<Ret>((Args::size+...+2)),
 					localvars<Args...>((Args::size+...+2)),
 					localvars<Ts...>(0)
 				)),
@@ -145,6 +144,27 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 				loadBP(),
 				adj((Args::size+...+0)-Ret::size),
 			}};
+		}
+		template<typename ...Ts,typename F>
+		requires std::is_invocable_r_v<code_t , F,
+			std::function<code_t(const Value<Ret>&)>,
+			LocalVar<Args>...,
+			LocalVar<Ts>...
+		>
+		inline static Expr<Ret> inplace(F&& fn){
+			return inplace<Ts...>([&](
+				const Label& end,
+				LocalVar<Ret> ret,
+				LocalVar<Args>... args,
+				LocalVar<Ts>... vars){
+					return fn(
+						[=](const Value<Ret>& value)->code_t{
+							return {ret.set(value),jmp(end)};
+						},
+						args...,
+						vars...
+					);
+			});
 		}
 	};	
 }
