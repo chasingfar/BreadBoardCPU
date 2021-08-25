@@ -166,10 +166,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
 			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				_return(Expr<UInt16>{{
-					a,c,add(),
-					b,d,adc(),
-				}}),
+				_return(UInt16::make(add(a,c),adc(b,d))),
 			};
 		}),
 		pop(Reg::B),
@@ -185,10 +182,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
 			[](const Label& end,auto ret,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				ret.set(Expr<UInt16>{{
-					a,c,add(),
-					b,d,adc(),
-				}}),
+				ret.set(UInt16::make(add(a,c),adc(b,d))),
 			};
 		}),
 		pop(Reg::B),

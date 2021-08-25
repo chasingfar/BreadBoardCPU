@@ -6,6 +6,7 @@
 #define BREADBOARDCPU_TYPE_H
 
 #include "ops.h"
+#include <cstddef>
 namespace BreadBoardCPU::ASM {
 	template<addr_t Size>
 	struct Type {
@@ -53,7 +54,12 @@ namespace BreadBoardCPU::ASM {
 	};
 
 	template<addr_t Size,bool Signed=false>
-	struct Int:Type<Size>{};
+	struct Int:Type<Size>{
+		template<addr_t ...S> requires(Size==(S+...+0))
+		inline static auto make(const Value<Int<S,Signed>>& ...vals){
+			return Expr<Int<Size,Signed>>{{vals...}};
+		}
+	};
 	using UInt8 =Int<1,false>;
 	using  Int8 =Int<1,true>;
 	using UInt16=Int<2,false>;
