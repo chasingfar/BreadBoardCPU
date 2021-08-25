@@ -2,11 +2,11 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_CPU_ALU_H
-#define BREADBOARDCPU_CPU_ALU_H
+#ifndef BBCPU_CPU_ALU_H
+#define BBCPU_CPU_ALU_H
 #include "common.h"
 #include "../alu.h"
-namespace BreadBoardCPU {
+namespace BBCPU {
 	using namespace ALU74181;
 	BITFILEDBASE(6) struct ALU : Base {
 		using fn     = BitField<4, Base, FollowMode::innerLow>;
@@ -122,4 +122,4 @@ namespace BreadBoardCPU {
 		}
 	};
 }
-#endif //BREADBOARDCPU_CPU_ALU_H
+#endif //BBCPU_CPU_ALU_H

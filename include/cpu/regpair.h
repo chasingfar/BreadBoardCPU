@@ -2,12 +2,12 @@
 // Created by chasingfar on 2020/10/31.
 //
 
-#ifndef BREADBOARDCPU_REGPAIR_H
-#define BREADBOARDCPU_REGPAIR_H
+#ifndef BBCPU_REGPAIR_H
+#define BBCPU_REGPAIR_H
 
 #include "mctrl.h"
 
-namespace BreadBoardCPU::RegPair {
+namespace BBCPU::RegPair {
 
 	BITFILEDBASE(2) struct REGSEL : Base {
 		using reg_sel_ = BitField<1, Base, FollowMode::innerLow>;
@@ -90,4 +90,4 @@ namespace BreadBoardCPU::RegPair {
 		}}));
 	}
 }
-#endif //BREADBOARDCPU_REGPAIR_H
+#endif //BBCPU_REGPAIR_H

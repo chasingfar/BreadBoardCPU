@@ -2,11 +2,11 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_CPU_CPU_H
-#define BREADBOARDCPU_CPU_CPU_H
+#ifndef BBCPU_CPU_CPU_H
+#define BBCPU_CPU_CPU_H
 #include "opcode.h"
 #include "regpair.h"
-namespace BreadBoardCPU{
+namespace BBCPU{
 	struct CPU{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
@@ -123,4 +123,4 @@ namespace BreadBoardCPU{
 		}
 	};
 }
-#endif //BREADBOARDCPU_CPU_H
+#endif //BBCPU_CPU_H

@@ -2,10 +2,10 @@
 // Created by chasingfar on 2021/2/1.
 //
 
-#ifndef BREADBOARDCPU_CPU_REGS_H
-#define BREADBOARDCPU_CPU_REGS_H
+#ifndef BBCPU_CPU_REGS_H
+#define BBCPU_CPU_REGS_H
 #include "common.h"
-namespace BreadBoardCPU{
+namespace BBCPU{
 	namespace Regs{
 		#define ENUM_NAME(...) Reg##__VA_ARGS__
 		#define ENUM_TABLE \
@@ -86,4 +86,4 @@ namespace BreadBoardCPU{
 	}
 	using namespace Regs;
 }
-#endif //BREADBOARDCPU_CPU_REGS_H
+#endif //BBCPU_CPU_REGS_H

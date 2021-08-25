@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/1/26.
 //
 
-#ifndef BREADBOARDCPU_ALU_H
-#define BREADBOARDCPU_ALU_H
+#ifndef BBCPU_ALU_H
+#define BBCPU_ALU_H
 
 #include <bitset>
 #include <iostream>
@@ -145,4 +145,4 @@ namespace ALU74181 {
 		return str;
 	}
 }
-#endif //BREADBOARDCPU_ALU_H
+#endif //BBCPU_ALU_H

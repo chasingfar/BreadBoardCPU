@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_CPU_COMMON_H
-#define BREADBOARDCPU_CPU_COMMON_H
+#ifndef BBCPU_CPU_COMMON_H
+#define BBCPU_CPU_COMMON_H
 #include "../util.h"
 #include "../Bitwise.h"
 #include <functional>
@@ -46,10 +46,10 @@ struct Logger{
 #define LOG_STOP()
 #define LOG_STEP()
 #endif
-namespace BreadBoardCPU {
+namespace BBCPU {
 	using namespace Util::Bitwise::BitField;
 	using Util::TruthTable;
 	using Util::ROM;
 	using Util::generateROM;
 }
-#endif //BREADBOARDCPU_CPU_COMMON_H
+#endif //BBCPU_CPU_COMMON_H

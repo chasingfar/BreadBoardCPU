@@ -2,12 +2,12 @@
 // Created by chasingfar on 2021/8/21.
 //
 
-#ifndef BREADBOARDCPU_TYPE_H
-#define BREADBOARDCPU_TYPE_H
+#ifndef BBCPU_TYPE_H
+#define BBCPU_TYPE_H
 
 #include "ops.h"
 #include <cstddef>
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 	template<addr_t Size>
 	struct Type {
 		static constexpr addr_t size = Size;
@@ -90,4 +90,4 @@ namespace BreadBoardCPU::ASM {
 	inline auto operator""_i16(unsigned long long val){return IntLiteral< int16_t>{val};}
 	inline auto operator""_u16(unsigned long long val){return IntLiteral<uint16_t>{val};}
 }
-#endif //BREADBOARDCPU_TYPE_H
+#endif //BBCPU_TYPE_H

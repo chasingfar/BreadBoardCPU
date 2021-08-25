@@ -2,11 +2,11 @@
 // Created by chasingfar on 2020/11/12.
 //
 
-#ifndef BREADBOARDCPU_CPU_OPCODE_H
-#define BREADBOARDCPU_CPU_OPCODE_H
+#ifndef BBCPU_CPU_OPCODE_H
+#define BBCPU_CPU_OPCODE_H
 
 #include "mcode.h"
-namespace BreadBoardCPU::OpCode {
+namespace BBCPU::OpCode {
 	template <size_t Size,typename Ref,auto Id>
 	using OPID=BitId<Id,BitField<Size,Ref,FollowMode::innerHigh> >;
 	template <size_t Size,typename As,typename Ref,typename Base=BitField<Size,Ref,FollowMode::outerLow>>
@@ -514,4 +514,4 @@ namespace BreadBoardCPU::OpCode {
 	}
 
 };
-#endif //BREADBOARDCPU_CPU_OPCODE_H
+#endif //BBCPU_CPU_OPCODE_H

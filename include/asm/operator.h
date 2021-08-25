@@ -2,10 +2,10 @@
 // Created by chasingfar on 2021/8/4.
 //
 
-#ifndef BREADBOARDCPU_OPERATOR_H
-#define BREADBOARDCPU_OPERATOR_H
+#ifndef BBCPU_OPERATOR_H
+#define BBCPU_OPERATOR_H
 #include "function.h"
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline auto _calc(const Value<Int<Size,Signed>>& lhs) {
@@ -185,4 +185,4 @@ namespace BreadBoardCPU::ASM {
 		return NOT(lhs);
 	}
 }
-#endif //BREADBOARDCPU_OPERATOR_H
+#endif //BBCPU_OPERATOR_H

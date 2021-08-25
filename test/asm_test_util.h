@@ -2,15 +2,15 @@
 // Created by chasingfar on 2021/7/25.
 //
 
-#ifndef BREADBOARDCPU_ASM_TEST_UTIL_H
-#define BREADBOARDCPU_ASM_TEST_UTIL_H
+#ifndef BBCPU_ASM_TEST_UTIL_H
+#define BBCPU_ASM_TEST_UTIL_H
 
 #include "catch.hpp"
 #include "asm/asm.h"
 
-using namespace BreadBoardCPU::ASM;
-using BreadBoardCPU::CPU;
-using BreadBoardCPU::MARG;
+using namespace BBCPU::ASM;
+using BBCPU::CPU;
+using BBCPU::MARG;
 using ALU74181::Carry;
 
 #define _REG(name) cpu.REG[CPU::Reg::name.v()]
@@ -41,4 +41,4 @@ inline CPU run(const code_t& program,const std::vector<Label>& pause_at={},size_
 	cpu.load(ASM{}<<program<<halt()<<ASM::END);
 	return run(cpu,pause_at,max_iter);
 }
-#endif //BREADBOARDCPU_ASM_TEST_UTIL_H
+#endif //BBCPU_ASM_TEST_UTIL_H

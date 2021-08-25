@@ -2,12 +2,12 @@
 // Created by chasingfar on 2021/8/7.
 //
 
-#ifndef BREADBOARDCPU_VAR_H
-#define BREADBOARDCPU_VAR_H
+#ifndef BBCPU_VAR_H
+#define BBCPU_VAR_H
 #include <utility>
 #include "type.h"
 
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 	template<typename T>
 	struct Var:Value<T>{
 		virtual code_t load(offset_t index) const=0;
@@ -92,4 +92,4 @@ namespace BreadBoardCPU::ASM {
 		inline static const RegVar H{Reg::H};
 	}
 }
-#endif //BREADBOARDCPU_VAR_H
+#endif //BBCPU_VAR_H

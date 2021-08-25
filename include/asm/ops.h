@@ -2,11 +2,11 @@
 // Created by chasingfar on 2021/8/7.
 //
 
-#ifndef BREADBOARDCPU_OPS_H
-#define BREADBOARDCPU_OPS_H
+#ifndef BBCPU_OPS_H
+#define BBCPU_OPS_H
 
 #include "basic.h"
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 
 #define OP0(op) op::id::setAs<MARG::opcode,op_t>()
 #define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
@@ -103,4 +103,4 @@ namespace BreadBoardCPU::ASM {
 	}
 	using namespace Ops;
 }
-#endif //BREADBOARDCPU_OPS_H
+#endif //BBCPU_OPS_H

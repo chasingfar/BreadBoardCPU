@@ -2,12 +2,12 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BREADBOARDCPU_CPU_MARG_H
-#define BREADBOARDCPU_CPU_MARG_H
+#ifndef BBCPU_CPU_MARG_H
+#define BBCPU_CPU_MARG_H
 
 #include "regs.h"
 #include "alu.h"
-namespace BreadBoardCPU {
+namespace BBCPU {
 	BITFILEDBASE(9) struct STATE : Base {
 		using index  = BitField<Size-2,Base,FollowMode::innerLow>;
 		using CF     = BitField<1,index>;
@@ -33,4 +33,4 @@ namespace BreadBoardCPU {
 		}
 	};
 }
-#endif //BREADBOARDCPU_CPU_MARG_H
+#endif //BBCPU_CPU_MARG_H

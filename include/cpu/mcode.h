@@ -2,11 +2,11 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BREADBOARDCPU_CPU_MCODE_H
-#define BREADBOARDCPU_CPU_MCODE_H
+#ifndef BBCPU_CPU_MCODE_H
+#define BBCPU_CPU_MCODE_H
 
 #include "mctrl.h"
-namespace BreadBoardCPU{
+namespace BBCPU{
 	struct MCode{
 		MARG::type marg;
 		MCTRL::type mctrl;
@@ -261,4 +261,4 @@ namespace BreadBoardCPU{
 		}
 	};
 }
-#endif //BREADBOARDCPU_CPU_MCODE_H
+#endif //BBCPU_CPU_MCODE_H

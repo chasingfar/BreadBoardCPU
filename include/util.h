@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/2/1.
 //
 
-#ifndef BREADBOARDCPU_UTIL_H
-#define BREADBOARDCPU_UTIL_H
+#ifndef BBCPU_UTIL_H
+#define BBCPU_UTIL_H
 
 #include <variant>
 #include <functional>
@@ -97,4 +97,4 @@ namespace Util{
 		}while(true);
 	}
 }
-#endif //BREADBOARDCPU_UTIL_H
+#endif //BBCPU_UTIL_H

@@ -2,8 +2,8 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_BASIC_H
-#define BREADBOARDCPU_BASIC_H
+#ifndef BBCPU_BASIC_H
+#define BBCPU_BASIC_H
 
 #include "../cpu/cpu.h"
 #include <memory>
@@ -13,7 +13,7 @@
 #include <map>
 
 
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 	using namespace OpCode::Ops;
 	using op_t = uint8_t;
 	using addr_t = uint16_t;
@@ -117,4 +117,4 @@ namespace BreadBoardCPU::ASM {
 	};
 
 }
-#endif //BREADBOARDCPU_BASIC_H
+#endif //BBCPU_BASIC_H

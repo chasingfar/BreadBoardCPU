@@ -5,7 +5,7 @@
 #include "include/cpu/cpu.h"
 #include "include/asm/asm.h"
 int main() {
-	using namespace BreadBoardCPU;
+	using namespace BBCPU;
 
 
 	//MCode mctx(0,0,0);

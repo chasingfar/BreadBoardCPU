@@ -2,12 +2,12 @@
 // Created by chasingfar on 2021/8/12.
 //
 
-#ifndef BREADBOARDCPU_FUNCTION_H
-#define BREADBOARDCPU_FUNCTION_H
+#ifndef BBCPU_FUNCTION_H
+#define BBCPU_FUNCTION_H
 
 #include <utility>
 #include "statement.h"
-namespace BreadBoardCPU::ASM::Function{
+namespace BBCPU::ASM::Function{
 /*
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 
@@ -168,4 +168,4 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		}
 	};	
 }
-#endif //BREADBOARDCPU_FUNCTION_H
+#endif //BBCPU_FUNCTION_H

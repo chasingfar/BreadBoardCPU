@@ -2,14 +2,14 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BREADBOARDCPU_STATEMENT_H
-#define BREADBOARDCPU_STATEMENT_H
+#ifndef BBCPU_STATEMENT_H
+#define BBCPU_STATEMENT_H
 
 #include <utility>
 
 #include "var.h"
 
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 	struct Block {
 		Label start;
 		code_t body{};
@@ -70,4 +70,4 @@ namespace BreadBoardCPU::ASM {
 		}
 	};
 }
-#endif //BREADBOARDCPU_STATEMENT_H
+#endif //BBCPU_STATEMENT_H

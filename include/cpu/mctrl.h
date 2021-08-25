@@ -2,10 +2,10 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BREADBOARDCPU_CPU_MCTRL_H
-#define BREADBOARDCPU_CPU_MCTRL_H
+#ifndef BBCPU_CPU_MCTRL_H
+#define BBCPU_CPU_MCTRL_H
 #include "marg.h"
-namespace BreadBoardCPU {
+namespace BBCPU {
 
 	BITFILEDBASE(2) struct IODIR : Base {
 		using mem_write = BitField<1, Base, FollowMode::innerLow>;
@@ -148,4 +148,4 @@ namespace BreadBoardCPU {
 		return MCTRL::setIndex(mctrl, MARG::getIndex(marg) + 1);
 	}
 }
-#endif //BREADBOARDCPU_CPU_MCTRL_H
+#endif //BBCPU_CPU_MCTRL_H

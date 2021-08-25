@@ -2,12 +2,12 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BREADBOARDCPU_ASM_ASM_H
-#define BREADBOARDCPU_ASM_ASM_H
+#ifndef BBCPU_ASM_ASM_H
+#define BBCPU_ASM_ASM_H
 
 #include "operator.h"
 
-namespace BreadBoardCPU::ASM {
+namespace BBCPU::ASM {
 	inline void generate(const std::string& name,auto program) {
 		std::ofstream fout{name};
 		if (!fout) { return; }
@@ -31,4 +31,4 @@ namespace BreadBoardCPU::ASM {
 		<<ASM::END);
 	}
 }
-#endif //BREADBOARDCPU_ASM_ASM_H
+#endif //BBCPU_ASM_ASM_H
