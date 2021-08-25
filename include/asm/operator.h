@@ -11,13 +11,17 @@ namespace BreadBoardCPU::ASM {
 	inline auto _calc(const Value<Int<Size,Signed>>& lhs) {
 		Expr<Int<Size,Signed>> tmp{lhs};
 		if (Size > 1) {
-			tmp << saveBP();
-			for (addr_t i = 0; i < Size; ++i) {
-				tmp << load_local(Size + 2 - i)
-				    << (i == 0 ? fn() : fnc())
-				    << save_local(Size + 2 - i);
-			}
-			tmp << loadBP();
+			tmp << []<size_t ...I>(std::index_sequence<I...>){
+				return Function::Fn<Int<Size,Signed>,Int<I-I+1,Signed>...>::inplace(
+					[](const Label& end,LocalVar<Int<Size,Signed>> ret,LocalVar<Int<I-I+1,Signed>>...ls)->code_t{
+						return {
+							ls.set(Expr<Int<I-I+1,Signed>>{{
+								ls,(I == 0 ? fn() : fnc())
+							}})...
+						};
+					}
+				);
+			}(std::make_index_sequence<Size>{});
 		} else if (Size == 1) {
 			tmp << fn();
 		}
@@ -29,14 +33,17 @@ namespace BreadBoardCPU::ASM {
 		Expr<Int<Size,Signed>> tmp{lhs};
 		tmp << rhs;
 		if (Size > 1) {
-			tmp << saveBP();
-			for (addr_t i = 0; i < Size; ++i) {
-				tmp << load_local(2 * Size + 2 - i)
-				    << load_local(Size + 2 - i)
-				    << (i == 0 ? fn() : fnc())
-				    << save_local(2 * Size + 2 - i);
-			}
-			tmp << loadBP() << adj(Size);
+			tmp << []<size_t ...I>(std::index_sequence<I...>){
+				return Function::Fn<Int<Size,Signed>,Int<I-I+1,Signed>...,Int<I-I+1,Signed>...>::inplace(
+					[](const Label& end,LocalVar<Int<Size,Signed>> ret,LocalVar<Int<I-I+1,Signed>>...ls,LocalVar<Int<I-I+1,Signed>>...rs)->code_t{
+						return {
+							ls.set(Expr<Int<I-I+1,Signed>>{{
+								ls,rs,(I == 0 ? fn() : fnc())
+							}})...
+						};
+					}
+				);
+			}(std::make_index_sequence<Size>{});
 		} else if (Size == 1) {
 			tmp << fn();
 		}
