@@ -57,7 +57,7 @@ namespace BreadBoardCPU::ASM {
 	};
 	struct StaticVars:Block{
 		template<typename Var,typename ...Rest>
-		auto get(ops_t value={},typename std::pair<Rest,ops_t>::second_type ... rest){
+		auto get(ops_t value,typename std::pair<Rest,ops_t>::second_type ... rest){
 			StaticVar<Var> var{start, static_cast<offset_t>(body.size())};
 			for(addr_t i=0;i<Var::size;++i){
 				body.push_back(i<value.size()?value[i]:0);
