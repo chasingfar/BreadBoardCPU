@@ -57,10 +57,11 @@ namespace BBCPU::ASM {
 	};
 	struct StaticVars:Block{
 		template<typename Var,typename ...Rest>
-		auto get(ops_t value,typename std::pair<Rest,ops_t>::second_type ... rest){
-			StaticVar<Var> var{start, static_cast<offset_t>(body.size())};
-			for(addr_t i=0;i<Var::size;++i){
-				body.push_back(i<value.size()?value[i]:0);
+		auto get(code_t value,typename std::pair<Rest,code_t>::second_type ... rest){
+			StaticVar<Var> var{start, static_cast<offset_t>(data_size(body))};
+			body.insert(body.end(),value.begin(),value.end());
+			for(addr_t i=data_size(value);i<Var::size;++i){
+				body.emplace_back(0);
 			}
 			if constexpr (sizeof...(Rest)==0){
 				return std::make_tuple(var);
