@@ -20,6 +20,7 @@ namespace BBCPU::ASM {
 	using offset_t = int16_t;
 	using lazy_t = std::function<op_t(addr_t)>;
 	using ops_t = std::vector<op_t>;
+	using data_t = std::vector<std::variant<op_t, lazy_t>>;
 	using Reg=Regs::UReg;
 	using Reg16=Regs::UReg16;
 
@@ -55,8 +56,11 @@ namespace BBCPU::ASM {
 #endif
 		}
 
-		op_t getByte(size_t i) const {
+		op_t get_byte(size_t i) const {
 			return (*addr >> (i * 8)) & 0xff;
+		}
+		lazy_t get_lazy(size_t i) const {
+			return [=](addr_t pc){return get_byte(i);};
 		}
 		addr_t& operator*() const{
 			return *addr;
@@ -66,9 +70,12 @@ namespace BBCPU::ASM {
 		}
 	};
 	using code_t = Util::flat_vector<std::variant<op_t, lazy_t, Label>>;
+	
+	inline static size_t data_size(code_t code){
+		return std::count_if(code.begin(), code.end(), [](auto c){return std::get_if<Label>(&c)==nullptr;});
+	}
 
 	struct ASM {
-		using data_t = std::vector<std::variant<op_t, lazy_t>>;
 		data_t data;
 		static struct end_t {} END;
 
