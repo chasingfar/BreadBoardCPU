@@ -153,16 +153,16 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		>
 		inline static Expr<Ret> inplace(F&& fn){
 			return inplace<Ts...>([&](
-				const Label& end,
-				LocalVar<Ret> ret,
-				LocalVar<Args>... args,
-				LocalVar<Ts>... vars){
+				const Label& _end,
+				LocalVar<Ret> _ret,
+				LocalVar<Args>... _args,
+				LocalVar<Ts>... _vars){
 					return fn(
 						[=](const Value<Ret>& value)->code_t{
-							return {ret.set(value),jmp(end)};
+							return {_ret.set(value),jmp(_end)};
 						},
-						args...,
-						vars...
+						_args...,
+						_vars...
 					);
 			});
 		}
