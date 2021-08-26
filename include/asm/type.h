@@ -69,6 +69,11 @@ namespace BBCPU::ASM {
 	using asInt=Int<sizeof(T),std::is_signed_v<T>>;
 
 	template<typename T>
+	struct Ptr:asInt<addr_t>{
+		using type=T;
+	};
+
+	template<typename T>
 	struct IntLiteral:Expr<asInt<T>>{
 		T literal;
 		explicit IntLiteral(long long val):literal(val){

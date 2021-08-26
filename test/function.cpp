@@ -216,3 +216,69 @@ TEST_CASE("function with custom type","[asm][function]"){
 	REQUIRE(_REG(B)==9);
 	REQUIRE(_REG(A)==14);
 }
+TEST_CASE("function pointer","[asm][function]"){
+	/*
+	main();
+	void* malloc(u16 size){
+		static next_ptr=[heap];
+	    u16 ret_ptr=next_ptr;
+	    next_ptr=next_ptr+size;
+	    return (void*)ret_ptr;
+	}
+	void fn(i8* i){
+		(*i)=(*i)+1;
+		return;
+	}
+	u16 main(){
+		i=(i8*)malloc(1);
+		(*i)=3;
+		fn(i);
+		return (u16)i;
+	}
+	*/
+	StaticVars global;
+
+	Fn<Ptr<Void>,UInt16> malloc{"malloc(size)"};
+	Fn<Void,Ptr<Int8>> fn{"fn(i)"};
+	Fn<UInt16> main{"main()"};
+	Label heap,aa;
+	code_t p{
+		main(),
+		pop(Reg::B),
+		pop(Reg::A),
+		halt(),
+		malloc.impl<UInt16>([&](auto size,auto ret_ptr)->code_t{
+			auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
+			return {
+				ret_ptr.set(next_ptr),
+				next_ptr.set(next_ptr+size),
+				malloc._return(to<Ptr<Void>>{}(ret_ptr)),
+			};
+		}),
+		fn.impl([&](auto i)->code_t{
+			return {
+				(*i).set((*i)+1_i8),
+				fn._return(Expr<Void>{}),
+			};
+		}),
+		main.impl<Ptr<Int8>>([&](auto i)->code_t{
+			return {
+				i.set(to<Ptr<Int8>>{}(malloc(1_u16))),
+				(*i).set(3_i8),
+				aa,
+				fn(i),
+				main._return(to<UInt16>{}(i)),
+			};
+		}),
+		global,
+		heap
+	};
+	ops_t ops=(ASM{}<<p<<ASM::END);
+	CPU cpu;
+	cpu.load(ops);
+	run(cpu,{aa});
+	REQUIRE(cpu.RAM[*heap] == 3);
+	run(cpu);
+	REQUIRE(cpu.RAM[*heap] == 4);
+	REQUIRE(_REG16(BA) == *heap);
+}

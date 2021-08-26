@@ -70,6 +70,26 @@ namespace BBCPU::ASM {
 			return StaticVar<U>{label,static_cast<offset_t>(offset + size)};
 		}
 	};
+	template<typename T>
+	struct PtrVar:StructVar<PtrVar,T>{
+		code_t ptr;
+		offset_t offset;
+		explicit PtrVar(const Value<Ptr<T>>& ptr,offset_t offset=0):ptr(ptr),offset(offset){}
+		code_t load(offset_t index) const override{
+			return {ptr,Ops::load(offset+index)};
+		}
+		code_t save(offset_t index) const override{
+			return {ptr,Ops::save(offset+index)};
+		}
+		template<typename U,addr_t size>
+		auto shift() const {
+			return PtrVar<U>{ptr,static_cast<offset_t>(offset + size)};
+		}
+	};
+	template<typename T>
+	inline static auto operator*(const Value<Ptr<T>>& lhs){
+		return PtrVar<T>{lhs};
+	}
 
 	struct RegVar:Var<UInt8>{
 		Reg reg;
