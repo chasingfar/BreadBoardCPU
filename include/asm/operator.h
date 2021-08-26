@@ -62,7 +62,7 @@ namespace BBCPU::ASM {
 
 	template<typename U>
 	struct to{
-		template<typename T>
+		template<typename T> requires std::is_convertible_v<T,U>||(T::size==U::size)
 		Expr<U> operator()(const Value<T>& from){
 			Expr<U> tmp{from};
 			return tmp;
