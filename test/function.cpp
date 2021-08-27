@@ -252,7 +252,7 @@ TEST_CASE("function pointer","[asm][function]"){
 			return {
 				ret_ptr.set(next_ptr),
 				next_ptr.set(next_ptr+size),
-				_return(to<Ptr<Void>>{}(ret_ptr)),
+				_return(to<Ptr<Void>>(ret_ptr)),
 			};
 		}),
 		fn.impl([&](auto _return,auto i)->code_t{
@@ -263,11 +263,11 @@ TEST_CASE("function pointer","[asm][function]"){
 		}),
 		main.impl<Ptr<Int8>>([&](auto _return,auto i)->code_t{
 			return {
-				i.set(to<Ptr<Int8>>{}(malloc(1_u16))),
+				i.set(to<Ptr<Int8>>(malloc(1_u16))),
 				(*i).set(3_i8),
 				aa,
 				fn(i),
-				_return(to<UInt16>{}(i)),
+				_return(to<UInt16>(i)),
 			};
 		}),
 		global,

@@ -13,6 +13,9 @@ namespace BBCPU::ASM {
 		static constexpr addr_t size = Size;
 	};
 	using Void = Type<0>;
+	
+	template<typename U>
+	struct TypeCaster{};
 
 	template<typename T>
 	struct Value:T{
@@ -73,6 +76,9 @@ namespace BBCPU::ASM {
 	struct Ptr:asInt<addr_t>{
 		using type=T;
 	};
+	template<typename T>struct UnPtr        {};
+	template<typename T>struct UnPtr<Ptr<T>>{using type = T;};
+	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
 
 	template<typename T>
 	struct IntLiteral:Expr<asInt<T>>{

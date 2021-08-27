@@ -60,18 +60,10 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed> inline auto  OR(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs) {return _calc<Size,Signed,Ops:: OR,Ops:: OR>(lhs,rhs);}
 	template<addr_t Size,bool Signed> inline auto XOR(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs) {return _calc<Size,Signed,Ops::XOR,Ops::XOR>(lhs,rhs);}
 
-	template<typename U>
-	struct to{
-		template<typename T> requires std::is_convertible_v<T,U>||(T::size==U::size)
-		Expr<U> operator()(const Value<T>& from){
-			Expr<U> tmp{from};
-			return tmp;
-		}
-	};
 	template<>
-	struct to<Bool>{
+	struct TypeCaster<Bool>{
 		template<addr_t Size,bool Signed>
-		Expr<Bool> operator()(const Value<Int<Size,Signed>>& from){
+		static Expr<Bool> from(const Value<Int<Size,Signed>>& from){
 			Expr<Bool> tmp{from};
 			for (addr_t i = 1; i < Size; ++i) {
 				tmp << OR();
@@ -79,10 +71,36 @@ namespace BBCPU::ASM {
 			return tmp;
 		}
 	};
+	template<>
+	struct TypeCaster<UInt16>{
+		template<typename T> requires IsPtr<T>
+		static auto from(const Value<T>& from){
+			return Expr<UInt16>{from};
+		}
+		template<typename T> requires IsPtr<T>
+		static auto to(const Value<UInt16>& from){
+			return Expr<T>{from};
+		}
+	};
+	template<typename U>
+	struct TypeCaster<Ptr<U>>{
+		template<typename T> requires IsPtr<T>
+		static auto to(const Value<Ptr<U>>& from){
+			return Expr<T>{from};
+		}
+	};
+	template<typename To,typename From>
+	concept CanCastFrom = requires(const Value<From>& from) {TypeCaster<To>::from(from);};
+	template<typename To,typename From>
+	concept CanCastTo = requires(const Value<From>& from) {TypeCaster<From>::template to<To>(from);};
+	template<typename To,typename From> requires CanCastFrom<To, From>
+	inline static auto to(const Value<From>& from){return TypeCaster<To>::from(from);}
+	template<typename To,typename From> requires CanCastTo<To, From> && (!CanCastFrom<To, From>)
+	inline static auto to(const Value<From>& from){return TypeCaster<From>::template to<To>(from);}
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Value<Int<Size,Signed>>& lhs){
-		Expr<Bool> tmp{to<Bool>{}(lhs)};
+		Expr<Bool> tmp{to<Bool>(lhs)};
 		Label if_zero, end;
 		tmp << code_t{
 			brz(if_zero),
@@ -96,7 +114,7 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){
-		return to<Bool>{}(lhs-rhs);
+		return to<Bool>(lhs-rhs);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator==(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){
