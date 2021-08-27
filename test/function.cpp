@@ -258,7 +258,7 @@ TEST_CASE("function pointer","[asm][function]"){
 		fn.impl([&](auto _return,auto i)->code_t{
 			return {
 				(*i).set((*i)+1_i8),
-				_return(Expr<Void>{}),
+				_return(_void),
 			};
 		}),
 		main.impl<Ptr<Int8>>([&](auto _return,auto i)->code_t{

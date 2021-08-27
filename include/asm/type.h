@@ -32,6 +32,7 @@ namespace BBCPU::ASM {
 			return *this;
 		}
 	};
+	inline static const Expr<Void> _void{};
 	struct Stmt:Expr<Void>{
 		template<typename T>
 		explicit Stmt(const Value<T>& value):Expr<Void>{{value, adj(T::size)}}{}
