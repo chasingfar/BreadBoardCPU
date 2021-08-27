@@ -77,7 +77,9 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		Expr<Ret> operator()(const Value<Args>&... _args) const{
 			Expr<Ret> expr{};
 			expr<<adj(-Ret::size);
-			(expr<<...<<_args);
+			if constexpr (sizeof...(Args)>0){
+				(expr<<...<<_args);
+			}
 			expr<<Ops::call(start)
 				<<adj((Args::size+...+0));
 			return expr;
