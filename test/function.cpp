@@ -247,27 +247,27 @@ TEST_CASE("function pointer","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-		malloc.impl<UInt16>([&](auto size,auto ret_ptr)->code_t{
+		malloc.impl<UInt16>([&](auto _return,auto size,auto ret_ptr)->code_t{
 			auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
 			return {
 				ret_ptr.set(next_ptr),
 				next_ptr.set(next_ptr+size),
-				malloc._return(to<Ptr<Void>>{}(ret_ptr)),
+				_return(to<Ptr<Void>>{}(ret_ptr)),
 			};
 		}),
-		fn.impl([&](auto i)->code_t{
+		fn.impl([&](auto _return,auto i)->code_t{
 			return {
 				(*i).set((*i)+1_i8),
-				fn._return(Expr<Void>{}),
+				_return(Expr<Void>{}),
 			};
 		}),
-		main.impl<Ptr<Int8>>([&](auto i)->code_t{
+		main.impl<Ptr<Int8>>([&](auto _return,auto i)->code_t{
 			return {
 				i.set(to<Ptr<Int8>>{}(malloc(1_u16))),
 				(*i).set(3_i8),
 				aa,
 				fn(i),
-				main._return(to<UInt16>{}(i)),
+				_return(to<UInt16>{}(i)),
 			};
 		}),
 		global,

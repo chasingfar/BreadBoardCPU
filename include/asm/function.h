@@ -92,6 +92,15 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			code_t body=std::apply(fn,std::tuple_cat(args,local<Ts...>()));
 			return impl(body);
 		}
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(const Value<Ret>&)>, LocalVar<Args>...,LocalVar<Ts>...>
+		Block impl(F&& fn){
+			code_t body=std::apply(fn,std::tuple_cat(
+				std::make_tuple([&](const Value<Ret>& value){return _return(value);}),
+				args,
+				local<Ts...>()
+			));
+			return impl(body);
+		}
 		operator code_t(){
 			return body;
 		}
