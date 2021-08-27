@@ -31,12 +31,16 @@ namespace BBCPU::ASM {
 	struct StructVar:Var<T>{
 		auto extract(){
 			return [&]<size_t... I>(std::index_sequence<I...>){
-				return std::make_tuple(
-					static_cast<V<T>*>(this)->template shift<
-						typename T::template SubType<I>::type,
-						T::template SubType<I>::offset
-					>()...);
+				return std::make_tuple(get<I>()...);
 			}(std::make_index_sequence<T::count>{});
+		}
+
+		template<size_t I>
+		auto get(){
+			return static_cast<V<T>*>(this)->template shift<
+				typename T::template SubType<I>::type,
+				T::template SubType<I>::offset
+			>();
 		}
 	};
 	template<typename T>

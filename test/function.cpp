@@ -203,7 +203,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 		fn.impl({
 			x.set(x+1_u8),
 			y.set(y+2_u8),
-			z.set(z+3_u8),
+			vec.get<2>().set(vec.get<2>()+3_u8),
 			fn._return(vec),
 		}),
 		main,
