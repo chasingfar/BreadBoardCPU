@@ -57,6 +57,11 @@ namespace BBCPU::ASM {
 		}
 	};
 
+	template<typename T,size_t N,typename ...Ts>
+	struct Array:Array<T,N-1,T,Ts...>{};
+	template<typename T,typename ...Ts>
+	struct Array<T,0,Ts...>:Struct<Array<T,sizeof...(Ts)>,Ts...>{};
+
 	template<addr_t Size,bool Signed=false>
 	struct Int:Type<Size>{
 		template<addr_t ...S> requires(Size==(S+...+0))
