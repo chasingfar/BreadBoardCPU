@@ -219,15 +219,14 @@ TEST_CASE("function with custom type","[asm][function]"){
 TEST_CASE("function with array","[asm][function]"){
 	Fn<Array<UInt8,3>,Array<UInt8,3>> fn{"fn(vec)"};
 	auto [arr]=fn.args;
-	auto [arr0,arr1,arr2]=arr.extract();
 	
 	Label main;
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
-			arr0.set(arr0+1_u8),
-			arr1.set(arr1+2_u8),
-			arr.get<2>().set(arr.get<2>()+3_u8),
+			arr[0].set(arr[0]+1_u8),
+			arr[1].set(arr[1]+2_u8),
+			arr[2].set(arr[2]+3_u8),
 			fn._return(arr),
 		}),
 		main,

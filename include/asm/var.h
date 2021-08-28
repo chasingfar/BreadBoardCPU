@@ -4,6 +4,7 @@
 
 #ifndef BBCPU_VAR_H
 #define BBCPU_VAR_H
+#include <cstddef>
 #include <utility>
 #include "type.h"
 
@@ -38,9 +39,12 @@ namespace BBCPU::ASM {
 		template<size_t I>
 		auto get(){
 			return static_cast<V<T>*>(this)->template shift<
-				typename T::template SubType<I>::type,
-				T::template SubType<I>::offset
-			>();
+				typename T::template SubType<I>::type
+			>(T::template SubType<I>::offset);
+		}
+		auto operator[](size_t i){
+			using t = typename T::template SubType<0>::type;
+			return static_cast<V<T>*>(this)->template shift<t>(t::size*i);
 		}
 	};
 	template<typename T>
@@ -53,8 +57,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return save_local(offset-index);
 		}
-		template<typename U,addr_t size>
-		auto shift() const {
+		template<typename U>
+		auto shift(addr_t size) const {
 			return LocalVar<U>{static_cast<offset_t>(offset - size)};
 		}
 	};
@@ -69,8 +73,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return Ops::save(label,offset+index);
 		}
-		template<typename U,addr_t size>
-		auto shift() const {
+		template<typename U>
+		auto shift(addr_t size) const {
 			return StaticVar<U>{label,static_cast<offset_t>(offset + size)};
 		}
 	};
@@ -85,8 +89,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return {ptr,Ops::save(offset+index)};
 		}
-		template<typename U,addr_t size>
-		auto shift() const {
+		template<typename U>
+		auto shift(addr_t size) const {
 			return PtrVar<U>{ptr,static_cast<offset_t>(offset + size)};
 		}
 	};
