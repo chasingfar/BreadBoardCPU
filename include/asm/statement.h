@@ -64,9 +64,9 @@ namespace BBCPU::ASM {
 				body.emplace_back(0);
 			}
 			if constexpr (sizeof...(Rest)==0){
-				return std::make_tuple(var);
+				return std::tuple{var};
 			}else{
-				return std::tuple_cat(std::make_tuple(var), get<Rest...>(rest...));
+				return std::tuple_cat(std::tuple{var}, get<Rest...>(rest...));
 			}
 		}
 	};

@@ -32,7 +32,7 @@ namespace BBCPU::ASM {
 	struct StructVar:Var<T>{
 		auto extract(){
 			return [&]<size_t... I>(std::index_sequence<I...>){
-				return std::make_tuple(get<I>()...);
+				return std::tuple{get<I>()...};
 			}(std::make_index_sequence<T::count>{});
 		}
 
