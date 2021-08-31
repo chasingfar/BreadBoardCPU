@@ -75,10 +75,10 @@ namespace BBCPU::ASM {
 	using  Int16=Int<2,true>;
 	using Bool=UInt8;
 	template<typename T>
-	using asInt=Int<sizeof(T),std::is_signed_v<T>>;
+	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
 	template<typename T>
-	struct Ptr:asInt<addr_t>{
+	struct Ptr:AsInt<addr_t>{
 		using type=T;
 	};
 	template<typename T>struct UnPtr        {};
@@ -86,7 +86,7 @@ namespace BBCPU::ASM {
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
 
 	template<typename T>
-	struct IntLiteral:Expr<asInt<T>>{
+	struct IntLiteral:Expr<AsInt<T>>{
 		T literal;
 		explicit IntLiteral(long long val):literal(val){
 			for (size_t i=0;i<sizeof(T);++i){
