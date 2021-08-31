@@ -61,10 +61,9 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed> inline auto  OR(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs) {return _calc<Size,Signed,Ops:: OR,Ops:: OR>(lhs,rhs);}
 	template<addr_t Size,bool Signed> inline auto XOR(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs) {return _calc<Size,Signed,Ops::XOR,Ops::XOR>(lhs,rhs);}
 
-	template<>
-	struct TypeCaster<Bool>{
-		template<addr_t Size,bool Signed>
-		static Expr<Bool> from(const Value<Int<Size,Signed>>& from){
+	template<addr_t Size,bool Signed>
+	struct TypeCaster<Bool,Int<Size,Signed>>{
+		static Expr<Bool> to(const Value<Int<Size,Signed>>& from){
 			Expr<Bool> tmp{from};
 			for (addr_t i = 1; i < Size; ++i) {
 				tmp << OR();
@@ -72,32 +71,11 @@ namespace BBCPU::ASM {
 			return tmp;
 		}
 	};
-	template<>
-	struct TypeCaster<UInt16>{
-		template<typename T> requires IsPtr<T>
-		static auto from(const Value<T>& from){
-			return Expr<UInt16>{from};
-		}
-		template<typename T> requires IsPtr<T>
-		static auto to(const Value<UInt16>& from){
-			return Expr<T>{from};
-		}
-	};
-	template<typename U>
-	struct TypeCaster<Ptr<U>>{
-		template<typename T> requires IsPtr<T>
-		static auto to(const Value<Ptr<U>>& from){
-			return Expr<T>{from};
-		}
-	};
+
 	template<typename To,typename From>
-	concept CanCastFrom = requires(const Value<From>& from) {TypeCaster<To>::from(from);};
-	template<typename To,typename From>
-	concept CanCastTo = requires(const Value<From>& from) {TypeCaster<From>::template to<To>(from);};
-	template<typename To,typename From> requires CanCastFrom<To, From>
-	inline static auto to(const Value<From>& from){return TypeCaster<To>::from(from);}
-	template<typename To,typename From> requires CanCastTo<To, From> && (!CanCastFrom<To, From>)
-	inline static auto to(const Value<From>& from){return TypeCaster<From>::template to<To>(from);}
+	concept CanCastTo = requires(const Value<From>& from) {TypeCaster<To,From>::to(from);};
+	template<typename To,typename From> requires CanCastTo<To, From>
+	inline static auto to(const Value<From>& from){return TypeCaster<To,From>::to(from);}
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Value<Int<Size,Signed>>& lhs){

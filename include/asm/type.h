@@ -13,9 +13,6 @@ namespace BBCPU::ASM {
 		static constexpr addr_t size = Size;
 	};
 	using Void = Type<0>;
-	
-	template<typename U>
-	struct TypeCaster{};
 
 	template<typename T>
 	struct Value:T{
@@ -39,6 +36,15 @@ namespace BBCPU::ASM {
 	struct Stmt:Expr<Void>{
 		template<typename T>
 		explicit Stmt(const Value<T>& value):Expr<Void>{{value, adj(T::size)}}{}
+	};
+
+	template<typename To,typename From>
+	struct TypeCaster{};
+	template<typename To,typename From>
+	struct SimpleCaster{
+		static auto to(const Value<From>& from){
+			return Expr<To>{from};
+		}
 	};
 
 	template<typename U,typename T,typename ...Ts>
@@ -84,6 +90,13 @@ namespace BBCPU::ASM {
 	template<typename T>struct UnPtr        {};
 	template<typename T>struct UnPtr<Ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
+
+	template<typename T>
+	struct TypeCaster<Ptr<T>,UInt16>:SimpleCaster<Ptr<T>,UInt16>{};
+	template<typename T>
+	struct TypeCaster<UInt16,Ptr<T>>:SimpleCaster<UInt16,Ptr<T>>{};
+	template<typename To,typename From>
+	struct TypeCaster<Ptr<To>,Ptr<From>>:SimpleCaster<Ptr<To>,Ptr<From>>{};
 
 	template<typename T>
 	struct IntLiteral:Expr<AsInt<T>>{
