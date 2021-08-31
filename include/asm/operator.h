@@ -79,17 +79,10 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Value<Int<Size,Signed>>& lhs){
-		Expr<Bool> tmp{to<Bool>(lhs)};
-		Label if_zero, end;
-		tmp << code_t{
-			brz(if_zero),
-			imm(0),
-			jmp(end),
-			if_zero,
-			imm(1),
-			end,
-		};
-		return tmp;
+		return Expr<Bool>{IF{to<Bool>(lhs),
+			{imm(0)},
+			{imm(1)}
+		}};
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){
@@ -102,35 +95,17 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator>=(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){
-		Expr<Bool> tmp{};
-		Label if_ge_zero, end;
-		tmp << code_t{
-			lhs-rhs,
-			adj(Size),
-			brc(if_ge_zero),
-			imm(0),
-			jmp(end),
-			if_ge_zero,
-			imm(1),
-			end,
-		};
-		return tmp;
+		return Expr<Bool>{IFC{Stmt{lhs - rhs},
+			{imm(0)},
+			{imm(1)}
+		}};
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){
-		Expr<Bool> tmp{};
-		Label if_ge_zero, end;
-		tmp << code_t{
-			lhs-rhs,
-			adj(Size),
-			brc(if_ge_zero),
-			imm(1),
-			jmp(end),
-			if_ge_zero,
-			imm(0),
-			end,
-		};
-		return tmp;
+		return Expr<Bool>{IFC{Stmt{lhs - rhs},
+			{imm(1)},
+			{imm(0)}
+		}};
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<=(const Value<Int<Size,Signed>>& lhs,const Value<Int<Size,Signed>>& rhs){

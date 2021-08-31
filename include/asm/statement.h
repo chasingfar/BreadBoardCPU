@@ -40,6 +40,20 @@ namespace BBCPU::ASM {
 			};
 		}
 	};
+	struct IFC{
+		Stmt cond;
+		Block if_no_carry;
+		Block if_carry{};
+		operator code_t(){
+			return {
+				cond,
+				brc(if_carry.start),
+				if_no_carry,
+				jmp(if_carry.end),
+				if_carry,
+			};
+		}
+	};
 	struct While{
 		const Value<Bool>& cond;
 		Block body{};
