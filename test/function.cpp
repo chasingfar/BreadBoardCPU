@@ -148,8 +148,8 @@ TEST_CASE("function sum","[asm][function]"){
 			return code_t{
 				s.set(0_u8),
 				While{n,{{
-					s=s+n,
-					n=n-1_u8,
+					s+=n,
+					n-=1_u8,
 				}}},
 				sum._return(s),
 			};
@@ -201,9 +201,9 @@ TEST_CASE("function with custom type","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
-			x=x+1_u8,
-			y=y+2_u8,
-			vec.get<2>()=vec.get<2>()+3_u8,
+			x+=1_u8,
+			y+=2_u8,
+			vec.get<2>()+=3_u8,
 			fn._return(vec),
 		}),
 		main,
@@ -224,9 +224,9 @@ TEST_CASE("function with array","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
-			arr[0]=arr[0]+1_u8,
-			arr[1]=arr[1]+2_u8,
-			arr[2]=arr[2]+3_u8,
+			arr[0]+=1_u8,
+			arr[1]+=2_u8,
+			arr[2]+=3_u8,
 			fn._return(arr),
 		}),
 		main,
@@ -274,13 +274,13 @@ TEST_CASE("function pointer","[asm][function]"){
 			auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
 			return {
 				ret_ptr=next_ptr,
-				next_ptr=next_ptr+size,
+				next_ptr+=size,
 				_return(to<Ptr<Void>>(ret_ptr)),
 			};
 		}),
 		fn.impl([&](auto _return,auto i)->code_t{
 			return {
-				(*i)=(*i)+1_i8,
+				(*i)+=1_i8,
 				_return(_void),
 			};
 		}),

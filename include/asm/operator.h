@@ -5,6 +5,7 @@
 #ifndef BBCPU_OPERATOR_H
 #define BBCPU_OPERATOR_H
 #include "function.h"
+#include <cstddef>
 namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
@@ -201,6 +202,35 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed>
 	inline auto operator~(const Value<Int<Size,Signed>>& lhs){
 		return NOT(lhs);
+	}
+
+	template<typename T>
+	inline auto operator+=(const Var<T>& var,const Value<T>& value){
+		return var.set(var+value);
+	}
+	template<typename T>
+	inline auto operator-=(const Var<T>& var,const Value<T>& value){
+		return var.set(var-value);
+	}
+	template<typename T>
+	inline auto operator<<=(const Var<T>& var,size_t value){
+		return var.set(var<<value);
+	}
+	template<typename T>
+	inline auto operator>>=(const Var<T>& var,size_t value){
+		return var.set(var>>value);
+	}
+	template<typename T>
+	inline auto operator&=(const Var<T>& var,const Value<T>& value){
+		return var.set(var&value);
+	}
+	template<typename T>
+	inline auto operator|=(const Var<T>& var,const Value<T>& value){
+		return var.set(var|value);
+	}
+	template<typename T>
+	inline auto operator^=(const Var<T>& var,const Value<T>& value){
+		return var.set(var^value);
 	}
 }
 #endif //BBCPU_OPERATOR_H
