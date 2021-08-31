@@ -32,7 +32,9 @@ namespace BBCPU::ASM {
 			return *this;
 		}
 	};
-	inline static const Expr<Void> _void{};
+	namespace Val{
+		inline static const Expr<Void> _void{};
+	}
 	struct Stmt:Expr<Void>{
 		template<typename T>
 		explicit Stmt(const Value<T>& value):Expr<Void>{{value, adj(T::size)}}{}
@@ -82,6 +84,11 @@ namespace BBCPU::ASM {
 	using Bool=UInt8;
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
+
+	namespace Val{
+		inline static const Expr<Bool> _true{imm(1)};
+		inline static const Expr<Bool> _false{imm(0)};
+	}
 
 	template<typename T>
 	struct Ptr:AsInt<addr_t>{
