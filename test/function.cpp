@@ -148,8 +148,8 @@ TEST_CASE("function sum","[asm][function]"){
 			return code_t{
 				s.set(0_u8),
 				While{n,{{
-					s.set(s+n),
-					n.set(n-1_u8),
+					s=s+n,
+					n=n-1_u8,
 				}}},
 				sum._return(s),
 			};
@@ -182,7 +182,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
 			[](const Label& end,auto ret,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				ret.set(UInt16::make(add(a,c),adc(b,d))),
+				ret=UInt16::make(add(a,c),adc(b,d)),
 			};
 		}),
 		pop(Reg::B),
@@ -201,9 +201,9 @@ TEST_CASE("function with custom type","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
-			x.set(x+1_u8),
-			y.set(y+2_u8),
-			vec.get<2>().set(vec.get<2>()+3_u8),
+			x=x+1_u8,
+			y=y+2_u8,
+			vec.get<2>()=vec.get<2>()+3_u8,
 			fn._return(vec),
 		}),
 		main,
@@ -224,9 +224,9 @@ TEST_CASE("function with array","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		fn.impl({
-			arr[0].set(arr[0]+1_u8),
-			arr[1].set(arr[1]+2_u8),
-			arr[2].set(arr[2]+3_u8),
+			arr[0]=arr[0]+1_u8,
+			arr[1]=arr[1]+2_u8,
+			arr[2]=arr[2]+3_u8,
 			fn._return(arr),
 		}),
 		main,
@@ -273,21 +273,21 @@ TEST_CASE("function pointer","[asm][function]"){
 		malloc.impl<UInt16>([&](auto _return,auto size,auto ret_ptr)->code_t{
 			auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
 			return {
-				ret_ptr.set(next_ptr),
-				next_ptr.set(next_ptr+size),
+				ret_ptr=next_ptr,
+				next_ptr=next_ptr+size,
 				_return(to<Ptr<Void>>(ret_ptr)),
 			};
 		}),
 		fn.impl([&](auto _return,auto i)->code_t{
 			return {
-				(*i).set((*i)+1_i8),
+				(*i)=(*i)+1_i8,
 				_return(_void),
 			};
 		}),
 		main.impl<Ptr<Int8>>([&](auto _return,auto i)->code_t{
 			return {
-				i.set(to<Ptr<Int8>>(malloc(1_u16))),
-				(*i).set(3_i8),
+				i=to<Ptr<Int8>>(malloc(1_u16)),
+				(*i)=3_i8,
 				aa,
 				fn(i),
 				_return(to<UInt16>(i)),

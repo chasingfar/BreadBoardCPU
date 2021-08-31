@@ -61,6 +61,9 @@ namespace BBCPU::ASM {
 		auto shift(addr_t size) const {
 			return LocalVar<U>{static_cast<offset_t>(offset - size)};
 		}
+		code_t operator=(const Value<T>& value) const{
+			return Var<T>::set(value);
+		}
 	};
 	template<typename T>
 	struct StaticVar:StructVar<StaticVar,T>{
@@ -76,6 +79,9 @@ namespace BBCPU::ASM {
 		template<typename U>
 		auto shift(addr_t size) const {
 			return StaticVar<U>{label,static_cast<offset_t>(offset + size)};
+		}
+		code_t operator=(const Value<T>& value) const{
+			return Var<T>::set(value);
 		}
 	};
 	template<typename T>
@@ -93,6 +99,9 @@ namespace BBCPU::ASM {
 		auto shift(addr_t size) const {
 			return PtrVar<U>{ptr,static_cast<offset_t>(offset + size)};
 		}
+		code_t operator=(const Value<T>& value) const{
+			return Var<T>::set(value);
+		}
 	};
 	template<typename T>
 	inline static auto operator*(const Value<Ptr<T>>& lhs){
@@ -107,6 +116,9 @@ namespace BBCPU::ASM {
 		}
 		code_t save(offset_t index) const override{
 			return pop(reg);
+		}
+		code_t operator=(const Value<UInt8>& value) const{
+			return set(value);
 		}
 	};
 	namespace RegVars{
