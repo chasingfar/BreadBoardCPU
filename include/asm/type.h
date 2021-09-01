@@ -64,6 +64,23 @@ namespace BBCPU::ASM {
 			return Expr<U>{{val,vals...}};
 		}
 	};
+	template<typename U,typename ...Ts>
+	struct Union:Type<std::max({Ts::size...})>{
+		static constexpr size_t count=sizeof...(Ts);
+		template<addr_t Index>
+		struct SubType:std::tuple_element_t<Index, std::tuple<Ts...>>{
+			using type = std::tuple_element_t<Index, std::tuple<Ts...>>;
+			static constexpr addr_t offset=0;
+		};
+		template<typename V>
+		inline static auto make(const Value<V>& val){
+			Expr<U> tmp{val};
+			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
+				tmp<<imm(0);
+			}
+			return tmp;
+		}
+	};
 
 	template<typename T,size_t N,typename ...Ts>
 	struct Array:Array<T,N-1,T,Ts...>{};

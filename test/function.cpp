@@ -216,6 +216,32 @@ TEST_CASE("function with custom type","[asm][function]"){
 	REQUIRE(_REG(B)==9);
 	REQUIRE(_REG(A)==14);
 }
+TEST_CASE("function with union","[asm][function]"){
+	struct T:Union<T, UInt8, UInt16, Array<UInt8, 2>>{};
+	Fn<UInt16,T> fn{"fn(t)"};
+	auto [t]=fn.args;
+	auto [t_u8,t_u16,t_arr]=t.extract();
+	
+	Label main;
+	CPU cpu=run({
+		jmp(main),
+		fn.impl({
+			RegVars::C=t_u8,
+			RegVars::D=t_arr[0],
+			RegVars::E=t_arr[1],
+			fn._return(t_u16),
+		}),
+		main,
+		fn(T::make(0x1234_u16)),
+		pop(Reg::A),
+		pop(Reg::B),
+	});
+	REQUIRE(_REG(A)==0x12);
+	REQUIRE(_REG(B)==0x34);
+	REQUIRE(_REG(C)==0x34);
+	REQUIRE(_REG(D)==0x34);
+	REQUIRE(_REG(E)==0x12);
+}
 TEST_CASE("function with array","[asm][function]"){
 	Fn<Array<UInt8,3>,Array<UInt8,3>> fn{"fn(vec)"};
 	auto [arr]=fn.args;
