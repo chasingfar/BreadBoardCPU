@@ -85,7 +85,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return expr;
 		}
 		Fn<Ret,Args...>& impl(const code_t& code){
-			body=code_t{start,ent(local_size),code};
+			body=code_t{ent(local_size),code};
 			return *this;
 		}
 
@@ -102,9 +102,6 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 				local<Ts...>()
 			));
 			return impl(body);
-		}
-		operator code_t(){
-			return body;
 		}
 		inline code_t _return(const Value<Ret>& value){return {ret.set(value),lev()};}
 
