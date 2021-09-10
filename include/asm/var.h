@@ -14,8 +14,8 @@ namespace BBCPU::ASM {
 	};
 	struct Expr:Value{
 		code_t code{};
-		Expr() {}
-		explicit Expr(const code_t& value):code(value){}
+		Expr() = default;
+		explicit Expr(code_t  value):code(std::move(value)){}
 		explicit Expr(const Value& value):code(value.load()){}
 		code_t load() const override{
 			return code;
@@ -41,7 +41,7 @@ namespace BBCPU::ASM {
 	};
 	struct MemVar:Var{
 		addr_t size;
-		MemVar(addr_t size):size(size){}
+		explicit MemVar(addr_t size):size(size){}
 		virtual code_t load(offset_t index) const=0;
 		virtual code_t save(offset_t index) const=0;
 		virtual std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const=0;
@@ -78,7 +78,7 @@ namespace BBCPU::ASM {
 		Label label;
 		offset_t offset;
 		StaticVar(addr_t size,Label label,offset_t offset):MemVar(size),label(std::move(label)),offset(offset){}
-		static auto make(addr_t size,Label label,offset_t offset){ return std::make_shared<StaticVar>(size,label,offset);}
+		static auto make(addr_t size,const Label& label,offset_t offset){ return std::make_shared<StaticVar>(size,label,offset);}
 		code_t load(offset_t index) const override{
 			return Ops::load(label,offset+index);
 		}
@@ -92,8 +92,8 @@ namespace BBCPU::ASM {
 	struct PtrVar:MemVar{
 		code_t ptr;
 		offset_t offset;
-		explicit PtrVar(addr_t size,code_t ptr,offset_t offset=0):MemVar(size),ptr(ptr),offset(offset){}
-		static auto make(addr_t size,code_t ptr,offset_t offset=0){ return std::make_shared<PtrVar>(size,ptr,offset);}
+		explicit PtrVar(addr_t size,code_t ptr,offset_t offset=0):MemVar(size),ptr(std::move(ptr)),offset(offset){}
+		static auto make(addr_t size,const code_t& ptr,offset_t offset=0){ return std::make_shared<PtrVar>(size,ptr,offset);}
 		code_t load(offset_t index) const override{
 			return {ptr,Ops::load(offset+index)};
 		}
