@@ -46,7 +46,7 @@ namespace BBCPU::ASM {
 		std::shared_ptr<addr_t> addr;
 		std::string name;
 
-		explicit Label(addr_t addr=0) : addr(new addr_t(addr)) {}
+		explicit Label(addr_t addr=0) : addr(std::make_shared<addr_t>(addr)) {}
 		explicit Label(std::string name,addr_t addr=0) : name(std::move(name)),addr(new addr_t(addr)) {}
 
 		void set(addr_t v) const {
