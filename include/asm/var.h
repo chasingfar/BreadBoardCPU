@@ -44,7 +44,7 @@ namespace BBCPU::ASM {
 		explicit MemVar(addr_t size):size(size){}
 		virtual code_t load(offset_t index) const=0;
 		virtual code_t save(offset_t index) const=0;
-		virtual std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const=0;
+		virtual std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const=0;
 		code_t load() const override{
 			code_t tmp{};
 			for (addr_t i=0; i<size; ++i) {
@@ -70,8 +70,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return save_local(offset-index);
 		}
-		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
-			return make(_size,offset - _offset);
+		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
+			return make(new_size,offset - shift_offset);
 		}
 	};
 	struct StaticVar:MemVar{
@@ -85,8 +85,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return Ops::save(label,offset+index);
 		}
-		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
-			return make(_size,label,offset + _offset);
+		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
+			return make(new_size,label,offset + shift_offset);
 		}
 	};
 	struct PtrVar:MemVar{
@@ -100,8 +100,8 @@ namespace BBCPU::ASM {
 		code_t save(offset_t index) const override{
 			return {ptr,Ops::save(offset+index)};
 		}
-		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
-			return make(_size,ptr,offset + _offset);
+		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
+			return make(new_size,ptr,offset + shift_offset);
 		}
 	};
 }
