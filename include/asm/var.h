@@ -5,131 +5,104 @@
 #ifndef BBCPU_VAR_H
 #define BBCPU_VAR_H
 #include <cstddef>
-#include <utility>
-#include "type.h"
+#include "ops.h"
 
 namespace BBCPU::ASM {
-	template<typename T>
-	struct Var:Value<T>{
+	struct Value{
+		virtual code_t load() const=0;
+		virtual ~Value()=default;
+	};
+	struct Expr:Value{
+		code_t code{};
+		Expr() {}
+		explicit Expr(const code_t& value):code(value){}
+		explicit Expr(const Value& value):code(value.load()){}
+		code_t load() const override{
+			return code;
+		}
+		Expr& operator <<(code_t c){
+			code<<std::move(c);
+			return *this;
+		}
+	};
+	struct Var:Value{
+		virtual code_t save() const=0;
+	};
+	struct RegVar:Var{
+		Reg reg;
+		explicit RegVar(Reg reg):reg(reg){}
+		static auto make(Reg reg){ return std::make_shared<RegVar>(reg);}
+		code_t load() const override{
+			return push(reg);
+		}
+		code_t save() const override{
+			return pop(reg);
+		}
+	};
+	struct MemVar:Var{
+		addr_t size;
+		MemVar(addr_t size):size(size){}
 		virtual code_t load(offset_t index) const=0;
 		virtual code_t save(offset_t index) const=0;
-		code_t set(const Value<T>& value) const{
-			Expr<T> tmp{value};
-			for (offset_t i = 0; i < T::size; ++i) {
-				tmp.code<<save(T::size-1-i);
-			}
-			return tmp;
-		}
-		operator code_t() const override{
+		virtual std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const=0;
+		code_t load() const override{
 			code_t tmp{};
-			for (offset_t i = 0; i < T::size; ++i) {
+			for (addr_t i=0; i<size; ++i) {
 				tmp<<load(i);
 			}
 			return tmp;
 		}
-	};
-	template<template<typename> typename V,typename T>
-	struct StructVar:Var<T>{
-		auto extract(){
-			return [&]<size_t... I>(std::index_sequence<I...>){
-				return std::tuple{get<I>()...};
-			}(std::make_index_sequence<T::count>{});
-		}
-
-		template<size_t I>
-		auto get(){
-			return static_cast<V<T>*>(this)->template shift<
-				typename T::template SubType<I>::type
-			>(T::template SubType<I>::offset);
-		}
-		auto operator[](size_t i){
-			using t = typename T::template SubType<0>::type;
-			return static_cast<V<T>*>(this)->template shift<t>(t::size*i);
+		code_t save() const override{
+			code_t tmp{};
+			for (addr_t i=0; i<size; ++i) {
+				tmp<<save(size-1-i);
+			}
+			return tmp;
 		}
 	};
-	template<typename T>
-	struct LocalVar:StructVar<LocalVar,T>{
+	struct LocalVar:MemVar{
 		offset_t offset;
-		explicit LocalVar(offset_t offset):offset(offset){}
+		explicit LocalVar(addr_t size,offset_t offset):MemVar(size),offset(offset){}
+		static auto make(addr_t size,offset_t offset){ return std::make_shared<LocalVar>(size,offset);}
 		code_t load(offset_t index) const override{
 			return load_local(offset-index);
 		}
 		code_t save(offset_t index) const override{
 			return save_local(offset-index);
 		}
-		template<typename U>
-		auto shift(addr_t size) const {
-			return LocalVar<U>{static_cast<offset_t>(offset - size)};
-		}
-		code_t operator=(const Value<T>& value) const{
-			return Var<T>::set(value);
+		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
+			return make(_size,offset - _offset);
 		}
 	};
-	template<typename T>
-	struct StaticVar:StructVar<StaticVar,T>{
+	struct StaticVar:MemVar{
 		Label label;
 		offset_t offset;
-		StaticVar(Label label,offset_t offset):label(std::move(label)),offset(offset){}
+		StaticVar(addr_t size,Label label,offset_t offset):MemVar(size),label(std::move(label)),offset(offset){}
+		static auto make(addr_t size,Label label,offset_t offset){ return std::make_shared<StaticVar>(size,label,offset);}
 		code_t load(offset_t index) const override{
 			return Ops::load(label,offset+index);
 		}
 		code_t save(offset_t index) const override{
 			return Ops::save(label,offset+index);
 		}
-		template<typename U>
-		auto shift(addr_t size) const {
-			return StaticVar<U>{label,static_cast<offset_t>(offset + size)};
-		}
-		code_t operator=(const Value<T>& value) const{
-			return Var<T>::set(value);
+		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
+			return make(_size,label,offset + _offset);
 		}
 	};
-	template<typename T>
-	struct PtrVar:StructVar<PtrVar,T>{
+	struct PtrVar:MemVar{
 		code_t ptr;
 		offset_t offset;
-		explicit PtrVar(const Value<Ptr<T>>& ptr,offset_t offset=0):ptr(ptr),offset(offset){}
+		explicit PtrVar(addr_t size,code_t ptr,offset_t offset=0):MemVar(size),ptr(ptr),offset(offset){}
+		static auto make(addr_t size,code_t ptr,offset_t offset=0){ return std::make_shared<PtrVar>(size,ptr,offset);}
 		code_t load(offset_t index) const override{
 			return {ptr,Ops::load(offset+index)};
 		}
 		code_t save(offset_t index) const override{
 			return {ptr,Ops::save(offset+index)};
 		}
-		template<typename U>
-		auto shift(addr_t size) const {
-			return PtrVar<U>{ptr,static_cast<offset_t>(offset + size)};
-		}
-		code_t operator=(const Value<T>& value) const{
-			return Var<T>::set(value);
+		std::shared_ptr<MemVar> shift(offset_t _offset,addr_t _size) const override{
+			return make(_size,ptr,offset + _offset);
 		}
 	};
-	template<typename T>
-	inline static auto operator*(const Value<Ptr<T>>& lhs){
-		return PtrVar<T>{lhs};
-	}
-
-	struct RegVar:Var<UInt8>{
-		Reg reg;
-		explicit RegVar(Reg reg):reg(reg){}
-		code_t load(offset_t index) const override{
-			return push(reg);
-		}
-		code_t save(offset_t index) const override{
-			return pop(reg);
-		}
-		code_t operator=(const Value<UInt8>& value) const{
-			return set(value);
-		}
-	};
-	namespace RegVars{
-		inline static const RegVar A{Reg::A};
-		inline static const RegVar B{Reg::B};
-		inline static const RegVar C{Reg::C};
-		inline static const RegVar D{Reg::D};
-		inline static const RegVar E{Reg::E};
-		inline static const RegVar F{Reg::F};
-		inline static const RegVar L{Reg::L};
-		inline static const RegVar H{Reg::H};
-	}
 }
 #endif //BBCPU_VAR_H

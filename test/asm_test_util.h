@@ -17,8 +17,8 @@ using ALU74181::Carry;
 #define _REG16(name) cpu.get_pair(CPU::Reg16::name)
 #define _STACK_TOP cpu.read_pair(CPU::Reg16::SP,1)
 #define _STACK_INSERT cpu.read_pair(CPU::Reg16::SP)
-#define _LOCAL(offset) cpu.read_pair(CPU::ASM_BP,(offset))
-#define _STATIC(label,offset) cpu.RAM[*(label).start.addr+(offset)]
+#define _LOCAL(var) cpu.read_pair(CPU::ASM_BP,std::dynamic_pointer_cast<LocalVar>((var).value)->offset)
+#define _STATIC(label,var) cpu.RAM[*(label).start.addr+std::dynamic_pointer_cast<StaticVar>((var).value)->offset]
 #define _RUN_OP(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
 #define _SET_FLAG(flag,value) cpu.marg=MARG::state::flag::set(cpu.marg,value);
 

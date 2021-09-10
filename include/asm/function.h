@@ -44,7 +44,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		protected:
 		template<typename Var,typename ...Rest>
 		static auto _local_vars(offset_t start) {
-			LocalVar<Var> var{start};
+			Var var{LocalVar::make(Var::size,start)};
 			if constexpr (sizeof...(Rest)==0){
 				return std::tuple{var};
 			}else{
@@ -52,7 +52,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			}
 		}
 		template<typename ...Var>
-		static std::tuple<LocalVar<Var>...> local_vars(offset_t start) {
+		static std::tuple<Var...> local_vars(offset_t start) {
 			if constexpr (sizeof...(Var)==0){
 				return std::tuple{};
 			}else{
@@ -63,8 +63,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 	template<typename Ret,typename ...Args>
 	struct Fn:FnBase{
 		offset_t local_size{0};
-		std::tuple<LocalVar<Args>...> args{local_vars<Args...>((4+...+Args::size))};
-		LocalVar<Ret> ret{Ret::size+(4+...+Args::size)};
+		std::tuple<Args...> args{local_vars<Args...>((4+...+Args::size))};
+		Ret ret{LocalVar::make(Ret::size,Ret::size+(4+...+Args::size))};
 		explicit Fn(const std::string& name=""){ start.name=name;}
 
 		template<typename ...Ts>
@@ -74,36 +74,36 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return vars;
 		}
 
-		Expr<Ret> operator()(const Value<Args>&... _args) const{
-			Expr<Ret> expr{};
+		Ret operator()(Args... _args) const{
+			code_t expr{};
 			expr<<adj(-Ret::size);
 			if constexpr (sizeof...(Args)>0){
 				(expr<<...<<_args);
 			}
 			expr<<Ops::call(start)
 				<<adj((Args::size+...+0));
-			return expr;
+			return Ret{expr};
 		}
 		Fn<Ret,Args...>& impl(const code_t& code){
 			body=code_t{ent(local_size),code};
 			return *this;
 		}
 
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, LocalVar<Args>...,LocalVar<Ts>...>
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, Args...,Ts...>
 		Block impl(F&& fn){
 			code_t body=std::apply(fn,std::tuple_cat(args,local<Ts...>()));
 			return impl(body);
 		}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(const Value<Ret>&)>, LocalVar<Args>...,LocalVar<Ts>...>
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(Ret)>, Args...,Ts...>
 		Block impl(F&& fn){
 			code_t body=std::apply(fn,std::tuple_cat(
-				std::tuple{[&](const Value<Ret>& value){return _return(value);}},
+				std::tuple{[&](Ret value){return _return(value);}},
 				args,
 				local<Ts...>()
 			));
 			return impl(body);
 		}
-		inline code_t _return(const Value<Ret>& value){return {ret.set(value),lev()};}
+		inline code_t _return(Ret value){return {ret.set(value),lev()};}
 
 /*
 
@@ -133,13 +133,13 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		template<typename ...Ts,typename F>
 		requires std::is_invocable_r_v<code_t , F,
 			const Label&,
-			LocalVar<Ret>,
-			LocalVar<Args>...,
-			LocalVar<Ts>...
+			Ret,
+			Args...,
+			Ts...
 		>
-		inline static Expr<Ret> inplace(F&& fn){
+		inline static Ret inplace(F&& fn){
 			Label end;
-			return Expr<Ret>{{
+			return Ret{code_t{
 				saveBP(),
 				adj(-(Ts::size+...+0)),
 				std::apply(fn,std::tuple_cat(
@@ -155,18 +155,18 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		}
 		template<typename ...Ts,typename F>
 		requires std::is_invocable_r_v<code_t , F,
-			std::function<code_t(const Value<Ret>&)>,
-			LocalVar<Args>...,
-			LocalVar<Ts>...
+			std::function<code_t(Ret)>,
+			Args...,
+			Ts...
 		>
-		inline static Expr<Ret> inplace(F&& fn){
+		inline static Ret inplace(F&& fn){
 			return inplace<Ts...>([&](
 				const Label& _end,
-				LocalVar<Ret> _ret,
-				LocalVar<Args>... _args,
-				LocalVar<Ts>... _vars){
+				Ret _ret,
+				Args... _args,
+				Ts... _vars){
 					return fn(
-						[=](const Value<Ret>& value)->code_t{
+						[=](Ret value)->code_t{
 							return {_ret.set(value),jmp(_end)};
 						},
 						_args...,

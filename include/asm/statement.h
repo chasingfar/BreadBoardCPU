@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "var.h"
+#include "type.h"
 
 namespace BBCPU::ASM {
 	struct Block {
@@ -27,7 +27,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct IF{
-		const Value<Bool>& cond;
+		Bool cond;
 		Block if_true;
 		Block if_false{};
 		operator code_t(){
@@ -41,7 +41,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct IFC{
-		Stmt cond;
+		Void cond;
 		Block if_no_carry;
 		Block if_carry{};
 		operator code_t(){
@@ -55,7 +55,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct While{
-		const Value<Bool>& cond;
+		Bool cond;
 		Block body{};
 		operator code_t(){
 			Label start,end;
@@ -72,7 +72,7 @@ namespace BBCPU::ASM {
 	struct StaticVars:Block{
 		template<typename Var,typename ...Rest>
 		auto get(code_t value,typename std::pair<Rest,code_t>::second_type ... rest){
-			StaticVar<Var> var{start, static_cast<offset_t>(data_size(body))};
+			Var var{StaticVar::make(Var::size, start, static_cast<offset_t>(data_size(body)))};
 			body.insert(body.end(),value.begin(),value.end());
 			for(addr_t i=data_size(value);i<Var::size;++i){
 				body.emplace_back(0);

@@ -30,8 +30,8 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 		fn(8_u8,3_u8),
 	}, {aa});
 
-	REQUIRE(_LOCAL(a.offset)==8);
-	REQUIRE(_LOCAL(b.offset)==3);
+	REQUIRE(_LOCAL(a)==8);
+	REQUIRE(_LOCAL(b)==3);
 
 	run(cpu,{bb});
 	REQUIRE(_REG(A)==8);
@@ -42,8 +42,8 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 	REQUIRE(_REG(D)==5);
 
 	run(cpu,{dd});
-	REQUIRE(_LOCAL(c.offset)==11);
-	REQUIRE(_LOCAL(d.offset)==5);
+	REQUIRE(_LOCAL(c)==11);
+	REQUIRE(_LOCAL(d)==5);
 
 	run(cpu);
 	REQUIRE(_REG(A)==8);
@@ -86,12 +86,12 @@ TEST_CASE("function nest call","[asm][function]"){
 		foo(8_u8),
 	}, {aa});
 
-	REQUIRE(_LOCAL(a.offset)==8);
-	REQUIRE(_LOCAL(c.offset)==10);
+	REQUIRE(_LOCAL(a)==8);
+	REQUIRE(_LOCAL(c)==10);
 
 	run(cpu,{bb});
-	REQUIRE(_LOCAL(b.offset)==10);
-	REQUIRE(_LOCAL(d.offset)==16);
+	REQUIRE(_LOCAL(b)==10);
+	REQUIRE(_LOCAL(d)==16);
 
 	run(cpu);
 	REQUIRE(_STACK_TOP==26);
@@ -192,7 +192,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 	REQUIRE(_REG(A)==0xbf);
 }
 TEST_CASE("function with custom type","[asm][function]"){
-	struct Vec:Struct<Vec,UInt8,UInt8,UInt8>{};
+	using Vec=Struct<UInt8,UInt8,UInt8>;
 	Fn<Vec,Vec> fn{"fn(vec)"};
 	auto [vec]=fn.args;
 	auto [x,y,z]=vec.extract();
@@ -217,7 +217,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 	REQUIRE(_REG(A)==14);
 }
 TEST_CASE("function with union","[asm][function]"){
-	struct T:Union<T, UInt8, UInt16, Array<UInt8, 2>>{};
+	using T=Union<UInt8, UInt16, Array<UInt8, 2>>;
 	Fn<UInt16,T> fn{"fn(t)"};
 	auto [t]=fn.args;
 	auto [t_u8,t_u16,t_arr]=t.extract();
