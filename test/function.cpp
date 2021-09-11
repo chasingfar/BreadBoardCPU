@@ -286,39 +286,39 @@ TEST_CASE("function pointer","[asm][function]"){
 	}
 	*/
 	StaticVars global;
-
-	Fn<Ptr<Void>,UInt16> malloc{"malloc(size)"};
-	Fn<Void,Ptr<Int8>> fn{"fn(i)"};
-	Fn<UInt16> main{"main()"};
 	Label heap,aa;
+
+	Fn<Ptr<Void>,UInt16> malloc{{},[&](const code_t& _return,auto _ret,auto size)->code_t{
+		auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
+		return {
+			_ret=to<Ptr<Void>>(next_ptr),
+			next_ptr+=size,
+			_return,
+		};
+	}};
+	Fn<Void,Ptr<Int8>> fn{{},[](auto _return,auto i)->code_t{
+		return {
+			(*i)+=1_i8,
+			_return(Val::_void),
+		};
+	}};
+	Fn<UInt16> main{get_local<Ptr<Int8>>(),[&](auto _return,auto i)->code_t{
+		return {
+			i=to<Ptr<Int8>>(malloc(1_u16)),
+			(*i)=3_i8,
+			aa,
+			fn(i),
+			_return(to<UInt16>(i)),
+		};
+	}};
 	code_t p{
 		main(),
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-		malloc.impl<UInt16>([&](auto _return,auto size,auto ret_ptr)->code_t{
-			auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
-			return {
-				ret_ptr=next_ptr,
-				next_ptr+=size,
-				_return(to<Ptr<Void>>(ret_ptr)),
-			};
-		}),
-		fn.impl([&](auto _return,auto i)->code_t{
-			return {
-				(*i)+=1_i8,
-				_return(Val::_void),
-			};
-		}),
-		main.impl<Ptr<Int8>>([&](auto _return,auto i)->code_t{
-			return {
-				i=to<Ptr<Int8>>(malloc(1_u16)),
-				(*i)=3_i8,
-				aa,
-				fn(i),
-				_return(to<UInt16>(i)),
-			};
-		}),
+		malloc,
+		fn,
+		main,
 		global,
 		heap
 	};

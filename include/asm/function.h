@@ -40,23 +40,22 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
-	struct FnBase:Block{
-		protected:
-		template<typename Var,typename ...Rest>
-		static auto _local_vars(offset_t start) {
-			Var var{LocalVar::make(Var::size,start)};
-			if constexpr (sizeof...(Rest)==0){
-				return std::tuple{var};
-			}else{
-				return std::tuple_cat(std::tuple{var}, local_vars<Rest...>(start-Var::size));
-			}
+	template<typename Var,typename ...Rest>
+	inline static auto get_local(offset_t start=0) {
+		Var var{LocalVar::make(Var::size,start)};
+		if constexpr (sizeof...(Rest)==0){
+			return std::tuple{var};
+		}else{
+			return std::tuple_cat(std::tuple{var}, get_local<Rest...>(start-Var::size));
 		}
+	}
+	struct FnBase:Block{
 		template<typename ...Var>
-		static std::tuple<Var...> local_vars(offset_t start) {
+		static std::tuple<Var...> local_vars(offset_t start=0) {
 			if constexpr (sizeof...(Var)==0){
 				return std::tuple{};
 			}else{
-				return _local_vars<Var...>(start);
+				return get_local<Var...>(start);
 			}
 		}
 	};
@@ -74,7 +73,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return vars;
 		}
 
-		Ret operator()(Args... _args) const{
+		Ret operator()(const Args&... _args) const{
 			code_t expr{};
 			expr<<adj(-Ret::size);
 			if constexpr (sizeof...(Args)>0){
@@ -103,8 +102,25 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			));
 			return impl(body);
 		}
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, code_t, Ret, Args..., Ts...>
+		Block impl(F&& fn){
+			code_t body=std::apply(fn,std::tuple_cat(
+					std::tuple{_return(),ret},
+					args,
+					local<Ts...>()
+			));
+			return impl(body);
+		}
 		inline code_t _return(Ret value){return {ret.set(value),lev()};}
+		inline code_t _return(){return {lev()};}
 
+		explicit Fn(const code_t& code){impl(code);}
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, Args...,Ts...>
+		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(const Ret&)>, Args...,Ts...>
+		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
+		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, code_t, Ret, Args...,Ts...>
+		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
 /*
 
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
