@@ -60,23 +60,6 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed> inline auto  OR(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs) {return _calc<Size,Signed,Ops:: OR,Ops:: OR>(lhs,rhs);}
 	template<addr_t Size,bool Signed> inline auto XOR(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs) {return _calc<Size,Signed,Ops::XOR,Ops::XOR>(lhs,rhs);}
 
-	template<typename T>
-	struct TypeCaster<Void,T>{
-		static Void to(const T& from){
-			return Void{code_t{from,adj(T::size)}};
-		}
-	};
-	template<addr_t Size,bool Signed>
-	struct TypeCaster<Bool,Int<Size,Signed>>{
-		static Bool to(const Int<Size,Signed>& from){
-			code_t tmp{from};
-			for (addr_t i = 1; i < Size; ++i) {
-				tmp << OR();
-			}
-			return Bool{tmp};
-		}
-	};
-
 	template<typename To,typename From>
 	concept CanCastTo = requires(From from) {TypeCaster<To,From>::to(from);};
 	template<typename To,typename From> requires CanCastTo<To, From>
@@ -85,7 +68,7 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Int<Size,Signed>& lhs){
 		return Bool{code_t{
-			IF{to<Bool>(lhs),
+			IF{lhs,
 				{Val::_false},
 				{Val::_true},
 			}
@@ -93,7 +76,7 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return to<Bool>(lhs-rhs);
+		return ((Bool)lhs-rhs);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator==(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
@@ -103,7 +86,7 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed>
 	inline auto operator>=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
 		return Bool{code_t{
-			IFC{to<Void>(lhs - rhs),
+			IFC{(Void)(lhs - rhs),
 				{Val::_false},
 				{Val::_true},
 			}
@@ -112,7 +95,7 @@ namespace BBCPU::ASM {
 	template<addr_t Size,bool Signed>
 	inline auto operator<(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
 		return Bool{code_t{
-			IFC{to<Void>(lhs - rhs),
+			IFC{(Void)(lhs - rhs),
 				{Val::_true},
 				{Val::_false},
 			}

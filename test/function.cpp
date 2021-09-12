@@ -291,7 +291,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	Fn<Ptr<Void>,UInt16> malloc{{},[&](const code_t& _return,auto _ret,auto size)->code_t{
 		auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
 		return {
-			_ret=to<Ptr<Void>>(next_ptr),
+			_ret=((Ptr<Void>)next_ptr),
 			next_ptr+=size,
 			_return,
 		};
@@ -304,11 +304,11 @@ TEST_CASE("function pointer","[asm][function]"){
 	}};
 	Fn<UInt16> main{get_local<Ptr<Int8>>(),[&](auto _return,auto i)->code_t{
 		return {
-			i=to<Ptr<Int8>>(malloc(1_u16)),
+			i=((Ptr<Int8>)malloc(1_u16)),
 			(*i)=3_i8,
 			aa,
 			fn(i),
-			_return(to<UInt16>(i)),
+			_return((UInt16)i),
 		};
 	}};
 	code_t p{

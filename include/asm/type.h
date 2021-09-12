@@ -8,6 +8,9 @@
 #include "var.h"
 #include <cstddef>
 #include <memory>
+#define DEF_TYPE_COMMON \
+	using Base::Base;\
+	code_t operator =(const This& rhs) const {return this->set(rhs);}
 namespace BBCPU::ASM {
 	template<addr_t Size>
 	struct Type {
@@ -27,6 +30,9 @@ namespace BBCPU::ASM {
 		code_t operator =(const Type<Size>& rhs) const{
 			return set(rhs);
 		}
+		explicit operator Type<0>(){
+			return Type<0>{code_t{*this,adj(size)}};
+		}
 	};
 	using Void = Type<0>;
 
@@ -45,7 +51,9 @@ namespace BBCPU::ASM {
 
 	template<typename T,typename ...Ts>
 	struct Struct:Type<(T::size+...+Ts::size)>{
-		code_t operator =(const Struct<T,Ts...>& rhs) const {return this->set(rhs);}
+		using This = Struct<T,Ts...>;
+		using Base = Type<(T::size+...+Ts::size)>;
+		DEF_TYPE_COMMON
 
 		static constexpr size_t count=1+sizeof...(Ts);
 		template<addr_t Index,addr_t Offset=0>
@@ -76,7 +84,12 @@ namespace BBCPU::ASM {
 	};
 	template<typename ...Ts>
 	struct Union:Type<std::max({Ts::size...})>{
-		code_t operator =(const Union<Ts...>& rhs) const {return this->set(rhs);}
+		using This = Union<Ts...>;
+		using Base = Type<std::max({Ts::size...})>;
+		DEF_TYPE_COMMON
+
+		template<typename T> requires std::disjunction_v<std::is_same<T, Ts>...>
+		explicit Union(const T& v):Base(v.value){}
 
 		static constexpr size_t count=sizeof...(Ts);
 		template<addr_t Index>
@@ -111,10 +124,12 @@ namespace BBCPU::ASM {
 	struct Array:Array<T,N-1,T,Ts...>{};
 	template<typename T,typename ...Ts>
 	struct Array<T,0,Ts...>:Struct<Ts...>{
-		code_t operator =(const Array<T,sizeof...(Ts)>& rhs) const {return this->set(rhs);}
+		using This = Array<T,sizeof...(Ts)>;
+		using Base = Struct<Ts...>;
+		DEF_TYPE_COMMON
 
 		inline static auto make(Ts ...vals){
-			return Array<T,sizeof...(Ts)>{code_t{vals...}};
+			return This{code_t{vals...}};
 		}
 		auto operator[](size_t i){
 			return T{
@@ -125,11 +140,20 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed=false>
 	struct Int:Type<Size>{
-		code_t operator =(const Int<Size,Signed>& rhs) const {return this->set(rhs);}
+		using This = Int<Size,Signed>;
+		using Base = Type<Size>;
+		DEF_TYPE_COMMON
 
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
-			return Int<Size,Signed>{code_t{vals...}};
+			return This{code_t{vals...}};
+		}
+		operator Int<1,false>() const{
+			code_t tmp{*this};
+			for (addr_t i = 1; i < Size; ++i) {
+				tmp << OR();
+			}
+			return Int<1,false>{tmp};
 		}
 	};
 	using UInt8 =Int<1,false>;
@@ -147,7 +171,13 @@ namespace BBCPU::ASM {
 
 	template<typename T>
 	struct Ptr:AsInt<addr_t>{
-		code_t operator =(const Ptr<T>& rhs) const {return this->set(rhs);}
+		using This = Ptr<T>;
+		using Base = AsInt<addr_t>;
+		DEF_TYPE_COMMON
+
+		explicit Ptr(const UInt16& v):Base(v.value){}
+		template<typename U>
+		explicit Ptr(const Ptr<U>& v):Base(v.value){}
 
 		using type=T;
 		auto operator*(){
@@ -157,13 +187,6 @@ namespace BBCPU::ASM {
 	template<typename T>struct UnPtr        {};
 	template<typename T>struct UnPtr<Ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
-
-	template<typename T>
-	struct TypeCaster<Ptr<T>,UInt16>:SimpleCaster<Ptr<T>,UInt16>{};
-	template<typename T>
-	struct TypeCaster<UInt16,Ptr<T>>:SimpleCaster<UInt16,Ptr<T>>{};
-	template<typename To,typename From>
-	struct TypeCaster<Ptr<To>,Ptr<From>>:SimpleCaster<Ptr<To>,Ptr<From>>{};
 
 	template<typename T>
 	struct IntLiteral:AsInt<T>{
