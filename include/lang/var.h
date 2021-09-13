@@ -5,7 +5,7 @@
 #ifndef BBCPU_VAR_H
 #define BBCPU_VAR_H
 #include <cstddef>
-#include "ops.h"
+#include "../asm/ops.h"
 
 namespace BBCPU::ASM {
 	struct Value{

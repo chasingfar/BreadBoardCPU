@@ -7,6 +7,7 @@
 
 #include "catch.hpp"
 #include "asm/asm.h"
+#include "lang/lang.h"
 
 using namespace BBCPU::ASM;
 using BBCPU::CPU;

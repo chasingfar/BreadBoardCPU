@@ -1,7 +1,6 @@
 //
 // Created by chasingfar on 2021/7/24.
 //
-#include "asm/type.h"
 #include "asm_test_util.h"
 
 using namespace Function;

@@ -5,7 +5,7 @@
 #ifndef BBCPU_ASM_ASM_H
 #define BBCPU_ASM_ASM_H
 
-#include "operator.h"
+#include "ops.h"
 
 namespace BBCPU::ASM {
 	inline void generate(const std::string& name,auto program) {
