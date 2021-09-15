@@ -18,10 +18,10 @@ namespace BBCPU {
 		MemToMem = 0b11,/*as RegToReg*/
 	};
 	BITFILEDBASE(14) struct IO : Base {
-		using dir    = IODIR<2, Base,FollowMode::innerLow>;
-		using to     = BitField<4, dir >;
-		using fromB  = BitField<4, to >;
+		using fromB  = BitField<4, Base,FollowMode::innerLow >;
 		using fromA  = BitField<4, fromB >;
+		using to     = BitField<4, fromA >;
+		using dir    = IODIR<2, to >;
 		static auto set(auto o,Reg lhs,Reg rhs,Reg dest,DirMode dirMode){
 			o=fromA::set(o,lhs);
 			o=fromB::set(o,rhs);
