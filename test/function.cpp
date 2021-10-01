@@ -144,7 +144,7 @@ TEST_CASE("function sum","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		sum.impl([&](auto& _,UInt8 n){
-			auto [s]=_.template local<UInt8>();
+			auto [s]=_.let(local_vars<UInt8>());
 			return code_t{
 				s.set(0_u8),
 				While{n,{{
@@ -303,7 +303,7 @@ TEST_CASE("function pointer","[asm][function]"){
 		};
 	}};
 	Fn<UInt16> main{[&](auto& _)->code_t{
-		auto [i]=_.template local<Ptr<Int8>>();
+		auto [i]=_.let(local_vars<Ptr<Int8>>());
 		return {
 			i=((Ptr<Int8>)malloc(1_u16)),
 			(*i)=3_i8,

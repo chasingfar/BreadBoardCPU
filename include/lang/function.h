@@ -41,26 +41,26 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 
 */
 	template<typename Var,typename ...Rest>
-	inline static auto get_local(offset_t start=0) {
+	inline static auto _local_vars(offset_t start=0) {
 		Var var{LocalVar::make(Var::size,start)};
 		if constexpr (sizeof...(Rest)==0){
 			return std::tuple{var};
 		}else{
-			return std::tuple_cat(std::tuple{var}, get_local<Rest...>(start-Var::size));
+			return std::tuple_cat(std::tuple{var}, _local_vars<Rest...>(start-Var::size));
+		}
+	}
+	template<typename ...Var>
+	inline static std::tuple<Var...> local_vars(offset_t start=0) {
+		if constexpr (sizeof...(Var)==0){
+			return std::tuple{};
+		}else{
+			return _local_vars<Var...>(start);
 		}
 	}
 	template<typename Ret,typename ...Args>
 	struct FnBase:Block{
 		static constexpr offset_t ret_size=Ret::size;
 		static constexpr offset_t arg_size=(0+...+Args::size);
-		template<typename ...Var>
-		static std::tuple<Var...> local_vars(offset_t start=0) {
-			if constexpr (sizeof...(Var)==0){
-				return std::tuple{};
-			}else{
-				return get_local<Var...>(start);
-			}
-		}
 		offset_t local_size{0};
 		Ret ret;
 		std::tuple<Args...> args;
@@ -72,10 +72,13 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			FnBase(ret_start,arg_start)
 			{ start.name=name;}
 		template<typename ...Ts>
-		auto local(){
-			auto vars=local_vars<Ts...>(-local_size);
+		auto let(std::tuple<Ts...> vars){
 			local_size+=(Ts::size+...+0);
 			return vars;
+		}
+		template<typename ...Ts>
+		auto local(){
+			return let(local_vars<Ts...>(-local_size));
 		}
 	};
 	template<typename Ret,typename ...Args>
