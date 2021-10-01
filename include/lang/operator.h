@@ -12,13 +12,13 @@ namespace BBCPU::ASM {
 		code_t tmp{lhs};
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::Fn<Int<Size,Signed>,Int<I-I+1,Signed>...>::inplace(
-					[](const Label& end,Int<Size,Signed> ret,Int<I-I+1,Signed>...ls)->code_t{
+				return Function::InplaceFn<Int<Size,Signed>,Int<I-I+1,Signed>...>{
+					[](auto& _,Int<I-I+1,Signed>...ls)->code_t{
 						return {
 							ls.set(_calc<1,Signed,I==0?fn:fnc,fnc>(ls))...
 						};
 					}
-				);
+				};
 			}(std::make_index_sequence<Size>{});
 		} else if constexpr (Size == 1) {
 			tmp << fn();
@@ -32,13 +32,13 @@ namespace BBCPU::ASM {
 		tmp << rhs;
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::Fn<Int<Size,Signed>,Int<I-I+1,Signed>...,Int<I-I+1,Signed>...>::inplace(
-					[](const Label& end,Int<Size,Signed> ret,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->code_t{
+				return Function::InplaceFn<Int<Size,Signed>,Int<I-I+1,Signed>...,Int<I-I+1,Signed>...>{
+					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->code_t{
 						return {
 							ls.set(_calc<1,Signed,I==0?fn:fnc,fnc>(ls,rs))...
 						};
 					}
-				);
+				};
 			}(std::make_index_sequence<Size>{});
 		} else if constexpr (Size == 1) {
 			tmp << fn();

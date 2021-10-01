@@ -49,7 +49,10 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return std::tuple_cat(std::tuple{var}, get_local<Rest...>(start-Var::size));
 		}
 	}
+	template<typename Ret,typename ...Args>
 	struct FnBase:Block{
+		static constexpr offset_t ret_size=Ret::size;
+		static constexpr offset_t arg_size=(0+...+Args::size);
 		template<typename ...Var>
 		static std::tuple<Var...> local_vars(offset_t start=0) {
 			if constexpr (sizeof...(Var)==0){
@@ -58,69 +61,59 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 				return get_local<Var...>(start);
 			}
 		}
-	};
-	template<typename Ret,typename ...Args>
-	struct Fn:FnBase{
 		offset_t local_size{0};
-		std::tuple<Args...> args{local_vars<Args...>((4+...+Args::size))};
-		Ret ret{LocalVar::make(Ret::size,Ret::size+(4+...+Args::size))};
-		explicit Fn(const std::string& name=""){ start.name=name;}
-
+		Ret ret;
+		std::tuple<Args...> args;
+		explicit FnBase(offset_t ret_start,offset_t arg_start):
+			ret{LocalVar::make(Ret::size,ret_start)},
+			args{local_vars<Args...>(arg_start)}
+			{}
+		explicit FnBase(const std::string& name,offset_t ret_start,offset_t arg_start):
+			FnBase(ret_start,arg_start)
+			{ start.name=name;}
 		template<typename ...Ts>
 		auto local(){
 			auto vars=local_vars<Ts...>(-local_size);
 			local_size+=(Ts::size+...+0);
 			return vars;
 		}
+	};
+	template<typename Ret,typename ...Args>
+	struct Fn:FnBase<Ret,Args...>{
+		using This = Fn<Ret,Args...>;
+		using Base = FnBase<Ret,Args...>;
+		static constexpr offset_t ret_start=Base::ret_size+Base::arg_size+4;
+		static constexpr offset_t arg_start=Base::arg_size+4;
+		explicit Fn(const std::string& name=""):Base{name,ret_start,arg_start}{}
 
 		Ret operator()(const Args&... _args) const{
 			code_t expr{};
-			expr<<adj(-Ret::size);
+			expr<<adj(-Base::ret_size);
 			if constexpr (sizeof...(Args)>0){
 				(expr<<...<<_args);
 			}
-			expr<<Ops::call(start)
-				<<adj((Args::size+...+0));
+			expr<<Ops::call(this->start)
+				<<adj(Base::arg_size);
 			return Ret{expr};
 		}
 		Fn<Ret,Args...>& impl(const code_t& code){
-			body=code_t{ent(local_size),code};
+			this->body=code_t{ent(this->local_size),code};
 			return *this;
 		}
 
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, Args...,Ts...>
+		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
 		Block impl(F&& fn){
-			code_t body=std::apply(fn,std::tuple_cat(args,local<Ts...>()));
+			code_t body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(Ret)>, Args...,Ts...>
-		Block impl(F&& fn){
-			code_t body=std::apply(fn,std::tuple_cat(
-				std::tuple{[&](Ret value){return _return(value);}},
-				args,
-				local<Ts...>()
-			));
-			return impl(body);
-		}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, code_t, Ret, Args..., Ts...>
-		Block impl(F&& fn){
-			code_t body=std::apply(fn,std::tuple_cat(
-					std::tuple{_return(),ret},
-					args,
-					local<Ts...>()
-			));
-			return impl(body);
-		}
-		inline code_t _return(Ret value){return {ret.set(value),lev()};}
+		inline code_t _return(Ret value){return {this->ret.set(value),lev()};}
 		inline code_t _return(){return {lev()};}
 
 		explicit Fn(const code_t& code){impl(code);}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, Args...,Ts...>
-		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, std::function<code_t(const Ret&)>, Args...,Ts...>
-		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
-		template<typename ...Ts,typename F>requires std::is_invocable_r_v<code_t , F, code_t, Ret, Args...,Ts...>
-		explicit Fn(std::tuple<Ts...> vars,F&& fn){impl<Ts...>(fn);}
+		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		explicit Fn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
+	};
+
 /*
 
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
@@ -146,50 +139,32 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
-		template<typename ...Ts,typename F>
-		requires std::is_invocable_r_v<code_t , F,
-			const Label&,
-			Ret,
-			Args...,
-			Ts...
-		>
-		inline static Ret inplace(F&& fn){
-			Label end;
-			return Ret{code_t{
-				saveBP(),
-				adj(-(Ts::size+...+0)),
-				std::apply(fn,std::tuple_cat(
-					std::tuple{end},
-					local_vars<Ret>((Args::size+...+2)),
-					local_vars<Args...>((Args::size+...+2)),
-					local_vars<Ts...>(0)
-				)),
-				end,
-				loadBP(),
-				adj((Args::size+...+0)-Ret::size),
-			}};
+	template<typename Ret,typename ...Args>
+	struct InplaceFn:FnBase<Ret,Args...>{
+		using This = InplaceFn<Ret,Args...>;
+		using Base = FnBase<Ret,Args...>;
+		static constexpr offset_t ret_start=Base::arg_size+2;
+		static constexpr offset_t arg_start=Base::arg_size+2;
+		Label _end;
+
+		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		InplaceFn<Ret,Args...>& impl(F&& fn){
+			code_t code=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
+			this->body=code_t{
+					saveBP(),
+					adj(-this->local_size),
+					code,
+					_end,
+					loadBP(),
+					adj(Base::arg_size-Base::ret_size),
+			};
+			return *this;
 		}
-		template<typename ...Ts,typename F>
-		requires std::is_invocable_r_v<code_t , F,
-			std::function<code_t(Ret)>,
-			Args...,
-			Ts...
-		>
-		inline static Ret inplace(F&& fn){
-			return inplace<Ts...>([&](
-				const Label& _end,
-				Ret _ret,
-				Args... _args,
-				Ts... _vars){
-					return fn(
-						[=](Ret value)->code_t{
-							return {_ret.set(value),jmp(_end)};
-						},
-						_args...,
-						_vars...
-					);
-			});
-		}
-	};	
+		inline code_t _return(Ret value){return {this->ret.set(value),jmp(_end)};}
+		inline code_t _return(){return {jmp(_end)};}
+
+		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		explicit InplaceFn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
+	};
 }
 #endif //BBCPU_FUNCTION_H

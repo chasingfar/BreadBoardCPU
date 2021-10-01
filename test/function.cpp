@@ -112,12 +112,12 @@ TEST_CASE("function recursion","[asm][function]"){
 	Label main;
 	CPU cpu=run({
 		jmp(main),
-		fib.impl([&](auto i){
+		fib.impl([&](auto& _,auto i){
 			return code_t{
 				IF{i<2_u8, {
-					fib._return(i),
+					_._return(i),
 				}, {
-					fib._return(fib(i - 1_u8) + fib(i - 2_u8)),
+					_._return(fib(i - 1_u8) + fib(i - 2_u8)),
 				}},
 			};
 		}),
@@ -143,7 +143,8 @@ TEST_CASE("function sum","[asm][function]"){
 	Label main;
 	CPU cpu=run({
 		jmp(main),
-		sum.impl<UInt8>([&](auto n,auto s){
+		sum.impl([&](auto& _,UInt8 n){
+			auto [s]=_.template local<UInt8>();
 			return code_t{
 				s.set(0_u8),
 				While{n,{{
@@ -162,12 +163,12 @@ TEST_CASE("inplace function","[asm][function]"){
 	CPU cpu=run({
 		0x12f3_u16,
 		0x32cc_u16,
-		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
-			[](auto _return,auto a,auto b,auto c,auto d)->code_t{
+		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
+			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				_return(UInt16::make(add(a,c),adc(b,d))),
+				_._return(UInt16::make(add(a,c),adc(b,d))),
 			};
-		}),
+		}},
 		pop(Reg::B),
 		pop(Reg::A),
 	});
@@ -178,12 +179,12 @@ TEST_CASE("inplace function 2","[asm][function]"){
 	CPU cpu=run({
 		0x12f3_u16,
 		0x32cc_u16,
-		Fn<UInt16,UInt8,UInt8,UInt8,UInt8>::inplace(
-			[](const Label& end,auto ret,auto a,auto b,auto c,auto d)->code_t{
+		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
+			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				ret=UInt16::make(add(a,c),adc(b,d)),
+				_.ret=UInt16::make(add(a,c),adc(b,d)),
 			};
-		}),
+		}},
 		pop(Reg::B),
 		pop(Reg::A),
 	});
@@ -287,27 +288,28 @@ TEST_CASE("function pointer","[asm][function]"){
 	StaticVars global;
 	Label heap,aa;
 
-	Fn<Ptr<Void>,UInt16> malloc{{},[&](const code_t& _return,auto _ret,auto size)->code_t{
+	Fn<Ptr<Void>,UInt16> malloc{[&](auto& _,auto size)->code_t{
 		auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
 		return {
-			_ret=((Ptr<Void>)next_ptr),
+			_.ret=((Ptr<Void>)next_ptr),
 			next_ptr+=size,
-			_return,
+			_._return(),
 		};
 	}};
-	Fn<Void,Ptr<Int8>> fn{{},[](auto _return,auto i)->code_t{
+	Fn<Void,Ptr<Int8>> fn{[](auto& _,auto i)->code_t{
 		return {
 			(*i)+=1_i8,
-			_return(Val::_void),
+			_._return(Val::_void),
 		};
 	}};
-	Fn<UInt16> main{get_local<Ptr<Int8>>(),[&](auto _return,auto i)->code_t{
+	Fn<UInt16> main{[&](auto& _)->code_t{
+		auto [i]=_.template local<Ptr<Int8>>();
 		return {
 			i=((Ptr<Int8>)malloc(1_u16)),
 			(*i)=3_i8,
 			aa,
 			fn(i),
-			_return((UInt16)i),
+			_._return((UInt16)i),
 		};
 	}};
 	code_t p{
