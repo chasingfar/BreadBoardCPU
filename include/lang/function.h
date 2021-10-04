@@ -40,45 +40,25 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
-	template<typename Var,typename ...Rest>
-	inline static auto _local_vars(offset_t start=0) {
-		Var var{LocalVar::make(Var::size,start)};
-		if constexpr (sizeof...(Rest)==0){
-			return std::tuple{var};
-		}else{
-			return std::tuple_cat(std::tuple{var}, _local_vars<Rest...>(start-Var::size));
-		}
-	}
-	template<typename ...Var>
-	inline static std::tuple<Var...> local_vars(offset_t start=0) {
-		if constexpr (sizeof...(Var)==0){
-			return std::tuple{};
-		}else{
-			return _local_vars<Var...>(start);
-		}
-	}
 	template<typename Ret,typename ...Args>
-	struct FnBase:Block{
+	struct FnBase:Block,Allocator{
 		static constexpr offset_t ret_size=Ret::size;
 		static constexpr offset_t arg_size=(0+...+Args::size);
-		offset_t local_size{0};
+		offset_t local_size;
 		Ret ret;
 		std::tuple<Args...> args;
 		explicit FnBase(offset_t ret_start,offset_t arg_start):
+			local_size(-arg_start),
 			ret{LocalVar::make(Ret::size,ret_start)},
-			args{local_vars<Args...>(arg_start)}
-			{}
+			args{vars<Args...>()}
+			{local_size=0;}
 		explicit FnBase(const std::string& name,offset_t ret_start,offset_t arg_start):
 			FnBase(ret_start,arg_start)
 			{ start.name=name;}
-		template<typename ...Ts>
-		auto let(std::tuple<Ts...> vars){
-			local_size+=(Ts::size+...+0);
-			return vars;
-		}
-		template<typename ...Ts>
-		auto local(){
-			return let(local_vars<Ts...>(-local_size));
+		std::shared_ptr<MemVar> alloc(addr_t size) override {
+			addr_t pos=-local_size;
+			local_size+=size;
+			return LocalVar::make(size,pos);
 		}
 	};
 	template<typename Ret,typename ...Args>

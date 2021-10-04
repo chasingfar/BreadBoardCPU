@@ -104,5 +104,25 @@ namespace BBCPU::ASM {
 			return make(new_size,ptr,offset + shift_offset);
 		}
 	};
+	struct Allocator{
+		template<typename Type,typename ...Rest>
+		auto _vars() {
+			Type var{alloc(Type::size)};
+			if constexpr (sizeof...(Rest)==0){
+				return std::tuple{var};
+			}else{
+				return std::tuple_cat(std::tuple{var}, _vars<Rest...>());
+			}
+		}
+		template<typename ...Types>
+		std::tuple<Types...> vars() {
+			if constexpr (sizeof...(Types)==0){
+				return std::tuple{};
+			}else{
+				return _vars<Types...>();
+			}
+		}
+		virtual std::shared_ptr<MemVar> alloc(addr_t size)=0;
+	};
 }
 #endif //BBCPU_VAR_H

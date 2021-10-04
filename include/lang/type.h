@@ -19,6 +19,7 @@ namespace BBCPU::ASM {
 		Type():value(nullptr){}
 		template<typename T> requires std::is_base_of_v<Value,T>
 		Type(std::shared_ptr<T> value):value(value){}
+		Type(Allocator& allocator):value(allocator.alloc(size)){}
 		Type(const code_t& expr):value(std::make_shared<Expr>(expr)){}
 		
 		operator code_t() const{

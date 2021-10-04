@@ -6,7 +6,7 @@
 #define BBCPU_STATEMENT_H
 
 #include <utility>
-
+#include <forward_list>
 #include "type.h"
 
 namespace BBCPU::ASM {
@@ -69,19 +69,26 @@ namespace BBCPU::ASM {
 			};
 		}
 	};
-	struct StaticVars:Block{
-		template<typename Var,typename ...Rest>
-		auto get(code_t value,typename std::pair<Rest,code_t>::second_type ... rest){
-			Var var{StaticVar::make(Var::size, start, static_cast<offset_t>(data_size(body)))};
+	struct StaticVars:Block,Allocator{
+		std::forward_list<code_t> presets{};
+		std::shared_ptr<MemVar> alloc(addr_t size) override {
+			auto var=StaticVar::make(size, start, static_cast<offset_t>(data_size(body)));
+			code_t value{};
+			if(!presets.empty()){
+				value=presets.front();
+				presets.pop_front();
+			}
 			body.insert(body.end(),value.begin(),value.end());
-			for(addr_t i=data_size(value);i<Var::size;++i){
+			for(addr_t i=data_size(value);i<size;++i){
 				body.emplace_back(0);
 			}
-			if constexpr (sizeof...(Rest)==0){
-				return std::tuple{var};
-			}else{
-				return std::tuple_cat(std::tuple{var}, get<Rest...>(rest...));
-			}
+			return var;
+		}
+
+		template<typename ...Types>
+		std::tuple<Types...> get(typename std::pair<Types,code_t>::second_type ... v) {
+			presets={v...};
+			return vars<Types...>();
 		}
 	};
 }

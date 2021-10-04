@@ -8,7 +8,7 @@ using namespace Function;
 TEST_CASE("function dynamic args and vars","[asm][function]"){
 	Fn<Void,UInt8,UInt8> fn{"fn(a,b)"};
 	auto [a,b]=fn.args;
-	auto [c,d]=fn.local<UInt8, UInt8>();
+	auto [c,d]=fn.vars<UInt8, UInt8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
@@ -65,9 +65,9 @@ TEST_CASE("function nest call","[asm][function]"){
 	Fn<UInt8,UInt8> foo{"foo(a)"};
 	Fn<UInt8,UInt8> bar{"bar(b)"};
 	auto [a]=foo.args;
-	auto [c]=foo.local<UInt8>();
+	auto [c]=foo.vars<UInt8>();
 	auto [b]=bar.args;
-	auto [d]=bar.local<UInt8>();
+	auto [d]=bar.vars<UInt8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu=run({
 		jmp(main),
@@ -144,7 +144,7 @@ TEST_CASE("function sum","[asm][function]"){
 	CPU cpu=run({
 		jmp(main),
 		sum.impl([&](auto& _,UInt8 n){
-			auto [s]=_.let(local_vars<UInt8>());
+			UInt8 s{_};
 			return code_t{
 				s.set(0_u8),
 				While{n,{{
@@ -303,7 +303,7 @@ TEST_CASE("function pointer","[asm][function]"){
 		};
 	}};
 	Fn<UInt16> main{[&](auto& _)->code_t{
-		auto [i]=_.let(local_vars<Ptr<Int8>>());
+		Ptr<Int8> i{_};
 		return {
 			i=((Ptr<Int8>)malloc(1_u16)),
 			(*i)=3_i8,
