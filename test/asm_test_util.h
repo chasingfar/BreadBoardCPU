@@ -39,7 +39,7 @@ inline CPU run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=10
 }
 inline CPU run(const code_t& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
 	CPU cpu;
-	cpu.load(ASM{}<<program<<halt()<<ASM::END);
+	cpu.load(ASM{}<<program<<ASM::END);
 	return run(cpu,pause_at,max_iter);
 }
 #endif //BBCPU_ASM_TEST_UTIL_H

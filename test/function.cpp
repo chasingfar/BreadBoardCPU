@@ -27,6 +27,7 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 		}),
 		main,
 		fn(8_u8,3_u8),
+		halt(),
 	}, {aa});
 
 	REQUIRE(_LOCAL(a)==8);
@@ -83,6 +84,7 @@ TEST_CASE("function nest call","[asm][function]"){
 		}),
 		main,
 		foo(8_u8),
+		halt(),
 	}, {aa});
 
 	REQUIRE(_LOCAL(a)==8);
@@ -123,6 +125,7 @@ TEST_CASE("function recursion","[asm][function]"){
 		}),
 		main,
 		fib(6_u8),
+		halt(),
 	});
 	REQUIRE(_STACK_TOP==8);
 }
@@ -156,6 +159,7 @@ TEST_CASE("function sum","[asm][function]"){
 		}),
 		main,
 		sum(6_u8),
+		halt(),
 	});
 	REQUIRE(_STACK_TOP==21);
 }
@@ -211,6 +215,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 		pop(Reg::A),
 		pop(Reg::B),
 		pop(Reg::C),
+		halt(),
 	});
 	REQUIRE(_REG(C)==4);
 	REQUIRE(_REG(B)==9);
@@ -235,6 +240,7 @@ TEST_CASE("function with union","[asm][function]"){
 		fn(T::make(0x1234_u16)),
 		pop(Reg::A),
 		pop(Reg::B),
+		halt(),
 	});
 	REQUIRE(_REG(A)==0x12);
 	REQUIRE(_REG(B)==0x34);
@@ -260,6 +266,7 @@ TEST_CASE("function with array","[asm][function]"){
 		pop(Reg::A),
 		pop(Reg::B),
 		pop(Reg::C),
+		halt(),
 	});
 	REQUIRE(_REG(C)==4);
 	REQUIRE(_REG(B)==9);
@@ -312,7 +319,7 @@ TEST_CASE("function pointer","[asm][function]"){
 			_._return((UInt16)i),
 		};
 	}};
-	code_t p{
+	CPU cpu=run({
 		main(),
 		pop(Reg::B),
 		pop(Reg::A),
@@ -322,11 +329,7 @@ TEST_CASE("function pointer","[asm][function]"){
 		main,
 		global,
 		heap
-	};
-	ops_t ops=(ASM{}<<p<<ASM::END);
-	CPU cpu;
-	cpu.load(ops);
-	run(cpu,{aa});
+	},{aa});
 	REQUIRE(cpu.RAM[*heap] == 3);
 	run(cpu);
 	REQUIRE(cpu.RAM[*heap] == 4);

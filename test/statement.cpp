@@ -1,6 +1,8 @@
 //
 // Created by chasingfar on 2021/7/23.
 //
+#include "asm/basic.h"
+#include "asm/ops.h"
 #include "asm_test_util.h"
 
 
@@ -12,6 +14,7 @@ TEST_CASE("block","[asm][statement]"){
 		imm(Reg::A,10),
 		b,
 		imm(Reg::A,15),
+		halt(),
 	}},{a,b});
 	REQUIRE(_REG(A)==5);
 	run(cpu,{a,b});
@@ -22,21 +25,23 @@ TEST_CASE("block","[asm][statement]"){
 
 TEST_CASE("if","[asm][statement]"){
 	SECTION("if true"){
-		CPU cpu=run(
+		CPU cpu=run({
 			IF{1_u8,
 				{imm(Reg::A,5)},
 				{imm(Reg::A,6)}
-			}
-		);
+			},
+			halt(),
+		});
 		REQUIRE(_REG(A)==5);
 	}
 	SECTION("if false"){
-		CPU cpu=run(
+		CPU cpu=run({
 			IF{0_u8,
 				{imm(Reg::A,5)},
 				{imm(Reg::A,6)}
-			}
-		);
+			},
+			halt(),
+		});
 		REQUIRE(_REG(A)==6);
 	}
 }
@@ -55,6 +60,7 @@ TEST_CASE("while","[asm][statement]"){
 			a.set(add(a,b)),
 			b.set(sub(b,1_u8)),
 		}}},
+		halt(),
 	});
 	REQUIRE(_REG(A)==6);
 	REQUIRE(cpu.isHalt()==true);
@@ -72,6 +78,7 @@ TEST_CASE("static variable","[asm][statement]"){
 		a.set(56_u8),
 		b.set(78_u8),
 		c.set(90_u8),
+		halt(),
 	},{main});
 	REQUIRE(_STATIC(vars,a)==0);
 	REQUIRE(_STATIC(vars,b)==12);
@@ -95,6 +102,7 @@ TEST_CASE("static variable with custom type","[asm][statement]"){
 		x.set(x+1_u8),
 		y.set(y+2_u8),
 		z.set(z+3_u8),
+		halt(),
 	},{main});
 	REQUIRE(_STATIC(vars,x)==3);
 	REQUIRE(_STATIC(vars,y)==7);
@@ -110,16 +118,20 @@ TEST_CASE("big variable","[asm][statement]"){
 		add(0x12f3_u16,0x32cc_u16),
 		pop(Reg::B),
 		pop(Reg::A),
+		halt(),
 	});
 	REQUIRE(_REG(B)==0x45);
 	REQUIRE(_REG(A)==0xbf);
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
-	auto _if=[=](Bool cond){
-		return IF{cond,
-			{imm(Reg::A,T)},
-	        {imm(Reg::A,F)}
+	auto _if=[=](Bool cond)->code_t{
+		return {
+			IF{cond,
+				{imm(Reg::A,T)},
+	        	{imm(Reg::A,F)}
+			},
+			halt(),
 		};
 	};
 	SECTION("if !") {
