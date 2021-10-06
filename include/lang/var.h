@@ -5,6 +5,7 @@
 #ifndef BBCPU_VAR_H
 #define BBCPU_VAR_H
 #include <cstddef>
+#include <forward_list>
 #include "../asm/ops.h"
 
 namespace BBCPU::ASM {
@@ -123,6 +124,30 @@ namespace BBCPU::ASM {
 			}
 		}
 		virtual std::shared_ptr<MemVar> alloc(addr_t size)=0;
+	};
+	template<typename T>
+	struct PresetAllocator:Allocator{
+		std::forward_list<T> presets{};
+		virtual std::shared_ptr<MemVar> alloc_preset(addr_t size,T value)=0;
+		std::shared_ptr<MemVar> alloc(addr_t size) override {
+			T value{};
+			if(!presets.empty()){
+				value=presets.front();
+				presets.pop_front();
+			}
+			return alloc_preset(size,value);
+		}
+
+		template<typename ...Types>
+		std::tuple<Types...> preset_vars(typename std::pair<Types,T>::second_type ... v) {
+			presets={v...};
+			return vars<Types...>();
+		}
+
+		auto& preset(T v){
+			presets.emplace_front(v);
+			return *this;
+		}
 	};
 }
 #endif //BBCPU_VAR_H

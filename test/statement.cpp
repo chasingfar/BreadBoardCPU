@@ -62,8 +62,8 @@ TEST_CASE("while","[asm][statement]"){
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
-	auto [a]=vars.get<UInt8>({0});
-	auto [b,c]=vars.get<UInt8,UInt8>({12},{34});
+	UInt8 a{vars.preset({0})};
+	auto [b,c]=vars.preset_vars<UInt8,UInt8>({12},{34});
 	Label main;
 	CPU cpu=run({
 		jmp(main),
@@ -84,7 +84,7 @@ TEST_CASE("static variable","[asm][statement]"){
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	struct Vec:Struct<UInt8,UInt8,UInt8>{};
 	StaticVars vars;
-	auto [vec]=vars.get<Vec>({3,7,11});
+	Vec vec{vars.preset({3,7,11})};
 	auto [x,y,z]=vec.extract();
 	
 	Label main;

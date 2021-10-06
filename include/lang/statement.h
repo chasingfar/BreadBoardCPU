@@ -6,7 +6,6 @@
 #define BBCPU_STATEMENT_H
 
 #include <utility>
-#include <forward_list>
 #include "type.h"
 
 namespace BBCPU::ASM {
@@ -69,26 +68,14 @@ namespace BBCPU::ASM {
 			};
 		}
 	};
-	struct StaticVars:Block,Allocator{
-		std::forward_list<code_t> presets{};
-		std::shared_ptr<MemVar> alloc(addr_t size) override {
+	struct StaticVars:Block,PresetAllocator<code_t>{
+		std::shared_ptr<MemVar> alloc_preset(addr_t size,code_t value) override {
 			auto var=StaticVar::make(size, start, static_cast<offset_t>(data_size(body)));
-			code_t value{};
-			if(!presets.empty()){
-				value=presets.front();
-				presets.pop_front();
-			}
 			body.insert(body.end(),value.begin(),value.end());
 			for(addr_t i=data_size(value);i<size;++i){
 				body.emplace_back(0);
 			}
 			return var;
-		}
-
-		template<typename ...Types>
-		std::tuple<Types...> get(typename std::pair<Types,code_t>::second_type ... v) {
-			presets={v...};
-			return vars<Types...>();
 		}
 	};
 }

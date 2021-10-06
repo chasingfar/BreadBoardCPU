@@ -289,7 +289,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	Label heap,aa;
 
 	Fn<Ptr<Void>,UInt16> malloc{[&](auto& _,auto size)->code_t{
-		auto [next_ptr]=global.get<UInt16>({heap.get_lazy(0),heap.get_lazy(1)});
+		UInt16 next_ptr{global.preset({heap.get_lazy(0),heap.get_lazy(1)})};
 		return {
 			_.ret=((Ptr<Void>)next_ptr),
 			next_ptr+=size,
