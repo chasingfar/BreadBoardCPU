@@ -121,6 +121,10 @@ namespace BBCPU::ASM {
 			}
 			return os;
 		}
+
+		static ops_t parse(const code_t& codes){
+			return ASM{}<<codes<<END;
+		}
 	};
 
 }
