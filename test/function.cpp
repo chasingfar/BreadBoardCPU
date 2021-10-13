@@ -335,3 +335,16 @@ TEST_CASE("function pointer","[asm][function]"){
 	REQUIRE(cpu.RAM[*heap] == 4);
 	REQUIRE(_REG16(BA) == *heap);
 }
+TEST_CASE("library function","[asm][function]"){
+	using namespace Library;
+	Label main;
+	stdlib.clear();
+	CPU cpu=run({
+		3_u8*5_u8+6_u8*7_u8,
+		halt(),
+		stdlib,
+	});
+
+	REQUIRE(stdlib.fns.size()==1);
+	REQUIRE(_STACK_TOP==3*5+6*7);
+}

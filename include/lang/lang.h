@@ -5,6 +5,6 @@
 #ifndef BBCPU_LANG_H
 #define BBCPU_LANG_H
 
-#include "operator.h"
+#include "library.h"
 
 #endif //BBCPU_LANG_H
