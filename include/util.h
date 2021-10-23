@@ -66,7 +66,7 @@ namespace Util{
 			os<<"v2.0 raw"<<std::endl;
 			size_t i=0;
 			for(auto out:rom.data){
-				os<<std::hex<< static_cast<size_t>(out);
+				os<<std::hex<< (static_cast<size_t>(out)&0xffffffffull);
 				if(i%8==7){
 					os<<std::endl;
 				}else{

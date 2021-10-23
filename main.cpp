@@ -1,19 +1,32 @@
 #include <iostream>
 #include <fstream>
 
-#define CPU_DEBUG 1
+#define CPU_DEBUG 0
 #include "include/cpu/cpu.h"
 #include "include/asm/asm.h"
+#include "include/lang/lang.h"
 int main() {
-	using namespace BBCPU;
+	//using namespace BBCPU;
 
 
 	//MCode mctx(0,0,0);
 	//mctx.inc16(Reg16::PC);
 	//std::cout<<std::bitset<16>(-1);
 	//RegPair::generateRPROM();
-	//OpCode::generateOPROM();
-	ASM::generateASMROM();
+	BBCPU::OpCode::generateOPROM();
+	//ASM::generateASMROM();
+	{
+		using namespace BBCPU::ASM;
+		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
+		generate("program.txt",ASM::parse({
+			imm(Reg::A,0),imm(Reg::B,3),
+			While{b,{{
+				a.set(add(a,b)),
+				b.set(sub(b,1_u8)),
+			}}},
+			halt(),
+		}));
+	}
 	//ASM::testASM();
 	/*{
 		using namespace ALU74181;
