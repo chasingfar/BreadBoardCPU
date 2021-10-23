@@ -428,7 +428,7 @@ namespace BBCPU::OpCode {
 		}
 		inline static size_t imax=0;
 		static MCTRL::type gen(MARG::type marg) {
-			MCode ctx(marg, 0, 0);
+			MCode ctx(marg, -1, 0);
 			LOG_START()
 			( gen_if<Ops>(ctx) || ... || gen_default(ctx) );
 			//((Ops::id::test(marg) && (Ops::gen(ctx), true))||...);
@@ -446,7 +446,7 @@ namespace BBCPU::OpCode {
 			return false;
 		}
 		static layout_t parse(auto op){
-			MCode ctx(MARG::opcode::set(0,op), 0, 0);
+			MCode ctx(MARG::opcode::set(0,op), -1, 0);
 			layout_t result{"Unknown",1};
 			( parse_if<Ops>(ctx,result) || ... );
 			return result;
@@ -454,23 +454,23 @@ namespace BBCPU::OpCode {
 	};
 	
 	namespace Ops{
-		using Load       = Load       <0b111111>;
-		using Save       = Save       <0b111110>;
-		using Push       = Push       <0b11101>;
-		using Pop        = Pop        <0b11100>;
-		using Calc       = Calc       <0b11011>;
-		using Logic      = Logic      <0b110101>;
-		using BranchCF   = BranchCF   <0b11010011>;
-		using BranchZero = BranchZero <0b11010010>;
-		using ImmVal     = ImmVal     <0b11010001>;
-		using Jump       = Jump       <0b11010000>;
-		using Call       = Call       <0b11001111>;
-		using Return     = Return     <0b11001110>;
-		using Halt       = Halt       <0b11001101>;
+		using Halt       = Halt       <0b11111111>;
+		using ImmVal     = ImmVal     <0b11111110>;
+		using BranchCF   = BranchCF   <0b11111101>;
+		using BranchZero = BranchZero <0b11111100>;
+		using Load       = Load       <0b111110>;
+		using Save       = Save       <0b111101>;
+		using Logic      = Logic      <0b111100>;
+		using Calc       = Calc       <0b11101>;
+		using Push       = Push       <0b11100>;
+		using Pop        = Pop        <0b11011>;
+		using Jump       = Jump       <0b11010111>;
+		using Call       = Call       <0b11010110>;
+		using Return     = Return     <0b11010101>;
 
-		using Adjust     = Adjust     <0b11001100>;
-		using PushSP     = PushSP     <0b11001011>;
-		using PopSP      = PopSP      <0b11001010>;
+		using Adjust     = Adjust     <0b11010100>;
+		using PushSP     = PushSP     <0b11010011>;
+		using PopSP      = PopSP      <0b11010010>;
 		/*using Enter    = Enter      <0b11001100>;
 		using Adjust     = Adjust     <0b11001011>;
 		using Leave      = Leave      <0b11001010>;
@@ -501,13 +501,13 @@ namespace BBCPU::OpCode {
 	}
 
 	inline void generateOPROM(){
-		std::ofstream fout("oprom.txt");
+		std::ofstream fout("oprom2.txt");
 		if(!fout) {return;}
 		Ops::all::imax=0;
 		fout<<ROM(TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[](MARG::type marg){
-			std::cout<<std::bitset<MARG::size>(marg);
+			//std::cout<<std::bitset<MARG::size>(marg);
 			auto mctrl=Ops::all::gen(marg);
-			std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
+			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
 			return mctrl;
 		}}));
 		std::cout<<"imax="<<Ops::all::imax<<std::endl;

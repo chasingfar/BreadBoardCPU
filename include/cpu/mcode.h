@@ -33,7 +33,8 @@ namespace BBCPU{
 		}
 
 		void halt(){
-			mctrl=MCTRL::sig::halt(MCTRL::noOp(mctrl));
+			if(step()){mctrl=MCTRL::sig::halt(MCTRL::noOp(mctrl));}
+			end();
 		}
 		void copy(Reg from,Reg to){
 			LOG(from,to);

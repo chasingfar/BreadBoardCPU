@@ -31,6 +31,7 @@ namespace BBCPU {
 		}
 		static auto set2(auto o,Reg lhs,Reg dest,DirMode dirMode){
 			o=fromA::set(o,lhs);
+			o=fromB::set(o,0);
 			o=to::set(o,dest);
 			o=dir::set(o,dirMode);
 			return o;
@@ -41,11 +42,11 @@ namespace BBCPU {
 		using HALT   = BitField<1, INTA_>;
 		using SIG    = BitField<1, HALT>;
 		static auto  halt(auto o){
-			o=HALT::set(o,1);
+			o=HALT::set(o,0);
 			return o;
 		}
 		static bool isHalt(auto o){
-			return HALT::get(o)==1;
+			return HALT::get(o)==0;
 		}
 	};
 	struct MCTRL : BitField<32,StartAt<0> > {
