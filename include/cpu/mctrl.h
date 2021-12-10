@@ -8,107 +8,114 @@
 namespace BBCPU {
 
 	BITFILEDBASE(2) struct IODIR : Base {
-		using mem_write = BitField<1, Base, FollowMode::innerLow>;
-		using mem_read  = BitField<1, mem_write>;
+		using is_write = BitField<1, Base, FollowMode::innerLow>;
+		using is_mem  = BitField<1, is_write>;
 	};
 	enum struct DirMode : IODIR<>::type {
-		RegToReg = 0b00,
-		RegToMem = 0b01,
-		MemToReg = 0b10,
-		MemToMem = 0b11,/*as RegToReg*/
+		Br = 0b00,
+		Bw = 0b01,
+		Mr = 0b10,
+		Mw = 0b11,
 	};
-	BITFILEDBASE(14) struct IO : Base {
-		using fromB  = BitField<4, Base,FollowMode::innerLow >;
-		using fromA  = BitField<4, fromB >;
-		using to     = BitField<4, fromA >;
-		using dir    = IODIR<2, to >;
-		static auto set(auto o,Reg lhs,Reg rhs,Reg dest,DirMode dirMode){
-			o=fromA::set(o,lhs);
-			o=fromB::set(o,rhs);
-			o=to::set(o,dest);
+	enum struct RegSet : BitField<2>::type {
+		I = 0b00,
+		A = 0b01,
+		L = 0b10,
+		H = 0b11,
+	};
+	BITFILEDBASE(8) struct IO : Base {
+		using Bs  = BitField<4, Base,FollowMode::innerLow >;
+		using Rs  = BitField<2, Bs>;
+		using dir = IODIR<2, Rs >;
+		static auto set(auto o,Reg bs,RegSet rs,DirMode dirMode){
+			o=Bs::set(o,bs);
+			o=Rs::set(o,rs);
 			o=dir::set(o,dirMode);
 			return o;
 		}
-		static auto set2(auto o,Reg lhs,Reg dest,DirMode dirMode){
-			o=fromA::set(o,lhs);
-			o=fromB::set(o,0);
-			o=to::set(o,dest);
-			o=dir::set(o,dirMode);
-			return o;
+		static auto setBr(auto o,Reg bs,RegSet rs){
+			return set(o,bs,rs,DirMode::Br);
 		}
-	};
-	BITFILEDBASE(3) struct SIGNAL : Base {
-		using INTA_  = BitField<1, Base,FollowMode::innerLow>;
-		using HALT   = BitField<1, INTA_>;
-		using SIG    = BitField<1, HALT>;
-		static auto  halt(auto o){
-			o=HALT::set(o,0);
-			return o;
+		static auto setA(auto o){
+			return set(o,0,RegSet::A,DirMode::Br);
 		}
-		static bool isHalt(auto o){
-			return HALT::get(o)==0;
+		static auto setBw(auto o,Reg bs){
+			return set(o,bs,RegSet::A,DirMode::Bw);
+		}
+		static auto setMr(auto o,RegSet toReg){
+			return set(o,0,toReg,DirMode::Mr);
+		}
+		static auto setMw(auto o){
+			return set(o,0,RegSet::A,DirMode::Mw);
 		}
 	};
 	struct MCTRL : BitField<32,StartAt<0> > {
 		using state  = STATE<9,StartAt<0> >;
-		using sig    = SIGNAL<3, state>;
-		using io     = IO<14, sig>;
-		using alu    = ALU<6, io>;
+		using INTA_  = BitField<1, state>;
+		using alu    = ALU<6, INTA_>;
+		using io     = IO<8, alu>;
 		static auto noOp(auto o){
-			o=regToReg(o, Reg::OPR,Reg::OPR);
+			o=alu::passA(o);
+			o=io::setA(o);
 			return o;
 		}
 		static auto setIndex(auto o, size_t index){
 			o=state::index::set(o, index);
 			return o;
 		}
-		static auto regToReg(auto o, Reg from, Reg to){
+		static auto BtoReg(auto o, Reg from, RegSet to){
 			LOG(from, to);
-			o=alu::pass(o);
-			o=io::set2(o, from, to, DirMode::RegToReg);
+			o=alu::passB(o);
+			o=io::setBr(o, from, to);
 			return o;
 		}
-		static auto memToReg(auto o, Reg16 from, Reg to){
+		static auto AtoB(auto o, Reg to){
 			LOG(from, to);
-			o=alu::pass(o);
-			o=io::set2(o, pair(from), to, DirMode::MemToReg);
+			o=alu::passA(o);
+			o=io::setBw(o, to);
 			return o;
 		}
-		static auto regToMem(auto o, Reg from, Reg16 to){
+		static auto MtoReg(auto o, RegSet to){
 			LOG(from, to);
-			o=alu::pass(o);
-			o=io::set2(o, from, pair(to), DirMode::RegToMem);
+			o=alu::passB(o);
+			o=io::setMr(o,to);
+			return o;
+		}
+		static auto AtoM(auto o){
+			LOG(from, to);
+			o=alu::passA(o);
+			o=io::setMw(o,);
 			return o;
 		}
 
 		template <auto fn>
-		static auto calc(auto o,Reg lhs,Reg rhs,Reg dest, auto carry){
-			LOG(lhs,rhs,dest,carry);
+		static auto calc(auto o,Reg rhs, auto carry){
+			LOG(rhs,carry);
 			o=fn(o,carry);
-			o=io::set(o,lhs,rhs,dest,DirMode::RegToReg);
+			o=io::setBr(o, rhs, RegSet::A);
 			return o;
 		}
 		template <auto fn>
-		static auto calc(auto o,Reg lhs,Reg rhs,Reg dest){
-			LOG(lhs,rhs,dest);
+		static auto calc(auto o,Reg rhs){
+			LOG(rhs);
 			o=fn(o);
-			o=io::set(o,lhs,rhs,dest,DirMode::RegToReg);
+			o=io::setBr(o, rhs, RegSet::A);
 			return o;
 		}
 
 
 		template <auto fn>
-		static auto logic(auto o,Reg lhs,Reg rhs,Reg dest){
-			LOG(lhs,dest);
+		static auto logic(auto o,Reg rhs){
+			LOG(rhs);
 			o=fn(o);
-			o=io::set(o,lhs,rhs,dest,DirMode::RegToReg);
+			o=io::setBr(o, rhs, RegSet::A);
 			return o;
 		}
 
-		static auto inc(auto o, Reg from, Reg to){
+		static auto inc(auto o){
 			LOG(from,to);
 			o=alu::inc(o);
-			o=io::set2(o,from,to,DirMode::RegToReg);
+			o=io::setA(o);
 			return o;
 		}
 		static auto inc(auto o, Reg reg){
@@ -118,7 +125,7 @@ namespace BBCPU {
 		static auto inc(auto o, Reg from, Reg to, alu::Carry carry){
 			LOG(from,to,carry);
 			o=alu::inc(o,carry);
-			o=io::set2(o,from,to,DirMode::RegToReg);
+			o=io::setA(o);
 			return o;
 		}
 		static auto inc(auto o, Reg reg, alu::Carry carry){
@@ -128,7 +135,7 @@ namespace BBCPU {
 		static auto dec(auto o, Reg from, Reg to){
 			LOG(from,to);
 			o=alu::dec(o);
-			o=io::set2(o,from,to,DirMode::RegToReg);
+			o=io::setA(o);
 			return o;
 		}
 		static auto dec(auto o, Reg reg){
@@ -138,7 +145,7 @@ namespace BBCPU {
 		static auto dec(auto o, Reg from, Reg to, alu::Carry carry){
 			LOG(from,to,carry);
 			o=alu::dec(o,carry);
-			o=io::set2(o,from,to,DirMode::RegToReg);
+			o=io::setA(o);
 			return o;
 		}
 		static auto dec(auto o, Reg reg, alu::Carry carry){

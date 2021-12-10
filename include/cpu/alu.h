@@ -52,8 +52,11 @@ namespace BBCPU {
 			return o;
 		}
 
-		static auto pass(auto o) {
+		static auto passA(auto o) {
 			return setLogic(o,LogicFn::A);
+		}
+		static auto passB(auto o) {
+			return setLogic(o,LogicFn::B);
 		}
 
 		static auto zero(auto o) {
