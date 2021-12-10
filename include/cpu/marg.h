@@ -9,8 +9,9 @@
 #include "alu.h"
 namespace BBCPU {
 	BITFILEDBASE(9) struct STATE : Base {
-		using index  = BitField<Size-2,Base,FollowMode::innerLow>;
-		using CF     = BitField<1,index>;
+		using index  = BitField<Size-3,Base,FollowMode::innerLow>;
+		using TCF     = BitField<1,index>;
+		using CF     = BitField<1,TCF>;
 		using IF    = BitField<1,CF>;
 	};
 
@@ -21,6 +22,9 @@ namespace BBCPU {
 		using opcode = BitField<8, INT >;
 		static ALU74181::Carry getCarry(auto o){
 			return static_cast<ALU74181::Carry>(carry::get(o));
+		}
+		static ALU74181::Carry getTCF(auto o){
+			return static_cast<ALU74181::Carry>(state::TCF::get(o));
 		}
 		static ALU74181::Carry getCF(auto o){
 			return static_cast<ALU74181::Carry>(state::CF::get(o));
