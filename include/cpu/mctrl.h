@@ -84,7 +84,7 @@ namespace BBCPU {
 		static auto AtoM(auto o){
 			LOG(from, to);
 			o=alu::passA(o);
-			o=io::setMw(o,);
+			o=io::setMw(o);
 			return o;
 		}
 
