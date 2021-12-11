@@ -33,7 +33,7 @@ namespace BBCPU{
 		}
 
 		void save_TCF(){
-			MCTRL::state::TCF::set(mctrl, MARG::carry::get(marg));
+			mctrl=MCTRL::state::TCF::set(mctrl, MARG::carry::get(marg));
 		}
 		void load_reg(Reg from){
 			if(step()){mctrl=MCTRL::BtoReg(mctrl, from, RegSet::A);}
