@@ -5,7 +5,6 @@
 #ifndef BBCPU_CPU_CPU_H
 #define BBCPU_CPU_CPU_H
 #include "opcode.h"
-#include "regpair.h"
 namespace BBCPU{
 	struct CPU{
 		using Reg = Regs::Reg;
@@ -14,6 +13,7 @@ namespace BBCPU{
 		using addr_t = uint16_t;
 
 		op_t REG[16]{};
+		op_t REGSET[4]{};
 		op_t RAM[1u<<16u]{};
 		MARG::type marg=0;
 		MCTRL::type mctrl=0;
@@ -56,6 +56,9 @@ namespace BBCPU{
 		std::string get_reg_str(size_t i){
 			return "REG["+std::to_string(i)+"]("+std::to_string(REG[i])+")";
 		}
+		std::string get_regset_str(size_t i){
+			return "REGSET["+std::to_string(i)+"]("+std::to_string(REGSET[i])+")";
+		}
 		std::string get_ram_str(size_t i){
 			return "RAM["+std::to_string(i)+"]("+std::to_string(RAM[i])+")";
 		}
@@ -70,48 +73,55 @@ namespace BBCPU{
 		}
 		void load_op(auto op){
 			load(op, get_pair(Reg16::PC));
-			REG[Reg::OPR.v()]=op[0];
+			REGSET[RegSet::I.v()]=op[0];
 			marg=MARG::opcode::set(marg,op[0]);
 		}
 		bool isHalt(){
-			return MCTRL::sig::isHalt(mctrl);
+			return MARG::opcode::get(marg)==OpCode::Ops::Halt::id::id;
 		}
 		void tick(bool debug=false){
-			std::string A_str,B_str,fn_str;
 			if(debug){std::cout<<std::bitset<19>(marg)<<std::endl;}
 			mctrl=OpCode::Ops::all::gen(marg);
 			if(debug){std::cout<<std::endl;}
 			auto dir=static_cast<DirMode>(MCTRL::io::dir::get(mctrl));
+			op_t A=0,B=0,F=0;
+			std::string A_str="",B_str="",F_str="",fn_str="";
+			std::tie(A,A_str)=std::pair{REGSET[RegSet::A.v()],get_regset_str(RegSet::A.v())};
+			auto addr=(static_cast<addr_t>(REGSET[RegSet::H.v()])<<8)|REGSET[RegSet::L.v()];
+			auto Bs=MCTRL::io::Bs::get(mctrl);
+			auto Rs=MCTRL::io::Rs::get(mctrl);
 
-			op_t A;
-			if(dir==DirMode::MemToReg){
-				A=RAM[get_addr(MCTRL::io::fromA::get(mctrl))];
-				A_str=get_ram_str(get_addr(MCTRL::io::fromA::get(mctrl)));
-			}else{
-				A=REG[MCTRL::io::fromA::get(mctrl)];
-				A_str=get_reg_str(MCTRL::io::fromA::get(mctrl));
+			if (dir==DirMode::Br){
+				std::tie(B,B_str)=std::pair{REG[Bs],get_reg_str(Bs)};
+			}else if(dir==DirMode::Mr){
+				std::tie(B,B_str)=std::pair{RAM[addr],get_ram_str(addr)};
 			}
-
-			op_t B=REG[MCTRL::io::fromB::get(mctrl)];
-			B_str=get_reg_str(MCTRL::io::fromB::get(mctrl));
 
 			auto [carry,O]=MCTRL::alu::run<8>(mctrl,A,B);
 			fn_str=MCTRL::alu::get_fn_str(mctrl,A_str,B_str)+"="+std::to_string(O);
-
-			if(dir==DirMode::RegToMem){
-				fn_str=get_ram_str(get_addr(MCTRL::io::to::get(mctrl)))+"="+fn_str;
-				RAM[get_addr(MCTRL::io::to::get(mctrl))]=O;
-			}else{
-				fn_str=get_reg_str(MCTRL::io::to::get(mctrl))+"="+fn_str;
-				REG[MCTRL::io::to::get(mctrl)]=O;
+			switch (dir) {
+				case DirMode::Br:
+				case DirMode::Mr:
+					F_str=get_reg_str(Rs);
+					REGSET[Rs]=O;
+					break;
+				case DirMode::Bw:
+					F_str=get_reg_str(Bs);
+					REG[Bs]=O;
+					break;
+				case DirMode::Mw:
+					F_str=get_ram_str(addr);
+					RAM[addr]=O;
+					break;
 			}
+
 			if(debug){
-				std::cout<<fn_str<<" carry="<<std::boolalpha<<(carry==MCTRL::alu::Carry::yes)<<std::endl;
+				std::cout<<F_str<<"="<<fn_str<<" carry="<<std::boolalpha<<(carry==MCTRL::alu::Carry::yes)<<std::endl;
 			}
 
 			marg=MARG::carry::set(0,static_cast<MARG::type>(carry));
 			marg=MARG::state::set(marg,MCTRL::state::get(mctrl));
-			marg=MARG::opcode::set(marg,REG[0]);
+			marg=MARG::opcode::set(marg,REGSET[RegSet::I.v()]);
 		}
 		void tick_op(bool debug=false){
 			do{
