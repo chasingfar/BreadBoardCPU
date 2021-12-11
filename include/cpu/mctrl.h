@@ -17,12 +17,6 @@ namespace BBCPU {
 		Mr = 0b10,
 		Mw = 0b11,
 	};
-	enum struct RegSet : BitField<2>::type {
-		I = 0b00,
-		A = 0b01,
-		L = 0b10,
-		H = 0b11,
-	};
 	BITFILEDBASE(8) struct IO : Base {
 		using Bs  = BitField<4, Base,FollowMode::innerLow >;
 		using Rs  = BitField<2, Bs>;

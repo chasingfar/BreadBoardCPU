@@ -74,6 +74,15 @@ namespace BBCPU{
 		#include "define_enum_x.h"
 
 
+		#define ENUM_NAME(...) RegSet##__VA_ARGS__
+		#define ENUM_TABLE \
+			X(I ) \
+			X(A ) \
+			X(L ) \
+			X(H ) \
+
+		#include "define_enum_x.h"
+
 		static Reg user(UReg ureg){
 			return ureg.toReg();
 		}
