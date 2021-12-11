@@ -102,7 +102,7 @@ namespace BBCPU{
 			switch (dir) {
 				case DirMode::Br:
 				case DirMode::Mr:
-					F_str=get_reg_str(Rs);
+					F_str=get_regset_str(Rs);
 					REGSET[Rs]=O;
 					break;
 				case DirMode::Bw:

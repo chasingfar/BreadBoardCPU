@@ -210,7 +210,7 @@ namespace BBCPU::OpCode {
 			LOG("BranchZero");
 			ctx.stack_pop(Reg::TMA);
 			ctx.load_imm16(Reg16::TMP);
-			ctx.branch_zero(Reg16::TMP,Reg::TMA,Reg::TMA);
+			ctx.branch_zero(Reg16::TMP,Reg::TMA);
 			ctx.next_op();
 		}
 	};
