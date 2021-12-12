@@ -500,15 +500,15 @@ namespace BBCPU::OpCode {
 		>;
 	}
 
-	inline void generateOPROM(){
-		std::ofstream fout("oprom2.txt");
+	inline void generateOPROM(const std::string& name,size_t size=Util::Bitwise::BitSize<MCTRL::type>,size_t i=0){
+		std::ofstream fout(name);
 		if(!fout) {return;}
 		Ops::all::imax=0;
-		fout<<ROM(TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[](MARG::type marg){
+		fout<<ROM(TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[=](MARG::type marg){
 			//std::cout<<std::bitset<MARG::size>(marg);
 			auto mctrl=Ops::all::gen(marg);
 			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
-			return mctrl;
+			return (mctrl>>(i*size)) % (1<<size);
 		}}));
 		std::cout<<"imax="<<Ops::all::imax<<std::endl;
 	}

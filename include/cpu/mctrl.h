@@ -43,7 +43,7 @@ namespace BBCPU {
 			return set(o,Reg::OPR,RegSet::A,DirMode::Mw);
 		}
 	};
-	struct MCTRL : BitField<32,StartAt<0> > {
+	struct MCTRL : BitField<24,StartAt<0> > {
 		using state  = STATE<9,StartAt<0> >;
 		using INTA_  = BitField<1, state>;
 		using alu    = ALU<6, INTA_>;
