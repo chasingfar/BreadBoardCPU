@@ -28,7 +28,7 @@ namespace ALU74181 {
 			X(notA     ,= 0b0000u,"~$A"        ) \
 			X(AnorB    ,= 0b0001u,"~($A|$B)"   ) \
 			X(notAandB ,= 0b0010u,"(~$A)&$B"   ) \
-			X(fill0    ,= 0b0011u,"0b00000000" ) \
+			X(fill0    ,= 0b0011u,"0"          ) \
 			X(AnandB   ,= 0b0100u,"~($A&$B)"   ) \
 			X(notB     ,= 0b0101u,"~$B"        ) \
 			X(AxorB    ,= 0b0110u,"$A^$B"      ) \
@@ -37,7 +37,7 @@ namespace ALU74181 {
 			X(notAxorB ,= 0b1001u,"(~$A)^$B"   ) \
 			X(B        ,= 0b1010u,"$B"         ) \
 			X(AandB    ,= 0b1011u,"$A&$B"      ) \
-			X(fill1    ,= 0b1100u,"0b11111111" ) \
+			X(fill1    ,= 0b1100u,"-1"         ) \
 			X(AornotB  ,= 0b1101u,"$A|(~$B)"   ) \
 			X(AorB     ,= 0b1110u,"$A|$B"      ) \
 			X(A        ,= 0b1111u,"$A"         ) \
