@@ -60,6 +60,24 @@ namespace BBCPU{
 			copy(from.H(),to.H());
 		}
 
+		void set_zero(Reg reg){
+			LOG(reg);
+			if(step()){mctrl=MCTRL::zero(mctrl, reg);}
+		}
+		void set_zero16(Reg16 reg16){
+			LOG(reg16);
+			set_zero(reg16.L());
+			set_zero(reg16.H());
+		}
+		void set_minus_one(Reg reg){
+			LOG(reg);
+			if(step()){mctrl=MCTRL::minusOne(mctrl, reg);}
+		}
+		void set_minus_one16(Reg16 reg16){
+			LOG(reg16);
+			set_minus_one(reg16.L());
+			set_minus_one(reg16.H());
+		}
 		void inc(Reg from,Reg to){
 			LOG(from, to);
 			load_reg(from);
@@ -227,12 +245,6 @@ namespace BBCPU{
 			constexpr auto fn=MCTRL::alu::XOR<MCTRL::type>;
 			load_reg(lhs);
 			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
-			save_reg(dest);
-		}
-		void set_zero(Reg dest){
-			LOG(dest);
-			constexpr auto fn=MCTRL::alu::zero<MCTRL::type>;
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, dest);}
 			save_reg(dest);
 		}
 		void test_zero(Reg lhs){

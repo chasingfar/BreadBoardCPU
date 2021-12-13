@@ -30,8 +30,8 @@ namespace BBCPU {
 		static auto setBr(auto o,Reg bs,RegSet rs){
 			return set(o,bs,rs,DirMode::Br);
 		}
-		static auto setA(auto o){
-			return set(o,Reg::OPR,RegSet::A,DirMode::Br);
+		static auto setRs(auto o,RegSet rs){
+			return set(o,Reg::OPR,rs,DirMode::Br);
 		}
 		static auto setBw(auto o,Reg bs){
 			return set(o,bs,RegSet::A,DirMode::Bw);
@@ -50,7 +50,7 @@ namespace BBCPU {
 		using io     = IO<8, alu>;
 		static auto noOp(auto o){
 			o=alu::passA(o);
-			o=io::setA(o);
+			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 		static auto setIndex(auto o, size_t index){
@@ -106,31 +106,42 @@ namespace BBCPU {
 			return o;
 		}
 
+		static auto zero(auto o,Reg reg){
+			o=alu::zero(o);
+			o=io::setBw(o,reg);
+			return o;
+		}
+		static auto minusOne(auto o,Reg reg){
+			o=alu::minusOne(o);
+			o=io::setBw(o,reg);
+			return o;
+		}
+
 		static auto inc(auto o){
 			LOG(from,to);
 			o=alu::inc(o);
-			o=io::setA(o);
+			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto inc(auto o, alu::Carry carry){
 			LOG(from,to,carry);
 			o=alu::inc(o,carry);
-			o=io::setA(o);
+			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto dec(auto o){
 			LOG(from,to);
 			o=alu::dec(o);
-			o=io::setA(o);
+			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto dec(auto o, alu::Carry carry){
 			LOG(from,to,carry);
 			o=alu::dec(o,carry);
-			o=io::setA(o);
+			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 	};

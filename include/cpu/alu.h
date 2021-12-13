@@ -62,6 +62,9 @@ namespace BBCPU {
 		static auto zero(auto o) {
 			return setLogic(o,LogicFn::fill0);
 		}
+		static auto minusOne(auto o) {
+			return setLogic(o,LogicFn::fill1);
+		}
 
 		static auto testAeqZero(auto o) {
 			return setArith(o,ArithFn::Aminus1, Carry::no);//CF=Carry::no if A==0
