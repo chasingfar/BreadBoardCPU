@@ -1,8 +1,6 @@
 //
 // Created by chasingfar on 2021/7/23.
 //
-#include "asm/basic.h"
-#include "asm/ops.h"
 #include "asm_test_util.h"
 
 
