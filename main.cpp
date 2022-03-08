@@ -2,7 +2,7 @@
 #include <fstream>
 
 #define CPU_DEBUG 0
-#include "include/cpu/cpu.h"
+#include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"
 int main() {
@@ -13,14 +13,13 @@ int main() {
 	//mctx.inc16(Reg16::PC);
 	//std::cout<<std::bitset<16>(-1);
 	//RegPair::generateRPROM();
-
-	//BBCPU::OpCode::generateOPROM("oprom_v3.txt");
+	BBCPU::OpCode::generateOPROM("oprom_regfile8x16.txt",32,0);
 	//BBCPU::OpCode::generateOPROM("oprom_v3_0.txt",8,0);
 	//BBCPU::OpCode::generateOPROM("oprom_v3_1.txt",8,1);
 	//BBCPU::OpCode::generateOPROM("oprom_v3_2.txt",8,2);
 
 	//ASM::generateASMROM();
-	{
+	/*{
 		using namespace BBCPU::ASM;
 		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
 		generate("program.txt",ASM::parse({
@@ -31,7 +30,7 @@ int main() {
 			}}},
 			halt(),
 		}));
-	}
+	}*/
 	//ASM::testASM();
 	/*{
 		using namespace ALU74181;

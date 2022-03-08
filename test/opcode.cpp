@@ -3,4 +3,4 @@
 //
 
 #include "catch.hpp"
-#include <cpu/cpu.h>
+#include <cpu/regfile8x16/cpu.h>
