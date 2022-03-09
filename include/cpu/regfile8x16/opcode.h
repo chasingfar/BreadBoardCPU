@@ -388,6 +388,7 @@ namespace BBCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("Init");
+			ctx.set_zero(Reg::OPR);
 			ctx.set_minus_one16(Reg16::SP);//Reg16::SP=0xFFFF
 			ctx.set_zero16(Reg16::PC);//Reg16::PC=0x0000
 			ctx.load_op();//load op from MEM[0]
@@ -513,7 +514,7 @@ namespace BBCPU::OpCode {
 #if CPU_DEBUG
 			std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
 #endif
-			return (mctrl>>(i*size)) % (1<<size);
+			return (mctrl>>(i*size)) & ((~MCTRL::type(0)) >> (Util::Bitwise::BitSize<MCTRL::type> - size));
 		}}));
 		std::cout<<"imax="<<Ops::all::imax<<std::endl;
 	}

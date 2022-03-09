@@ -49,8 +49,7 @@ namespace BBCPU {
 		}
 	};
 	BITFILEDBASE(3) struct SIGNAL : Base {
-		using INTA_  = BitField<1, Base,FollowMode::innerLow>;
-		using HALT   = BitField<1, INTA_>;
+		using HALT   = BitField<1, Base,FollowMode::innerLow >;
 		using SIG    = BitField<1, HALT>;
 		static auto  halt(auto o){
 			o=HALT::set(o,1);
@@ -62,9 +61,10 @@ namespace BBCPU {
 	};
 	struct MCTRL : BitField<32,StartAt<0> > {
 		using state  = STATE<9,StartAt<0> >;
-		using sig    = SIGNAL<3, state>;
-		using io     = IO<14, sig>;
-		using alu    = ALU<6, io>;
+		using INTA_  = BitField<1, state>;
+		using alu    = ALU<6, INTA_>;
+		using io     = IO<14, alu>;
+		using sig    = SIGNAL<2, io>;
 		static auto noOp(auto o){
 			o=copy(o, Reg::OPR,Reg::OPR);
 			return o;
