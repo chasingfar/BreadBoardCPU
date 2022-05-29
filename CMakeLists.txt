@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.20)
 project(BBCPU)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 include_directories(include)
+add_compile_options(-stdlib=libc++)
+add_link_options(-stdlib=libc++)
 
 add_executable(BBCPU main.cpp)
 add_executable(tests test/main.cpp

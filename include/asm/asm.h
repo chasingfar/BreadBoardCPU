@@ -19,7 +19,7 @@ namespace BBCPU::ASM {
 		cpu.load(program);
 		for (int i = 0; i < 50 && !cpu.isHalt(); ++i) {
 			std::cout<<i<<std::endl;
-			cpu.tick_op(true);
+			cpu.tick_op();
 			cpu.print_reg();
 			cpu.print_stack();
 			std::cout<<std::endl;

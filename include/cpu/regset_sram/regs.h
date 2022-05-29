@@ -4,7 +4,7 @@
 
 #ifndef BBCPU_CPU_REGS_H
 #define BBCPU_CPU_REGS_H
-#include "common.h"
+#include "../common.h"
 namespace BBCPU{
 	namespace Regs{
 		#define ENUM_NAME(...) Reg##__VA_ARGS__

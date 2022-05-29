@@ -73,7 +73,7 @@ namespace BBCPU::ASM {
 			auto var=StaticVar::make(size, start, static_cast<offset_t>(data_size(body)));
 			body.insert(body.end(),value.begin(),value.end());
 			for(addr_t i=data_size(value);i<size;++i){
-				body.emplace_back(0);
+				body.emplace_back(static_cast<op_t>(0));
 			}
 			return var;
 		}

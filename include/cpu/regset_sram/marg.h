@@ -6,7 +6,7 @@
 #define BBCPU_CPU_MARG_H
 
 #include "regs.h"
-#include "alu.h"
+#include "../alu.h"
 namespace BBCPU {
 	BITFILEDBASE(9) struct STATE : Base {
 		using index  = BitField<Size-3,Base,FollowMode::innerLow>;

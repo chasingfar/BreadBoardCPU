@@ -5,7 +5,8 @@
 #ifndef BBCPU_BASIC_H
 #define BBCPU_BASIC_H
 
-#include "../cpu/regfile8x16/cpu.h"
+//#include "../cpu/regfile8x16/cpu.h"
+#include "../cpu/regset_sram/opcode.h"
 #include <memory>
 #include <functional>
 #include <utility>

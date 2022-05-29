@@ -501,6 +501,15 @@ namespace BBCPU::OpCode {
 		>;
 	}
 
+	inline auto genOpTable(){
+		return TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[=](MARG::type marg){
+			//std::cout<<std::bitset<MARG::size>(marg);
+			auto mctrl=Ops::all::gen(marg);
+			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
+			return mctrl;
+		}});
+	}
+
 	inline void generateOPROM(const std::string& name,size_t size=Util::Bitwise::BitSize<MCTRL::type>,size_t i=0){
 		std::ofstream fout(name);
 		if(!fout) {return;}
