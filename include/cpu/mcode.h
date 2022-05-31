@@ -47,6 +47,7 @@ namespace BBCPU{
 		}
 		void halt(){
 			//if(step()){mctrl=MCTRL::sig::halt(MCTRL::noOp(mctrl));}
+			if(step()){mctrl=MCTRL::BtoReg(mctrl,Reg::A,RegSet::A);}
 			end();
 		}
 		void copy(Reg from,Reg to){

@@ -14,16 +14,17 @@ int main() {
 	//std::cout<<std::bitset<16>(-1);
 	//RegPair::generateRPROM();
 
-	//BBCPU::OpCode::generateOPROM("oprom_v3.txt");
-	//BBCPU::OpCode::generateOPROM("oprom_v3_0.txt",8,0);
-	//BBCPU::OpCode::generateOPROM("oprom_v3_1.txt",8,1);
-	//BBCPU::OpCode::generateOPROM("oprom_v3_2.txt",8,2);
+	//BBCPU::OpCode::generateOPROM("oprom_v3.1.txt",24);
+	//BBCPU::OpCode::generateOPROM("oprom_v3.1_0.txt",8,0);
+	//BBCPU::OpCode::generateOPROM("oprom_v3.1_1.txt",8,1);
+	//BBCPU::OpCode::generateOPROM("oprom_v3.1_2.txt",8,2);
 
 	//ASM::generateASMROM();
 	{
 		using namespace BBCPU::ASM;
 		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
-		generate("program.txt",ASM::parse({
+		BBCPU::CPU cpu;
+		cpu.load(ASM::parse({
 			imm(Reg::A,0),imm(Reg::B,3),
 			While{b,{{
 				a.set(add(a,b)),
@@ -31,6 +32,11 @@ int main() {
 			}}},
 			halt(),
 		}));
+		for (int i = 0; i < 50 && !cpu.isHalt(); ++i) {
+			//std::cout<<i<<std::endl;
+			cpu.tick_op(true);
+			std::cout<<std::endl;
+		}
 	}
 	//ASM::testASM();
 	/*{

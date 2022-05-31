@@ -80,9 +80,10 @@ namespace BBCPU{
 			return MARG::opcode::get(marg)==OpCode::Ops::Halt::id::id;
 		}
 		void tick(bool debug=false){
-			if(debug){std::cout<<std::bitset<19>(marg)<<std::endl;}
+			if(debug){std::cout<<std::bitset<19>(marg);}
 			mctrl=OpCode::Ops::all::gen(marg);
-			if(debug){std::cout<<std::endl;}
+			//if(debug){std::cout<<std::endl;}
+			if(debug){std::cout<<" "<<std::bitset<24>(mctrl);}
 			auto dir=static_cast<DirMode>(MCTRL::io::dir::get(mctrl));
 			op_t A=0,B=0,F=0;
 			std::string A_str="",B_str="",F_str="",fn_str="";
@@ -99,6 +100,13 @@ namespace BBCPU{
 
 			auto [carry,O]=MCTRL::alu::run<8>(mctrl,A,B);
 			fn_str=MCTRL::alu::get_fn_str(mctrl,A_str,B_str)+"="+std::to_string(O);
+			if(debug){std::cout<<" "<<std::bitset<8>(A);}
+			if(debug){std::cout<<" "<<std::bitset<8>(B);}
+			if(debug){std::cout<<" "<<std::bitset<8>(O);}
+			if(debug){std::cout<<" "<<std::bitset<8>(REGSET[0]);}
+			if(debug){std::cout<<" "<<std::bitset<8>(REGSET[1]);}
+			if(debug){std::cout<<" "<<std::bitset<8>(REGSET[2]);}
+			if(debug){std::cout<<" "<<std::bitset<8>(REGSET[3]);}
 			switch (dir) {
 				case DirMode::Br:
 				case DirMode::Mr:
@@ -116,7 +124,8 @@ namespace BBCPU{
 			}
 
 			if(debug){
-				std::cout<<F_str<<"="<<fn_str<<" carry="<<std::boolalpha<<(carry==MCTRL::alu::Carry::yes)<<std::endl;
+				//std::cout<<std::endl;
+				std::cout<<" "<<F_str<<"="<<fn_str<<" carry="<<std::boolalpha<<(carry==MCTRL::alu::Carry::yes)<<std::endl;
 			}
 
 			marg=MARG::carry::set(0,static_cast<MARG::type>(carry));
@@ -128,7 +137,7 @@ namespace BBCPU{
 				tick(debug);
 			}while(MARG::getIndex(marg)!=0);
 			if(debug){
-				std::cout<<std::endl;
+				//std::cout<<std::endl;
 			}
 		}
 	};
