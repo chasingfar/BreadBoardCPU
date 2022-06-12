@@ -16,12 +16,13 @@
 #include "regset_sram/opcode.h"
 
 namespace Circuit{
-	struct Error: std::exception{
-		std::string msg{};
-		explicit Error(std::string msg):msg(std::move(msg)){}
-		const char *what() const noexcept override {
-			return msg.c_str();
-		}
+	enum struct Status{
+		Stable = 0,
+		Updated,
+		WarnningWriteROM,
+		Warnning,
+		ErrorWireConflict,
+		Error,
 	};
 	enum struct PortMode{
 		INPUT,
@@ -127,7 +128,7 @@ namespace Circuit{
 						data=port->get(i-offset);
 						floating=false;
 					}else if(data!=port->get(i-offset)){
-						throw Error("wire conflict");
+						throw Status::ErrorWireConflict;
 					}
 				}
 			}
@@ -167,6 +168,7 @@ namespace Circuit{
 		}
 	};
 	struct Circuit{
+		Status status{Status::Stable};
 		virtual void update()=0;
 		virtual ~Circuit()= default;
 	};
@@ -263,6 +265,7 @@ namespace Circuit{
 	struct CompositeCircuit:Circuit{
 		std::vector<Ptr<IWire>> wires{};
 		std::vector<Ptr<Circuit>> circuits{};
+		Status ingnore_level{Status::Stable};
 
 		template<typename T>
 		Ptr<T> make_circuit(){
@@ -292,13 +295,20 @@ namespace Circuit{
 		}*/
 		bool step(){
 			for(const auto& circuit:circuits){
+				circuit->status=Status::Stable;
 				circuit->update();
+				if(ingnore_level<circuit->status){
+					throw circuit;
+				}
 			};
 			bool updated=false;
 			for(auto& wire:wires){
 				updated = updated || wire->update();
 			}
 			return updated;
+		}
+		void init(){
+
 		}
 		void update() override{
 			for(size_t i=0;i<max_iter;++i){
@@ -390,7 +400,7 @@ namespace Circuit{
 
 		void update() override {
 			if(we.get(0)==false){
-				throw Error("try write to rom");
+				status=Status::WarnningWriteROM;
 			}
 			if(ce.get(0)==false && oe.get(0)==false){
 				D=data[A];

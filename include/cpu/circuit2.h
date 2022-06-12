@@ -6,20 +6,39 @@
 #define BBCPU_CIRCUIT_H
 #include <vector>
 #include <string>
+#include <iostream>
+
 namespace Circuit{
-	enum struct Status{};
 	enum struct PortMode{
 		INPUT,
 		OUTPUT,
 	};
+	struct Component{
+		void update(){}
+	};
+	struct Pin;
 	struct Wire{
-		size_t size{};
-
+		std::vector<Pin*> pins;
 	};
 	struct Pin{
 		bool val;
 		PortMode mode{PortMode::INPUT};
 		Wire* wire;
+		Component* parent;
+		Pin& operator =(bool v){
+			if(val!=v){
+				if(mode==PortMode::INPUT){
+					std::cout<<"alert wire conflict";
+				}
+				val=v;
+				for(auto p:wire->pins){
+					if(p!=this){
+
+					}
+				}
+			}
+			return *this;
+		}
 	};
 	struct Port{
 		std::string name;
@@ -27,9 +46,6 @@ namespace Circuit{
 		std::vector<Wire*> wire{};
 		Port(std::string name,size_t size):name(std::move(name)),pins{size}{}
 
-	};
-	struct Component{
-		void update(){}
 	};
 	struct Circuit:Component{
 
