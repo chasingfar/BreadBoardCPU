@@ -8,8 +8,8 @@
 #include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"*/
-#include "include/cpu/circuit.h"
-#include "include/lang/lang.h"
+#include "include/cpu/circuit2.h"
+//#include "include/lang/lang.h"
 /*struct B:std::enable_shared_from_this<B>{
 	int i;
 	B(){
@@ -42,7 +42,8 @@ struct A{
 };*/
 
 int main() {
-	BBCPU::ASM::ops_t program;
+
+	/*BBCPU::ASM::ops_t program;
 	{
 		using namespace BBCPU::ASM;
 		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
@@ -65,7 +66,7 @@ int main() {
 		}
 	} catch (const Circuit::Error& err) {
 		std::cout<<err.what()<<std::endl;
-	}
+	}*/
 	/*auto [a,b,o]=sim.make_wires<8>(0,1,0);
 	auto [clk,en]=sim.make_wires<1>(0,0);
 	auto adder=sim.make_circuit<Adder>(a,b,o);
