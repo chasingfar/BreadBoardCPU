@@ -18,7 +18,7 @@ ARG USER_GID=$USER_UID
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG LLVM_VERSION=12
+ARG LLVM_VERSION=14
 ARG LLVM_GPG_FINGERPRINT=6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
 
 # Configure apt and install packages

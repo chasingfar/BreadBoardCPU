@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.13)
 project(BBCPU)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 include_directories(include)
 add_compile_options(-stdlib=libc++)
 add_link_options(-stdlib=libc++)
