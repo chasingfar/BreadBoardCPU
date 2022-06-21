@@ -50,7 +50,7 @@ Z	L	H	D	U	Z
 			return val>0?1:0;
 		}
 	};
-	struct PortNotValid{};
+	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
 		std::array<Wire*,Size> pins;
@@ -60,41 +60,97 @@ Z	L	H	D	U	Z
 				val>>=1;
 			});
 		}
-		bool is_valid(){
+		bool is_valid() const{
 			return std::all_of(pins.begin(), pins.end(), 
 				[](const auto &p){return p.get()>=0;}
 			);
 		}
-		std::optional<val_t> get(){
-			return std::accumulate(pins.begin(), pins.end(),0,
-				[](std::optional<val_t> val,const auto &p)->std::optional<val_t>{
-					int v=p.get();
-					if(!val || v<0){
-						return {};
-					}
-					return (*val<<1)&v;
-			});
-		}
-		operator val_t(){
+		val_t get() const{
 			if(is_valid()){
-				return get();
+				return std::accumulate(pins.begin(), pins.end(),0,
+				    [](val_t val,const auto &p){
+						return (val<<1)&p.get();
+				});
 			}
 			throw PortNotValid{};
+		}
+		auto& operator =(val_t val){
+			set(val);
+			return *this;
 		}
 	};
 	struct Component{
 		virtual void update(){}
+		virtual std::ostream& print(std::ostream& os) const{
+			return os;
+		}
+		virtual void reset(){}
+		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
+			return comp.print(os);
+		}
 	};
 	struct Circuit:Component{
+		std::vector<Wire*> wires;
+		void update() override{
 
+		}
+	};
+
+	template<size_t Size>
+	struct Reg:Component{
+		Port<1> clk;
+		Port<Size> input,output;
+		val_t data{};
+		void update() override {
+			if(clk.get() == 0){
+				output=data;
+			}else{
+				data=input.get();
+			}
+		}
+		void reset() override{
+			data=0;
+			output=0;
+		}
+		std::ostream& print(std::ostream& os) const override{
+			return os<<input.get()<<"=>"<<data<<"=>"<<output.get()<<"(clk="<<clk.get()<<")";
+		}
+	};
+	template<size_t Size>
+	struct RegEN:Reg<Size>{
+		using Base=Reg<Size>;
+		Port<1> en;
+		void update() override {
+			if(en.get() == 0){
+				Base::update();
+			}
+		}
+		std::ostream& print(std::ostream& os) const override{
+			return Base::print(os)<<"(en="<<en.get()<<")";
+		}
+	};
+	template<size_t Size>
+	struct RegCLR:Reg<Size>{
+		using Base=Reg<Size>;
+		Port<1> clr;
+		void update() override {
+			if(clr.get(0)){
+				Base::update();
+			} else {
+				Base::reset();
+			}
+		}
+		std::ostream& print(std::ostream& os) const override{
+			return Base::print(os)<<"(clr="<<clr.get()<<")";
+		}
 	};
 	template<size_t Size>
 	struct Nand:Component{
 		Port<Size> A,B,Y;
 		void update() override{
 			try{
-				Y=~(A&B);
-			}catch(PortNotValid e){
+				Y=~(A.get()&B.get());
+			}catch(const PortNotValid& e){
 				;
 			}
 		}
