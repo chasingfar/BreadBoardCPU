@@ -4,6 +4,7 @@
 
 #ifndef BBCPU_CIRCUIT_H
 #define BBCPU_CIRCUIT_H
+#include <cstddef>
 #include <exception>
 #include <optional>
 #include <type_traits>
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <algorithm>
 #include <array>
+#include <span>
 #include <numeric>
 namespace Circuit{
 	using val_t=unsigned long long;
@@ -53,12 +55,27 @@ E	E4	E4	E4	E4	E4	E1
 			return val>0?1:0;
 		}
 	};
+	struct Wires{
+		std::vector<Wire**> pool;
+		void reset(){
+			std::for_each(pool.begin(), pool.end(),[](auto w){
+				(*w)->updated=false;
+			});
+		}
+		bool is_updated(){
+			return std::any_of(pool.begin(), pool.end(),[](auto w){
+				return (*w)->updated;
+			});
+		}
+	};
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
 		std::array<Wire**,Size> pins;
 		Port(){
-			pins.fill(nullptr);
+			for(auto& p:pins){
+				p=new Wire*{new Wire{}};
+			}
 		}
 		void set(val_t val){
 			std::for_each(pins.begin(), pins.end(), [&](auto p){
@@ -84,12 +101,23 @@ E	E4	E4	E4	E4	E4	E1
 			set(val);
 			return *this;
 		}
-		void wire(Port<Size> p) {
-			
+		template<size_t Start=0,size_t Length=Size>
+		void link(std::span<Wire**,Length> port) {
+			for(size_t i=Start;i<Length;++i){
+				//delete *port[i];
+				*port[i]=*pins[i];
+			}
 		}
-		template<typename ...Ts> requires (sizeof...(Ts)>2&&std::is_same_v<Port<Size>,std::common_type_t<Ts...>>)
-		void wire(Ts... ps) {
-			(wire(ps),...);
+		template<size_t Start=0,size_t Length=Size>
+		void link(Port<Length> port){
+
+		}
+		template<size_t Length,typename T>
+		using can_link=std::disjunction<std::is_same<T,Port<Length>>,std::is_same<T,std::span<Wire**,Length>>>;
+		template<size_t Start=0,size_t Length=Size,typename ...Ts>
+		requires (sizeof...(Ts)>2&&(can_link<Length,Ts>::value&&...))
+		void link(Ts... ps) {
+			(link<Start,Length>(ps),...);
 		}
 	};
 	struct Component{
@@ -100,23 +128,6 @@ E	E4	E4	E4	E4	E4	E1
 		virtual void reset(){}
 		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
 			return comp.print(os);
-		}
-	};
-	struct Wires{
-		std::vector<Wire**> pool;
-		void reset(){
-			std::for_each(pool.begin(), pool.end(),[](auto w){
-				(*w)->updated=false;
-			});
-		}
-		bool is_updated(){
-			return std::any_of(pool.begin(), pool.end(),[](auto w){
-				return (*w)->updated;
-			});
-		}
-		template<size_t Size>
-		void wire(Port<Size> p){
-
 		}
 	};
 	struct Circuit:Component{
