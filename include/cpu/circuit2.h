@@ -17,7 +17,7 @@
 #include <numeric>
 namespace Circuit{
 	using val_t=unsigned long long;
-	struct Wire{
+	struct State{
 		enum Level:int{
 			Low      = -2,
 			PullDown = -1,
@@ -26,9 +26,9 @@ namespace Circuit{
 			High     =  2,
 			Error    = INT_MAX,
 		};
-		Level val=Floating;
+		Level level=Floating;
 		bool updated=false;
-		void set(Level v){
+		void set(Level new_level){
 			/*
 o\n	L	H	D	U	Z	E
 L	L1	E3	L4	L4	L4	E2
@@ -38,62 +38,58 @@ U	L2	H2	E3	U1	U4	E2
 Z	L2	H2	D2	U2	Z1	E2
 E	E4	E4	E4	E4	E4	E1
 			 */
-			if(v==val){return;}//1
-			if(int cmp=abs(v)-abs(val);cmp>0){//2
-				val=v;
+			if(new_level==level){return;}//1
+			if(int cmp=abs(new_level)-abs(level);cmp>0){//2
+				level=new_level;
 				updated=true;
 			}else if(cmp==0){//3
-				val=Error;
+				level=Error;
 				updated=true;
 			}
 			//4
 		}
 		int get() const{
-			if(val==Floating || val==Error){
+			if(level==Floating || level==Error){
 				return -1;
 			}
-			return val>0?1:0;
+			return level>0?1:0;
 		}
 	};
-	struct Wires{
-		std::vector<Wire**> pool;
-		void reset(){
-			std::for_each(pool.begin(), pool.end(),[](auto w){
-				(*w)->updated=false;
-			});
-		}
-		bool is_updated(){
-			return std::any_of(pool.begin(), pool.end(),[](auto w){
-				return (*w)->updated;
-			});
+	struct Wire{
+		State state{};
+		Wire* next=nullptr;
+		State& access() {
+			return (next == nullptr)?state:next->state;
 		}
 	};
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
-		std::array<Wire**,Size> pins;
+		std::array<Wire*,Size> pins;
 		Port(){
 			for(auto& p:pins){
-				p=new Wire*{new Wire{}};
+				p=new Wire{};
 			}
 		}
+		explicit Port(const std::span<Wire*,Size>& pins_view):pins{pins_view}{}
 		void set(val_t val){
 			std::for_each(pins.begin(), pins.end(), [&](auto p){
-				(*p)->set((val&1u)==1u?Wire::High:Wire::Low);
+				p->access().set((val&1u)==1u?State::High:State::Low);
 				val>>=1;
 			});
 		}
 		bool is_valid() const{
 			return std::all_of(pins.begin(), pins.end(), [](auto p){
-				return (*p)->get()>=0;
+				return p->access().get()>=0;
 			});
 		}
 		val_t get() const{
 			if(is_valid()){
 				return std::accumulate(pins.begin(), pins.end(),0,
 				    [](val_t val, auto p){
-						return (val<<1)&(*p)->get();
-				});
+						return (val<<1)&p->access().get();
+					}
+				);
 			}
 			throw PortNotValid{};
 		}
@@ -101,23 +97,32 @@ E	E4	E4	E4	E4	E4	E1
 			set(val);
 			return *this;
 		}
-		template<size_t Start=0,size_t Length=Size>
-		void link(std::span<Wire**,Length> port) {
-			for(size_t i=Start;i<Length;++i){
-				//delete *port[i];
-				*port[i]=*pins[i];
+		template<size_t NewSize>
+		auto sub(size_t start=0){
+			return Port<NewSize>{*this,start};
+		}
+	};
+	struct Wires{
+		std::vector<Wire*> pool;
+		void reset(){
+			std::for_each(pool.begin(), pool.end(),[](auto w){
+				w->access().updated=false;
+			});
+		}
+		bool is_updated(){
+			return std::any_of(pool.begin(), pool.end(),[](auto w){
+				return w->access().updated;
+			});
+		}
+		template<size_t Size,typename ...Ts>
+		requires (sizeof...(Ts)>2&&((std::is_same_v<Ts,Port<Size>>)&&...))
+		void link(Port<Size> port,Ts... ports) {
+			for(size_t i=1;i<Size;++i){
+				Wire* w=&port.pins[i]->access();
+				for(auto p:{ports...}){
+					p.pins[i]->access().next=w;
+				}
 			}
-		}
-		template<size_t Start=0,size_t Length=Size>
-		void link(Port<Length> port){
-
-		}
-		template<size_t Length,typename T>
-		using can_link=std::disjunction<std::is_same<T,Port<Length>>,std::is_same<T,std::span<Wire**,Length>>>;
-		template<size_t Start=0,size_t Length=Size,typename ...Ts>
-		requires (sizeof...(Ts)>2&&(can_link<Length,Ts>::value&&...))
-		void link(Ts... ps) {
-			(link<Start,Length>(ps),...);
 		}
 	};
 	struct Component{
@@ -181,10 +186,10 @@ E	E4	E4	E4	E4	E4	E1
 		using Base=Reg<Size>;
 		Port<1> clr;
 		void update() override {
-			if(clr.get(0)){
-				Base::update();
-			} else {
+			if(clr.get()==0){
 				Base::reset();
+			} else {
+				Base::update();
 			}
 		}
 		std::ostream& print(std::ostream& os) const override{
@@ -212,9 +217,7 @@ E	E4	E4	E4	E4	E4	E1
 	struct Sim:Circuit{
 		Adder<8> adder{};
 		RegCLR<8> reg{};
-		Sim(){
-			Wires.wire
-		}
-	}
+		Sim(){}
+	};
 }
 #endif //BBCPU_CIRCUIT_H
