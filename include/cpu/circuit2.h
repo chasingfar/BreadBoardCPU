@@ -58,36 +58,41 @@ E	E4	E4	E4	E4	E4	E1
 	struct Wire{
 		State state{};
 		Wire* next=nullptr;
-		State& access() {
-			return (next == nullptr)?state:next->state;
+		bool is_linked() const{return next!=nullptr;}
+		Wire* access() {
+			return is_linked()?next->access():this;
+		}
+	};
+	struct Pin{
+		Wire* wire;
+		Pin():wire{new Wire{}}{}
+		State& operator *(){
+			return wire->access()->state;
+		}
+		State* operator ->(){
+			return &wire->access()->state;
 		}
 	};
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
-		std::array<Wire*,Size> pins;
-		Port(){
-			for(auto& p:pins){
-				p=new Wire{};
-			}
-		}
-		explicit Port(const std::span<Wire*,Size>& pins_view):pins{pins_view}{}
+		std::array<Pin,Size> pins;
 		void set(val_t val){
 			std::for_each(pins.begin(), pins.end(), [&](auto p){
-				p->access().set((val&1u)==1u?State::High:State::Low);
+				p->set((val&1u)==1u?State::High:State::Low);
 				val>>=1;
 			});
 		}
 		bool is_valid() const{
 			return std::all_of(pins.begin(), pins.end(), [](auto p){
-				return p->access().get()>=0;
+				return p->get()>=0;
 			});
 		}
 		val_t get() const{
 			if(is_valid()){
 				return std::accumulate(pins.begin(), pins.end(),0,
 				    [](val_t val, auto p){
-						return (val<<1)&p->access().get();
+						return (val<<1)&p->get();
 					}
 				);
 			}
@@ -98,32 +103,15 @@ E	E4	E4	E4	E4	E4	E1
 			return *this;
 		}
 		template<size_t NewSize>
-		auto sub(size_t start=0){
-			return Port<NewSize>{*this,start};
+		auto sub(size_t offset=0){
+			return [&]<size_t ...I>(std::index_sequence<I...>){
+				return Port{pins[I+offset]...};
+			}(std::make_index_sequence<NewSize>{});
 		}
 	};
 	struct Wires{
 		std::vector<Wire*> pool;
-		void reset(){
-			std::for_each(pool.begin(), pool.end(),[](auto w){
-				w->access().updated=false;
-			});
-		}
-		bool is_updated(){
-			return std::any_of(pool.begin(), pool.end(),[](auto w){
-				return w->access().updated;
-			});
-		}
-		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>2&&((std::is_same_v<Ts,Port<Size>>)&&...))
-		void link(Port<Size> port,Ts... ports) {
-			for(size_t i=1;i<Size;++i){
-				Wire* w=&port.pins[i]->access();
-				for(auto p:{ports...}){
-					p.pins[i]->access().next=w;
-				}
-			}
-		}
+
 	};
 	struct Component{
 		virtual void update(){}
@@ -136,15 +124,44 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Circuit:Component{
-		Wires wires;
+		std::vector<Wire*> wires;
 		std::vector<Component*> comps;
+		void wires_reset(){
+			std::for_each(wires.begin(), wires.end(),[](auto w){
+				w->access()->state.updated=false;
+			});
+		}
+		bool wires_is_updated(){
+			return std::any_of(wires.begin(), wires.end(),[](auto w){
+				return w->access()->state.updated;
+			});
+		}
+		void comps_update(){
+			std::for_each(comps.begin(), comps.end(),[](auto c){
+				c->update();
+			});
+		}
 		void update() override{
 			do{
-				wires.reset();
-				std::for_each(comps.begin(), comps.end(),[](auto c){
-					c->update();
-				});
-			}while(wires.is_updated());
+				wires_reset();
+				comps_update();
+			}while(wires_is_updated());
+		}
+		template<size_t Size,typename ...Ts>
+		requires (sizeof...(Ts)>0&&((std::is_same_v<Ts,Port<Size>>)&&...))
+		void wire(Port<Size>& port,Ts&... ports) {
+			for(size_t i=1;i<Size;++i){
+				Wire* w=port.pins[i].wire->access();
+				for(auto p:{ports...}){
+					p.pins[i].wire->access()->next=w;
+				}
+				wires.push_back(w);
+			}
+		}
+		template<typename ...Ts>
+		requires ((std::is_base_of_v<Component,Ts>)&&...)
+		void add_comps(Ts&... c){
+			(comps.push_back(&c),...);
 		}
 	};
 
@@ -217,7 +234,13 @@ E	E4	E4	E4	E4	E4	E1
 	struct Sim:Circuit{
 		Adder<8> adder{};
 		RegCLR<8> reg{};
-		Sim(){}
+		Sim(){
+			add_comps(adder,reg);
+			wire<8>(adder.O,reg.input);
+			wire<8>(adder.A,reg.output);
+			adder.B.set(1);
+			reg.clr.set(1);
+		}
 	};
 }
 #endif //BBCPU_CIRCUIT_H
