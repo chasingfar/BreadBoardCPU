@@ -42,7 +42,15 @@ struct A{
 };*/
 
 int main() {
+	using namespace Circuit;
+	Sim sim{};
 
+	for(int i=0;i<10;i++){
+		sim.update();
+		std::cout<<sim.reg<<std::endl;
+		std::cout<<sim.adder<<std::endl;
+		std::cout<<std::endl;
+	}
 	/*BBCPU::ASM::ops_t program;
 	{
 		using namespace BBCPU::ASM;

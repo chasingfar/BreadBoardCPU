@@ -109,10 +109,6 @@ E	E4	E4	E4	E4	E4	E1
 			}(std::make_index_sequence<NewSize>{});
 		}
 	};
-	struct Wires{
-		std::vector<Wire*> pool;
-
-	};
 	struct Component{
 		virtual void update(){}
 		virtual std::ostream& print(std::ostream& os) const{
@@ -230,6 +226,9 @@ E	E4	E4	E4	E4	E4	E1
 		void update() override{
 			O=A.get()+B.get();
 		}
+		std::ostream& print(std::ostream& os) const override{
+			return os<<A.get()<<"+"<<B.get()<<"="<<O.get();
+		}
 	};
 	struct Sim:Circuit{
 		Adder<8> adder{};
@@ -240,6 +239,11 @@ E	E4	E4	E4	E4	E4	E1
 			wire<8>(adder.A,reg.output);
 			adder.B.set(1);
 			reg.clr.set(1);
+			reg.clk.set(0);
+		}
+		void update() override{
+			reg.clk.set(~reg.clk.get());
+			Circuit::update();
 		}
 	};
 }
