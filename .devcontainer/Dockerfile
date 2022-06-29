@@ -4,9 +4,10 @@
 #-------------------------------------------------------------------------------------------------------------
 
 # To fully customize the contents of this image, use the following Dockerfile as a base and add the RUN statement from this file:
-# https://github.com/microsoft/vscode-dev-containers/blob/v0.112.0/containers/debian-10-git/.devcontainer/Dockerfile
-FROM mcr.microsoft.com/vscode/devcontainers/base:0-debian-10
-
+# https://github.com/microsoft/vscode-dev-containers/tree/main/containers/debian/.devcontainer
+ARG VARIANT=bullseye
+FROM mcr.microsoft.com/vscode/devcontainers/base:${VARIANT}
+ARG VARIANT
 # This Dockerfile's base image has a non-root user with sudo access. Use the "remoteUser"
 # property in devcontainer.json to use it. On Linux, the container user's GID/UIDs
 # will be updated to match your local UID/GID (when using the dockerFile property).
@@ -20,6 +21,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ARG LLVM_VERSION=14
 ARG LLVM_GPG_FINGERPRINT=6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+
+# [Optional] Install CMake version different from what base image has already installed. 
+# CMake reinstall choices: none, 3.21.5, 3.22.2, or versions from https://cmake.org/download/
+ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="none"
 
 # Configure apt and install packages
 RUN apt-get update \
@@ -40,10 +45,16 @@ RUN apt-get update \
         && usermod --uid $USER_UID --gid $USER_GID $USERNAME \
         && chown -R $USER_UID:$USER_GID /home/$USERNAME; \
     fi
+    
+COPY ./reinstall-cmake.sh /tmp/
+RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
+        chmod +x /tmp/reinstall-cmake.sh && /tmp/reinstall-cmake.sh ${REINSTALL_CMAKE_VERSION_FROM_SOURCE}; \
+    fi \
+    && rm -f /tmp/reinstall-cmake.sh
 
 RUN apt-get update \
     && wget -O- https://apt.llvm.org/llvm-snapshot.gpg.key| apt-key add - \
-    && echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-${LLVM_VERSION} main" >> /etc/apt/sources.list \
+    && echo "deb http://apt.llvm.org/${VARIANT}/ llvm-toolchain-${VARIANT}-${LLVM_VERSION} main" >> /etc/apt/sources.list \
     && apt-get update \
     && apt-get -y install --no-install-recommends \
         llvm-${LLVM_VERSION} \
