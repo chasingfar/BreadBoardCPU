@@ -78,29 +78,57 @@ E	E4	E4	E4	E4	E4	E1
 	struct Port{
 		std::array<Pin,Size> pins;
 		void set(val_t val){
-			std::for_each(pins.begin(), pins.end(), [&](auto p){
+			//std::for_each(pins.begin(), pins.end(), [&](auto p){
+			//	p->set((val&1u)==1u?State::High:State::Low);
+			//	val>>=1;
+			//});
+			for(auto p:pins){
 				p->set((val&1u)==1u?State::High:State::Low);
 				val>>=1;
-			});
+			}
 		}
 		bool is_valid() const{
-			return std::all_of(pins.begin(), pins.end(), [](auto p){
-				return p->get()>=0;
-			});
+			//return std::all_of(pins.begin(), pins.end(), [](auto p){
+			//	return p->get()>=0;
+			//});
+			for(auto p:pins){
+				if(p->get()<0){
+					return false;
+				}
+			}
+			return true;
 		}
-		val_t get() const{
+		val_t get(std::optional<val_t> if_invalid={}) const{
 			if(is_valid()){
-				return std::accumulate(pins.begin(), pins.end(),0,
-				    [](val_t val, auto p){
-						return (val<<1)&p->get();
-					}
-				);
+				val_t val=0;
+				for(auto p:pins){
+					val=(val<<1)&p->get();
+				}
+				return val;
+				//return std::accumulate(pins.begin(), pins.end(),0,
+				//    [](val_t val, auto p){
+				//		return (val<<1)&p->get();
+				//	}
+				//);
+			}
+			if(if_invalid){
+				return *if_invalid;
 			}
 			throw PortNotValid{};
 		}
 		auto& operator =(val_t val){
 			set(val);
 			return *this;
+		}
+		std::ostream& print_ptr(std::ostream& os) const{
+			for (auto i = pins.rbegin(); i != pins.rend(); ++i) {
+				os<<i->wire->access()<<" ";
+			}
+			return os;
+		}
+		friend std::ostream& operator<<(std::ostream& os,const Port<Size>& port){
+			//return port.print_ptr(os);
+			return os<<port.get(0);
 		}
 		template<size_t NewSize>
 		auto sub(size_t offset=0){
@@ -123,19 +151,31 @@ E	E4	E4	E4	E4	E4	E1
 		std::vector<Wire*> wires;
 		std::vector<Component*> comps;
 		void wires_reset(){
-			std::for_each(wires.begin(), wires.end(),[](auto w){
+			//std::for_each(wires.begin(), wires.end(),[](auto w){
+			//	w->access()->state.updated=false;
+			//});
+			for(auto w:wires){
 				w->access()->state.updated=false;
-			});
+			}
 		}
 		bool wires_is_updated(){
-			return std::any_of(wires.begin(), wires.end(),[](auto w){
-				return w->access()->state.updated;
-			});
+			//return std::any_of(wires.begin(), wires.end(),[](auto w){
+			//	return w->access()->state.updated;
+			//});
+			for(auto w:wires){
+				if(w->access()->state.updated){
+					return true;
+				}
+			}
+			return false;
 		}
 		void comps_update(){
-			std::for_each(comps.begin(), comps.end(),[](auto c){
+			//std::for_each(comps.begin(), comps.end(),[](auto c){
+			//	c->update();
+			//});
+			for(auto c:comps){
 				c->update();
-			});
+			}
 		}
 		void update() override{
 			do{
@@ -178,7 +218,7 @@ E	E4	E4	E4	E4	E4	E1
 			output=0;
 		}
 		std::ostream& print(std::ostream& os) const override{
-			return os<<input.get()<<"=>"<<data<<"=>"<<output.get()<<"(clk="<<clk.get()<<")";
+			return os<<input<<"=>"<<data<<"=>"<<output<<"(clk="<<clk<<")";
 		}
 	};
 	template<size_t Size>
@@ -191,7 +231,7 @@ E	E4	E4	E4	E4	E4	E1
 			}
 		}
 		std::ostream& print(std::ostream& os) const override{
-			return Base::print(os)<<"(en="<<en.get()<<")";
+			return Base::print(os)<<"(en="<<en<<")";
 		}
 	};
 	template<size_t Size>
@@ -206,7 +246,7 @@ E	E4	E4	E4	E4	E4	E1
 			}
 		}
 		std::ostream& print(std::ostream& os) const override{
-			return Base::print(os)<<"(clr="<<clr.get()<<")";
+			return Base::print(os)<<"(clr="<<clr<<")";
 		}
 	};
 	template<size_t Size>
@@ -224,10 +264,14 @@ E	E4	E4	E4	E4	E4	E1
 	struct Adder:Component{
 		Port<Size> A,B,O;
 		void update() override{
-			O=A.get()+B.get();
+			try{
+				O=A.get()+B.get();
+			}catch(const PortNotValid& e){
+				;
+			}
 		}
 		std::ostream& print(std::ostream& os) const override{
-			return os<<A.get()<<"+"<<B.get()<<"="<<O.get();
+			return os<<A<<"+"<<B<<"="<<O;
 		}
 	};
 	struct Sim:Circuit{
