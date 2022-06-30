@@ -29,7 +29,23 @@ namespace Util{
 			}while(cur!=static_cast<T*>(this));
 			return false;
 		}
-		void each(auto&& fn){
+		bool any(auto&& fn) const{
+			const T* cur=static_cast<const T*>(this);
+			do {
+				if(fn(cur)){
+					return true;
+				}
+				cur=cur->next;
+			}while(cur!=static_cast<const T*>(this));
+			return false;
+		}
+		void each(auto&& fn) {
+			any([&](auto cur){
+				fn(cur);
+				return false;
+			});
+		}
+		void each(auto&& fn) const{
 			any([&](auto cur){
 				fn(cur);
 				return false;
@@ -86,9 +102,9 @@ E	E4	E4	E4	E4	E4	E1
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
 		bool updated=false;
-		int get() {
+		int get() const{
 			Level tmp=level;
-			each([&tmp](Wire* cur){
+			each([&tmp](const Wire* cur){
 				tmp=interact(tmp, cur->level);
 			});
 			return read_level(tmp);
@@ -113,21 +129,16 @@ E	E4	E4	E4	E4	E4	E1
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
-		std::array<Wire*,Size> pins;
-		Port(){
-			for(auto& p:pins){
-				p=new Wire;
-			}
-		}
+		std::array<Wire,Size> pins;
 		void set(val_t val){
-			for(auto p:pins){
-				p->set((val&1u)==1u?Level::High:Level::Low);
+			for(auto& p:pins){
+				p.set((val&1u)==1u?Level::High:Level::Low);
 				val>>=1;
 			}
 		}
 		bool is_valid() const{
-			for(auto p:pins){
-				if(p->get()<0){
+			for(auto& p:pins){
+				if(p.get()<0){
 					return false;
 				}
 			}
@@ -136,8 +147,8 @@ E	E4	E4	E4	E4	E4	E1
 		val_t get() const{
 			if(is_valid()){
 				val_t val=0;
-				for(auto p:pins){
-					val|=p->get();
+				for(auto& p:pins){
+					val|=p.get();
 					val=(val >> 1) | ((val&1) << (Size - 1));
 				}
 				return val;
@@ -163,11 +174,12 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return os;
 		}
+		operator std::span<Wire,Size>(){
+			return pins;
+		}
 		template<size_t NewSize>
 		auto sub(size_t offset=0){
-			return [&]<size_t ...I>(std::index_sequence<I...>){
-				return Port{pins[I+offset]...};
-			}(std::make_index_sequence<NewSize>{});
+			return std::span<Wire,NewSize>{&pins[offset],NewSize};
 		}
 	};
 	struct Enable:Port<1>{
@@ -221,15 +233,19 @@ E	E4	E4	E4	E4	E4	E1
 			}while(wires_is_updated());
 		}
 		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_same_v<Ts,Port<Size>>)&&...))
-		void wire(Port<Size>& port,Ts&... ports) {
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,std::span<Wire,Size>>)&&...))
+		void wire(std::span<Wire,Size> pins,Ts&&... other) {
 			for(size_t i=0;i<Size;++i){
-				Wire* w=port.pins[i];
-				for(auto p:{ports...}){
-					w->merge(p.pins[i]);
+				for(auto&& p:{static_cast<std::span<Wire,Size>>(other)...}){
+					pins[i].merge(&p[i]);
 				}
-				wires.push_back(w);
+				wires.push_back(&pins[i]);
 			}
+		}
+		template<size_t Size,typename ...Ts>
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,std::span<Wire,Size>>)&&...))
+		void wire(Port<Size>& port,Ts&&... other) {
+			wire(static_cast<std::span<Wire,Size>>(port),other...);
 		}
 		template<typename ...Ts>
 		requires ((std::is_base_of_v<Component,Ts>)&&...)
