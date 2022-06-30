@@ -57,40 +57,70 @@ E	E4	E4	E4	E4	E4	E1
 	};
 	struct Wire{
 		State state{};
-		Wire* next=nullptr;
-		bool is_linked() const{return next!=nullptr;}
-		Wire* access() {
-			return is_linked()?next->access():this;
+		Wire* next=this;
+		bool any(auto&& fn){
+			Wire* cur=this;
+			do {
+				if(fn(cur)){
+					return true;
+				}
+				cur=cur->next;
+			}while(cur!=this);
+			return false;
 		}
-	};
-	struct Pin{
-		Wire* wire;
-		Pin():wire{new Wire{}}{}
-		State& operator *(){
-			return wire->access()->state;
+		void each(auto&& fn){
+			any([&](auto cur){
+				fn(cur);
+				return false;
+			});
 		}
-		State* operator ->(){
-			return &wire->access()->state;
+		bool has(Wire* wire){
+			return any([=](Wire* cur){
+				return cur==wire;
+			});
+		}
+		void link(Wire* wire){
+			if(!has(wire)){
+				std::swap(next,wire->next);
+			}
+		}
+		int get() {
+			State tmp=state;
+			each([&tmp](Wire* cur){
+				tmp.set(cur->state.level);
+			});
+			return tmp.get();
+		}
+		void set(State::Level level){
+			state.level=level;
+		}
+		void reset(){
+			each([](Wire* cur){
+				cur->state.updated=false;
+			});
+		}
+		bool has_updated(){
+			return any([](Wire* cur){
+				return cur->state.updated;
+			});
 		}
 	};
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
 	struct Port{
-		std::array<Pin,Size> pins;
+		std::array<Wire*,Size> pins;
+		Port(){
+			for(auto& p:pins){
+				p=new Wire;
+			}
+		}
 		void set(val_t val){
-			//std::for_each(pins.begin(), pins.end(), [&](auto p){
-			//	p->set((val&1u)==1u?State::High:State::Low);
-			//	val>>=1;
-			//});
 			for(auto p:pins){
 				p->set((val&1u)==1u?State::High:State::Low);
 				val>>=1;
 			}
 		}
 		bool is_valid() const{
-			//return std::all_of(pins.begin(), pins.end(), [](auto p){
-			//	return p->get()>=0;
-			//});
 			for(auto p:pins){
 				if(p->get()<0){
 					return false;
@@ -102,14 +132,10 @@ E	E4	E4	E4	E4	E4	E1
 			if(is_valid()){
 				val_t val=0;
 				for(auto p:pins){
-					val=(val<<1)&p->get();
+					val|=p->get();
+					val=(val >> 1) | ((val&1) << (Size - 1));
 				}
 				return val;
-				//return std::accumulate(pins.begin(), pins.end(),0,
-				//    [](val_t val, auto p){
-				//		return (val<<1)&p->get();
-				//	}
-				//);
 			}
 			if(if_invalid){
 				return *if_invalid;
@@ -122,13 +148,18 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		std::ostream& print_ptr(std::ostream& os) const{
 			for (auto i = pins.rbegin(); i != pins.rend(); ++i) {
-				os<<i->wire->access()<<" ";
+				os<<*i<<" ";
 			}
 			return os;
 		}
 		friend std::ostream& operator<<(std::ostream& os,const Port<Size>& port){
 			//return port.print_ptr(os);
-			return os<<port.get(0);
+			try {
+				os<<port.get();
+			} catch (const PortNotValid& e) {
+				os<<"E";
+			}
+			return os;
 		}
 		template<size_t NewSize>
 		auto sub(size_t offset=0){
@@ -151,28 +182,19 @@ E	E4	E4	E4	E4	E4	E1
 		std::vector<Wire*> wires;
 		std::vector<Component*> comps;
 		void wires_reset(){
-			//std::for_each(wires.begin(), wires.end(),[](auto w){
-			//	w->access()->state.updated=false;
-			//});
 			for(auto w:wires){
-				w->access()->state.updated=false;
+				w->reset();
 			}
 		}
 		bool wires_is_updated(){
-			//return std::any_of(wires.begin(), wires.end(),[](auto w){
-			//	return w->access()->state.updated;
-			//});
 			for(auto w:wires){
-				if(w->access()->state.updated){
+				if(w->has_updated()){
 					return true;
 				}
 			}
 			return false;
 		}
 		void comps_update(){
-			//std::for_each(comps.begin(), comps.end(),[](auto c){
-			//	c->update();
-			//});
 			bool has_PortNotValid=false;
 			for(auto c:comps){
 				try{
@@ -194,10 +216,10 @@ E	E4	E4	E4	E4	E4	E1
 		template<size_t Size,typename ...Ts>
 		requires (sizeof...(Ts)>0&&((std::is_same_v<Ts,Port<Size>>)&&...))
 		void wire(Port<Size>& port,Ts&... ports) {
-			for(size_t i=1;i<Size;++i){
-				Wire* w=port.pins[i].wire->access();
+			for(size_t i=0;i<Size;++i){
+				Wire* w=port.pins[i];
 				for(auto p:{ports...}){
-					p.pins[i].wire->access()->next=w;
+					w->link(p.pins[i]);
 				}
 				wires.push_back(w);
 			}
@@ -279,8 +301,8 @@ E	E4	E4	E4	E4	E4	E1
 		RegCLR<8> reg{};
 		Sim(){
 			add_comps(adder,reg);
-			wire<8>(adder.O,reg.input);
-			wire<8>(adder.A,reg.output);
+			wire(adder.O,reg.input);
+			wire(adder.A,reg.output);
 			adder.B.set(1);
 			reg.clr.set(1);
 			reg.clk.set(0);
