@@ -170,6 +170,11 @@ E	E4	E4	E4	E4	E4	E1
 			}(std::make_index_sequence<NewSize>{});
 		}
 	};
+	struct Enable:Port<1>{
+		operator bool(){
+			return get()==0;
+		}
+	};
 	struct Component{
 		virtual void update(){}
 		virtual std::ostream& print(std::ostream& os) const{
@@ -256,9 +261,9 @@ E	E4	E4	E4	E4	E4	E1
 	template<size_t Size>
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
-		Port<1> en;
+		Enable en;
 		void update() override {
-			if(en.get() == 0){
+			if(en){
 				Base::update();
 			}
 		}
@@ -269,9 +274,9 @@ E	E4	E4	E4	E4	E4	E1
 	template<size_t Size>
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
-		Port<1> clr;
+		Enable clr;
 		void update() override {
-			if(clr.get()==0){
+			if(clr){
 				Base::reset();
 			} else {
 				Base::update();
