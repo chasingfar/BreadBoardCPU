@@ -15,57 +15,18 @@
 #include <array>
 #include <span>
 #include <numeric>
-namespace Circuit{
-	using val_t=unsigned long long;
-	struct State{
-		enum Level:int{
-			Low      = -2,
-			PullDown = -1,
-			Floating =  0,
-			PullUp   =  1,
-			High     =  2,
-			Error    = INT_MAX,
-		};
-		Level level=Floating;
-		bool updated=false;
-		void set(Level new_level){
-			/*
-o\n	L	H	D	U	Z	E
-L	L1	E3	L4	L4	L4	E2
-H	E3	H1	H4	H4	H4	E2
-D	L2	H2	D1	E3	D4	E2
-U	L2	H2	E3	U1	U4	E2
-Z	L2	H2	D2	U2	Z1	E2
-E	E4	E4	E4	E4	E4	E1
-			 */
-			if(new_level==level){return;}//1
-			if(int cmp=abs(new_level)-abs(level);cmp>0){//2
-				level=new_level;
-				updated=true;
-			}else if(cmp==0){//3
-				level=Error;
-				updated=true;
-			}
-			//4
-		}
-		int get() const{
-			if(level==Floating || level==Error){
-				return -1;
-			}
-			return level>0?1:0;
-		}
-	};
-	struct Wire{
-		State state{};
-		Wire* next=this;
+namespace Util{
+	template<typename T>
+	struct CircularList{
+		T* next=static_cast<T*>(this);
 		bool any(auto&& fn){
-			Wire* cur=this;
+			T* cur=static_cast<T*>(this);
 			do {
 				if(fn(cur)){
 					return true;
 				}
 				cur=cur->next;
-			}while(cur!=this);
+			}while(cur!=static_cast<T*>(this));
 			return false;
 		}
 		void each(auto&& fn){
@@ -74,34 +35,78 @@ E	E4	E4	E4	E4	E4	E1
 				return false;
 			});
 		}
-		bool has(Wire* wire){
-			return any([=](Wire* cur){
+		bool has(T* wire){
+			return any([=](T* cur){
 				return cur==wire;
 			});
 		}
-		void link(Wire* wire){
+		void merge(T* wire){
 			if(!has(wire)){
 				std::swap(next,wire->next);
 			}
 		}
-		int get() {
-			State tmp=state;
-			each([&tmp](Wire* cur){
-				tmp.set(cur->state.level);
-			});
-			return tmp.get();
+	};
+}
+namespace Circuit{
+	using val_t=unsigned long long;
+	enum struct Level:int8_t{
+		Low      = -2,
+		PullDown = -1,
+		Floating =  0,
+		PullUp   =  1,
+		High     =  2,
+		Error    = INT8_MAX,
+	};
+	inline Level interact(Level o,Level n){
+		/*
+o\n	L	H	D	U	Z	E
+L	L1	E3	L4	L4	L4	E2
+H	E3	H1	H4	H4	H4	E2
+D	L2	H2	D1	E3	D4	E2
+U	L2	H2	E3	U1	U4	E2
+Z	L2	H2	D2	U2	Z1	E2
+E	E4	E4	E4	E4	E4	E1
+		*/
+		if(n==o){return o;}//1
+		int cmp=abs(static_cast<int8_t>(n))-abs(static_cast<int8_t>(o));
+		if(cmp>0){//2
+			return n;
+		}else if(cmp==0){//3
+			return Level::Error;
 		}
-		void set(State::Level level){
-			state.level=level;
+		return o;
+		//4
+	}
+	inline int read_level(Level level){
+		if(level==Level::Floating || level==Level::Error){
+			return -1;
+		}
+		return static_cast<int8_t>(level)>0?1:0;
+	}
+	struct Wire:Util::CircularList<Wire>{
+		Level level=Level::Floating;
+		bool updated=false;
+		int get() {
+			Level tmp=level;
+			each([&tmp](Wire* cur){
+				tmp=interact(tmp, cur->level);
+			});
+			return read_level(tmp);
+		}
+		void set(Level new_level){
+			if(level!=new_level){
+				level=new_level;
+				updated=true;
+			}
 		}
 		void reset(){
 			each([](Wire* cur){
-				cur->state.updated=false;
+				cur->updated=false;
 			});
 		}
 		bool has_updated(){
 			return any([](Wire* cur){
-				return cur->state.updated;
+				return cur->updated;
 			});
 		}
 	};
@@ -116,7 +121,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		void set(val_t val){
 			for(auto p:pins){
-				p->set((val&1u)==1u?State::High:State::Low);
+				p->set((val&1u)==1u?Level::High:Level::Low);
 				val>>=1;
 			}
 		}
@@ -128,7 +133,7 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return true;
 		}
-		val_t get(std::optional<val_t> if_invalid={}) const{
+		val_t get() const{
 			if(is_valid()){
 				val_t val=0;
 				for(auto p:pins){
@@ -136,9 +141,6 @@ E	E4	E4	E4	E4	E4	E1
 					val=(val >> 1) | ((val&1) << (Size - 1));
 				}
 				return val;
-			}
-			if(if_invalid){
-				return *if_invalid;
 			}
 			throw PortNotValid{};
 		}
@@ -219,7 +221,7 @@ E	E4	E4	E4	E4	E4	E1
 			for(size_t i=0;i<Size;++i){
 				Wire* w=port.pins[i];
 				for(auto p:{ports...}){
-					w->link(p.pins[i]);
+					w->merge(p.pins[i]);
 				}
 				wires.push_back(w);
 			}
