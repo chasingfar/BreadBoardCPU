@@ -173,8 +173,16 @@ E	E4	E4	E4	E4	E4	E1
 			//std::for_each(comps.begin(), comps.end(),[](auto c){
 			//	c->update();
 			//});
+			bool has_PortNotValid=false;
 			for(auto c:comps){
-				c->update();
+				try{
+					c->update();
+				}catch(const PortNotValid& e){
+					has_PortNotValid=true;
+				}
+			}
+			if(has_PortNotValid){
+				std::cout<<"PortNotValid"<<std::endl;
 			}
 		}
 		void update() override{
@@ -253,22 +261,14 @@ E	E4	E4	E4	E4	E4	E1
 	struct Nand:Component{
 		Port<Size> A,B,Y;
 		void update() override{
-			try{
-				Y=~(A.get()&B.get());
-			}catch(const PortNotValid& e){
-				;
-			}
+			Y=~(A.get()&B.get());
 		}
 	};
 	template<size_t Size>
 	struct Adder:Component{
 		Port<Size> A,B,O;
 		void update() override{
-			try{
-				O=A.get()+B.get();
-			}catch(const PortNotValid& e){
-				;
-			}
+			O=A.get()+B.get();
 		}
 		std::ostream& print(std::ostream& os) const override{
 			return os<<A<<"+"<<B<<"="<<O;
