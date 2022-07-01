@@ -146,6 +146,13 @@ E	E4	E4	E4	E4	E4	E1
 	template<size_t Size>
 	struct Port{
 		std::array<Wire,Size> pins;
+		Port()=default;
+		Port(val_t val){set(val);}
+		Port(Level level){
+			for(auto& p:pins){
+				p.set(level);
+			}
+		}
 		void set(val_t val){
 			for(auto& p:pins){
 				p.set((val&1u)==1u?Level::High:Level::Low);
@@ -176,8 +183,18 @@ E	E4	E4	E4	E4	E4	E1
 			return *this;
 		}
 		std::ostream& print_ptr(std::ostream& os) const{
-			for (auto i = pins.rbegin(); i != pins.rend(); ++i) {
-				os<<*i<<" ";
+			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
+				os<<*it<<" ";
+			}
+			return os;
+		}
+		std::ostream& print_bit(std::ostream& os) const{
+			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
+				if(auto v=it->get();v>0){
+					os<<v;
+				}else{
+					os<<"E";
+				}
 			}
 			return os;
 		}
@@ -186,7 +203,7 @@ E	E4	E4	E4	E4	E4	E1
 			try {
 				os<<port.get();
 			} catch (const PortNotValid& e) {
-				os<<"E";
+				port.print_bit(os);
 			}
 			return os;
 		}
@@ -288,7 +305,7 @@ E	E4	E4	E4	E4	E4	E1
 	template<size_t Size>
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
-		Enable en;
+		Enable en{Level::PullUp};
 		void update() override {
 			if(en){
 				Base::update();
@@ -301,7 +318,7 @@ E	E4	E4	E4	E4	E4	E1
 	template<size_t Size>
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
-		Enable clr;
+		Enable clr{Level::PullUp};
 		void update() override {
 			if(clr){
 				Base::reset();
