@@ -18,12 +18,15 @@
 namespace Util{
 	template<typename T>
 	struct CircularList{
-		T* next=self(this);
+		T* next=self();
+		auto self() const{return static_cast<const T*>(this);}
+		auto self() {return static_cast<T*>(this);}
+
 		auto each(auto&& fn) const{
-			return loop(this,std::forward<decltype(fn)>(fn));
+			return loop(self(),std::forward<decltype(fn)>(fn));
 		}
 		auto each(auto&& fn){
-			return loop(this,std::forward<decltype(fn)>(fn));
+			return loop(self(),std::forward<decltype(fn)>(fn));
 		}
 		bool has(T* node) const{
 			return each([node](auto&& cur){
@@ -34,24 +37,19 @@ namespace Util{
 			if(!has(list)){
 				std::swap(next,list->next);
 			}
-			return *self(this);
+			return *self();
+		}
+		T& operator <<(T& list){
+			return link(&list);
 		}
 	private:
+		//CRTP guard
 		CircularList()=default;
 		friend T;
-		
-		template<typename This>
-		static auto self(This* ptr){
-			if constexpr(std::is_const_v<This>){
-				return static_cast<const T*>(ptr);
-			}else{
-				return static_cast<T*>(ptr);
-			}
-		}
 
-		static auto loop(auto ptr,auto&& fn){
-			constexpr bool return_void=std::is_same_v<decltype(fn(self(ptr))),void>;
-			auto cur=self(ptr);
+		static auto loop(auto head,auto&& fn){
+			constexpr bool return_void=std::is_same_v<decltype(fn(head)),void>;
+			auto cur=head;
 			do {
 				if constexpr(return_void){
 					fn(cur);
@@ -61,7 +59,7 @@ namespace Util{
 					}
 				}
 				cur=cur->next;
-			}while(cur!=self(ptr));
+			}while(cur!=head);
 			if constexpr(!return_void){
 				return false;
 			}
@@ -133,6 +131,19 @@ E	E4	E4	E4	E4	E4	E1
 	};
 	struct PortNotValid:std::exception{};
 	template<size_t Size>
+	struct SubPort{
+		std::span<Wire,Size> pins;
+		template<typename ...Ts>
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
+		auto wire(Ts&&... ports) {
+			return [&]<size_t ...I>(std::index_sequence<I...>){
+				return std::vector{[&](size_t i){
+					return &(pins[i]<<...<<ports.pins[i]);
+				}(I)...};
+			}(std::make_index_sequence<Size>{});
+		}
+	};
+	template<size_t Size>
 	struct Port{
 		std::array<Wire,Size> pins;
 		void set(val_t val){
@@ -179,12 +190,15 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return os;
 		}
-		operator std::span<Wire,Size>(){
+		operator SubPort<Size>(){
 			return pins;
 		}
-		template<size_t NewSize>
-		auto sub(size_t offset=0){
-			return std::span<Wire,NewSize>{&pins[offset],NewSize};
+		template<size_t NewSize=Size,size_t Offset=0>
+		auto sub(size_t offset=Offset){
+			return SubPort<NewSize>{std::span<Wire,NewSize>{&pins[offset],NewSize}};
+		}
+		auto wire(auto&& ...ports){
+			return sub().wire(ports...);
 		}
 	};
 	struct Enable:Port<1>{
@@ -238,22 +252,10 @@ E	E4	E4	E4	E4	E4	E1
 			}while(wires_is_updated());
 		}
 		
-		template<size_t Size>
-		using SubPort=std::span<Wire,Size>;
-		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
-		void wire(SubPort<Size> pins,Ts&&... other) {
-			for(size_t i=0;i<Size;++i){
-				for(auto&& p:{SubPort<Size>{other}...}){
-					pins[i].link(&p[i]);
-				}
-				wires.push_back(&pins[i]);
-			}
-		}
-		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
-		void wire(Port<Size>& port,Ts&&... other) {
-			wire(SubPort<Size>{port},other...);
+		template<typename ...Ts>
+		requires ((std::is_same_v<decltype(wires),Ts>)&&...)
+		void add_wires(const Ts&... w){
+			(wires.insert(wires.end(),w.begin(),w.end()),...);
 		}
 
 		template<typename ...Ts>
@@ -333,8 +335,10 @@ E	E4	E4	E4	E4	E4	E1
 		RegCLR<8> reg{};
 		Sim(){
 			add_comps(adder,reg);
-			wire(adder.O,reg.input);
-			wire(adder.A,reg.output);
+			add_wires(
+				adder.O.wire(reg.input),
+				adder.A.wire(reg.output)
+			);
 			adder.B.set(1);
 			reg.clr.set(1);
 			reg.clk.set(0);
