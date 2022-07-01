@@ -18,47 +18,52 @@
 namespace Util{
 	template<typename T>
 	struct CircularList{
-		using node_t = T*;
-		template<typename S>
-		static auto self(S* ptr){return static_cast<std::conditional_t<std::is_const_v<S>,const T*,T*>>(ptr);}
-		template<typename S,typename Fn>
-		static bool any_of(S* ptr,Fn&& fn){
-			auto cur=self(ptr);
-			do {
-				if(fn(cur)){
-					return true;
-				}
-				cur=cur->next;
-			}while(cur!=self(ptr));
-			return false;
+		T* next=self(this);
+		auto each(auto&& fn) const{
+			return loop(this,std::forward<decltype(fn)>(fn));
 		}
-		T* next=static_cast<T*>(this);
-		bool any(auto&& fn) const{
-			return any_of(this,fn);
-		}
-		bool any(auto&& fn){
-			return any_of(this,fn);
-		}
-		void each(auto&& fn) const{
-			any([&](auto&& cur){
-				fn(cur);
-				return false;
-			});
-		}
-		void each(auto&& fn) {
-			any([&](auto&& cur){
-				fn(cur);
-				return false;
-			});
+		auto each(auto&& fn){
+			return loop(this,std::forward<decltype(fn)>(fn));
 		}
 		bool has(T* node) const{
-			return any([node](auto&& cur){
+			return each([node](auto&& cur){
 				return cur==node;
 			});
 		}
-		void merge(T* list){
+		T& link(T* list){
 			if(!has(list)){
 				std::swap(next,list->next);
+			}
+			return *self(this);
+		}
+	private:
+		CircularList()=default;
+		friend T;
+		
+		template<typename This>
+		static auto self(This* ptr){
+			if constexpr(std::is_const_v<This>){
+				return static_cast<const T*>(ptr);
+			}else{
+				return static_cast<T*>(ptr);
+			}
+		}
+
+		static auto loop(auto ptr,auto&& fn){
+			constexpr bool return_void=std::is_same_v<decltype(fn(self(ptr))),void>;
+			auto cur=self(ptr);
+			do {
+				if constexpr(return_void){
+					fn(cur);
+				}else{
+					if(fn(cur)){
+						return true;
+					}
+				}
+				cur=cur->next;
+			}while(cur!=self(ptr));
+			if constexpr(!return_void){
+				return false;
 			}
 		}
 	};
@@ -121,7 +126,7 @@ E	E4	E4	E4	E4	E4	E1
 			});
 		}
 		bool has_updated(){
-			return any([](Wire* cur){
+			return each([](Wire* cur){
 				return cur->updated;
 			});
 		}
@@ -232,21 +237,25 @@ E	E4	E4	E4	E4	E4	E1
 				comps_update();
 			}while(wires_is_updated());
 		}
+		
+		template<size_t Size>
+		using SubPort=std::span<Wire,Size>;
 		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,std::span<Wire,Size>>)&&...))
-		void wire(std::span<Wire,Size> pins,Ts&&... other) {
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
+		void wire(SubPort<Size> pins,Ts&&... other) {
 			for(size_t i=0;i<Size;++i){
-				for(auto&& p:{static_cast<std::span<Wire,Size>>(other)...}){
-					pins[i].merge(&p[i]);
+				for(auto&& p:{SubPort<Size>{other}...}){
+					pins[i].link(&p[i]);
 				}
 				wires.push_back(&pins[i]);
 			}
 		}
 		template<size_t Size,typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,std::span<Wire,Size>>)&&...))
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
 		void wire(Port<Size>& port,Ts&&... other) {
-			wire(static_cast<std::span<Wire,Size>>(port),other...);
+			wire(SubPort<Size>{port},other...);
 		}
+
 		template<typename ...Ts>
 		requires ((std::is_base_of_v<Component,Ts>)&&...)
 		void add_comps(Ts&... c){
