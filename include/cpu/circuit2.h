@@ -18,47 +18,47 @@
 namespace Util{
 	template<typename T>
 	struct CircularList{
+		using node_t = T*;
+		template<typename S>
+		static auto self(S* ptr){return static_cast<std::conditional_t<std::is_const_v<S>,const T*,T*>>(ptr);}
+		template<typename S,typename Fn>
+		static bool any_of(S* ptr,Fn&& fn){
+			auto cur=self(ptr);
+			do {
+				if(fn(cur)){
+					return true;
+				}
+				cur=cur->next;
+			}while(cur!=self(ptr));
+			return false;
+		}
 		T* next=static_cast<T*>(this);
-		bool any(auto&& fn){
-			T* cur=static_cast<T*>(this);
-			do {
-				if(fn(cur)){
-					return true;
-				}
-				cur=cur->next;
-			}while(cur!=static_cast<T*>(this));
-			return false;
-		}
 		bool any(auto&& fn) const{
-			const T* cur=static_cast<const T*>(this);
-			do {
-				if(fn(cur)){
-					return true;
-				}
-				cur=cur->next;
-			}while(cur!=static_cast<const T*>(this));
-			return false;
+			return any_of(this,fn);
 		}
-		void each(auto&& fn) {
-			any([&](auto cur){
-				fn(cur);
-				return false;
-			});
+		bool any(auto&& fn){
+			return any_of(this,fn);
 		}
 		void each(auto&& fn) const{
-			any([&](auto cur){
+			any([&](auto&& cur){
 				fn(cur);
 				return false;
 			});
 		}
-		bool has(T* wire){
-			return any([=](T* cur){
-				return cur==wire;
+		void each(auto&& fn) {
+			any([&](auto&& cur){
+				fn(cur);
+				return false;
 			});
 		}
-		void merge(T* wire){
-			if(!has(wire)){
-				std::swap(next,wire->next);
+		bool has(T* node) const{
+			return any([node](auto&& cur){
+				return cur==node;
+			});
+		}
+		void merge(T* list){
+			if(!has(list)){
+				std::swap(next,list->next);
 			}
 		}
 	};
