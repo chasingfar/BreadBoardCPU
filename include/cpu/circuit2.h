@@ -148,14 +148,10 @@ E	E4	E4	E4	E4	E4	E1
 		std::array<Wire,Size> pins;
 		Port()=default;
 		Port(val_t val){set(val);}
-		Port(Level level){
+		Port(Level level){set(0,level);}
+		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
-				p.set(level);
-			}
-		}
-		void set(val_t val){
-			for(auto& p:pins){
-				p.set((val&1u)==1u?Level::High:Level::Low);
+				p.set((val&1u)==1u?one:zero);
 				val>>=1;
 			}
 		}
