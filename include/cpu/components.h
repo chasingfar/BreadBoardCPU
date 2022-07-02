@@ -31,9 +31,9 @@ namespace Circuit{
 	template<size_t Size>
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
-		Enable en{Level::PullUp};
+		Enable en;
 		void update() override {
-			if(en){
+			if(en.is_enable()){
 				Base::update();
 			}
 		}
@@ -44,9 +44,9 @@ namespace Circuit{
 	template<size_t Size>
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
-		Enable clr{Level::PullUp};
+		Enable clr;
 		void update() override {
-			if(clr){
+			if(clr.is_enable()){
 				Base::reset();
 			} else {
 				Base::update();

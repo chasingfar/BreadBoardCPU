@@ -160,7 +160,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Enable:Port<1>{
-		operator bool(){
+		bool is_enable(){
 			return get()==0;
 		}
 	};
