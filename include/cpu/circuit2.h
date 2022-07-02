@@ -4,17 +4,11 @@
 
 #ifndef BBCPU_CIRCUIT_H
 #define BBCPU_CIRCUIT_H
-#include <cstddef>
-#include <exception>
-#include <optional>
 #include <type_traits>
 #include <vector>
-#include <string>
 #include <iostream>
-#include <algorithm>
 #include <array>
 #include <span>
-#include <numeric>
 namespace Util{
 	template<typename T>
 	struct CircularList{
