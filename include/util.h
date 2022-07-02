@@ -96,5 +96,55 @@ namespace Util{
 			in++;
 		}while(true);
 	}
+
+	template<typename T>
+	struct CircularList{
+		T* next=self();
+		auto self() const{return static_cast<const T*>(this);}
+		auto self() {return static_cast<T*>(this);}
+
+		auto each(auto&& fn) const{
+			return loop(self(),std::forward<decltype(fn)>(fn));
+		}
+		auto each(auto&& fn){
+			return loop(self(),std::forward<decltype(fn)>(fn));
+		}
+		bool has(T* node) const{
+			return each([node](auto&& cur){
+				return cur==node;
+			});
+		}
+		T& link(T* list){
+			if(!has(list)){
+				std::swap(next,list->next);
+			}
+			return *self();
+		}
+		T& operator <<(T& list){
+			return link(&list);
+		}
+	private:
+		//CRTP guard
+		CircularList()=default;
+		friend T;
+
+		static auto loop(auto head,auto&& fn){
+			constexpr bool return_void=std::is_same_v<decltype(fn(head)),void>;
+			auto cur=head;
+			do {
+				if constexpr(return_void){
+					fn(cur);
+				}else{
+					if(fn(cur)){
+						return true;
+					}
+				}
+				cur=cur->next;
+			}while(cur!=head);
+			if constexpr(!return_void){
+				return false;
+			}
+		}
+	};
 }
 #endif //BBCPU_UTIL_H

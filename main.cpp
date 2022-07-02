@@ -8,7 +8,7 @@
 #include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"*/
-#include "include/cpu/circuit2.h"
+#include "include/cpu/components.h"
 //#include "include/lang/lang.h"
 /*struct B:std::enable_shared_from_this<B>{
 	int i;
