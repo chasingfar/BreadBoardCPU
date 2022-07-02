@@ -76,14 +76,12 @@ namespace Circuit{
 	template<size_t Size=8>
 	struct ALU:Component{
 		Port<Size> A,B,O;
-		Port<1> Cn;
-		Port<1> M;
-		Port<4> S;
+		Port<1> CMS;
 		Port<1> Co;
 		void update() override {
-			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(Cn.get()),
-			                                static_cast<ALU74181::Method>(M.get()),
-			                                S.get(),
+			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
+			                                static_cast<ALU74181::Method>(CMS.sub<1>(4).get()),
+			                                CMS.sub<4>(0).get(),
 			                                A.get(),
 			                                B.get());
 			Co=static_cast<val_t>(carry);
@@ -91,9 +89,9 @@ namespace Circuit{
 		}
 
 		std::ostream &print(std::ostream &os) const override {
-			return os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(Cn.get()),
-			                                static_cast<ALU74181::Method>(M.get()),
-			                                S.get(),
+			return os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
+			                                static_cast<ALU74181::Method>(CMS.sub<1>(4).get()),
+			                                CMS.sub<4>(0).get(),
 			                                std::to_string(A.get()),
 			                                std::to_string(B.get()));
 		}

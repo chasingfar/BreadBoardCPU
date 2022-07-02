@@ -74,12 +74,70 @@ E	E4	E4	E4	E4	E4	E1
 			});
 		}
 	};
+
 	struct PortNotValid:std::exception{};
-	template<size_t Size>
+	namespace Pins{
+		inline void write(auto& pins,val_t val,Level zero=Level::Low,Level one=Level::High){
+			for(auto& p:pins){
+				p.set((val&1u)==1u?one:zero);
+				val>>=1;
+			}
+		}
+		inline val_t read(const auto& pins){
+			val_t val=0;
+			for(auto& p:pins){
+				if(int v=p.get();v>=0){
+					val|=v;
+				}else{
+					throw PortNotValid{};
+				}
+				val=(val >> 1) | ((val&1) << (pins.size() - 1));
+			}
+			return val;
+		}
+		inline std::ostream& print_ptr(const auto& pins,std::ostream& os){
+			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
+				os<<*it<<" ";
+			}
+			return os;
+		}
+		inline std::ostream& print_bit(const auto& pins,std::ostream& os){
+			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
+				if(auto v=it->get();v>=0){
+					os<<v;
+				}else{
+					os<<"E";
+				}
+			}
+			return os;
+		}
+	}
+
+	template<size_t Size,typename T>
 	struct SubPort{
-		std::span<Wire,Size> pins;
+		std::span<T,Size> pins;
+		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
+			Pins::write(pins,zero,one);
+		}
+		val_t get() const{
+			Pins::read(pins);
+		}
+		auto& operator =(val_t val){
+			set(val);
+			return *this;
+		}
+		friend std::ostream& operator<<(std::ostream& os,const SubPort<Size,T>& port){
+			//return port.print_ptr(os);
+			try {
+				os<<Pins::read(port.pins,os);
+			} catch (const PortNotValid& e) {
+				Pins::print_bit(port.pins,os);
+			}
+			return os;
+		}
+
 		template<typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size>>)&&...))
+		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size,T>>)&&...))
 		auto wire(Ts&&... ports) {
 			return [&]<size_t ...I>(std::index_sequence<I...>){
 				return std::vector{[&](size_t i){
@@ -95,65 +153,37 @@ E	E4	E4	E4	E4	E4	E1
 		Port(val_t val){set(val);}
 		Port(Level level){set(0,level);}
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
-			for(auto& p:pins){
-				p.set((val&1u)==1u?one:zero);
-				val>>=1;
-			}
-		}
-		bool is_valid() const{
-			for(auto& p:pins){
-				if(p.get()<0){
-					return false;
-				}
-			}
-			return true;
+			Pins::write(pins,val,zero,one);
 		}
 		val_t get() const{
-			if(is_valid()){
-				val_t val=0;
-				for(auto& p:pins){
-					val|=p.get();
-					val=(val >> 1) | ((val&1) << (Size - 1));
-				}
-				return val;
-			}
-			throw PortNotValid{};
+			return Pins::read(pins);
 		}
 		auto& operator =(val_t val){
 			set(val);
 			return *this;
 		}
-		std::ostream& print_ptr(std::ostream& os) const{
-			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
-				os<<*it<<" ";
-			}
-			return os;
-		}
-		std::ostream& print_bit(std::ostream& os) const{
-			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
-				if(auto v=it->get();v>0){
-					os<<v;
-				}else{
-					os<<"E";
-				}
-			}
-			return os;
-		}
 		friend std::ostream& operator<<(std::ostream& os,const Port<Size>& port){
 			//return port.print_ptr(os);
 			try {
-				os<<port.get();
+				os<<Pins::read(port.pins);
 			} catch (const PortNotValid& e) {
-				port.print_bit(os);
+				Pins::print_bit(port.pins,os);
 			}
 			return os;
 		}
-		operator SubPort<Size>(){
+		operator SubPort<Size,const Wire>() const{
+			return pins;
+		}
+		operator SubPort<Size,Wire>() {
 			return pins;
 		}
 		template<size_t NewSize=Size,size_t Offset=0>
-		auto sub(size_t offset=Offset){
-			return SubPort<NewSize>{std::span<Wire,NewSize>{&pins[offset],NewSize}};
+		auto sub(size_t offset=Offset) {
+			return SubPort<NewSize,Wire>{std::span<Wire,NewSize>{&pins[offset],NewSize}};
+		}
+		template<size_t NewSize=Size,size_t Offset=0>
+		auto sub(size_t offset=Offset) const{
+			return SubPort<NewSize,const Wire>{std::span<const Wire,NewSize>{&pins[offset],NewSize}};
 		}
 		auto wire(auto&& ...ports){
 			return sub().wire(ports...);
