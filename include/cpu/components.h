@@ -96,82 +96,81 @@ namespace Circuit{
 			                                std::to_string(B.get()));
 		}
 	};
-	/*
+	
 	template<size_t ASize=19,size_t DSize=8>
-	struct RAM:Circuit{
+	struct RAM:Component{
 		static constexpr size_t data_size=1<<ASize;
-		Port<1> ce,oe,we;
+		Enable ce,oe,we;
 		Port<ASize> A;
 		Port<DSize> D;
-		typename Port<DSize>::val_t data[data_size]{0};
+		val_t data[data_size]{0};
 
 		void update() override {
-			D.mode=PortMode::INPUT;
-			if(ce.get(0)==false){
-				if(we.get(0)==false){
-					data[A]=D;
-				} else if(oe.get(0)==false) {
-					D.mode=PortMode::OUTPUT;
-					D=data[A];
+			D=Level::Floating;
+			if(ce.is_enable()){
+				if(we.is_enable()){
+					data[A.get()]=D.get();
+				} else if(oe.is_enable()) {
+					D=data[A.get()];
 				}
 			}
 		}
 	};
 	template<size_t ASize=19,size_t DSize=8>
-	struct ROM:Circuit{
-		using val_t = typename Port<DSize>::val_t;
+	struct ROM:Component{
 		static constexpr size_t data_size=1<<ASize;
-		Port<1> ce,oe,we;
+		Enable ce,oe,we;
 		Port<ASize> A;
-		Port<DSize> D{PortMode::OUTPUT};
+		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		void load(const std::vector<typename Port<DSize>::val_t>& new_data){
+		void load(const std::vector<val_t>& new_data){
 			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size), data);
 		}
 
 		void update() override {
-			if(we.get(0)==false){
-				status=Status::WarnningWriteROM;
-			}
-			if(ce.get(0)==false && oe.get(0)==false){
-				D=data[A];
+			if(ce.is_enable()){
+				if(we.is_enable()){
+					std::cout<<"[Warnning]Try write to ROM"<<std::endl;
+				} else if(oe.is_enable()) {
+					D=data[A.get()];
+				}
 			}
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
 	};
 	template<size_t Size=8>
-	struct Bus:Circuit{
-		Port<1> oe,dir;
+	struct Bus:Component{
+		Enable oe;
+		Port<1> dir;
 		Port<Size> A,B;
 		void update() override {
-			A.mode=PortMode::INPUT;
-			B.mode=PortMode::INPUT;
-			if(oe.get(0)==false){
-				if(dir.get(0)){
+			A=Level::Floating;
+			B=Level::Floating;
+			if(oe.is_enable()){
+				if(dir.get()==1){
 					B=A;
-					B.mode=PortMode::OUTPUT;
 				}else{
-					A.mode=PortMode::OUTPUT;
 					A=B;
 				}
 			}
 		}
 	};
 	template<size_t SelSize=2>
-	struct Demux:Circuit{
+	struct Demux:Component{
+		static constexpr size_t output_size=1<<SelSize;
 		Port<SelSize> S;
-		Port<1> G;
-		Port<1<<SelSize> Y{PortMode::OUTPUT};
+		Enable G;
+		Port<output_size> Y;
 
 		void update() override {
 			Y=-1;
-			if(G.get(0)==false){
-				Y.set(S, false);
+			if(G.is_enable()){
+				Y.sub<1>(S.get()).set(0);
 			}
 		}
-	};*/
+	};
 /*
 	struct CPU:CompositeCircuit<std::add_pointer_t>{
 		Port<1> clk{PortMode::OUTPUT},clr{PortMode::OUTPUT};
