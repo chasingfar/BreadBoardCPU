@@ -171,6 +171,27 @@ namespace Circuit{
 			}
 		}
 	};
+	template<size_t SelSize=2,size_t Size=8>
+	struct RegENSet:Circuit{
+		static constexpr size_t regs_num=1<<SelSize;
+		Port<1> clk;
+		Enable en[regs_num];
+		Port<Size> input,output[regs_num];
+
+		Demux<SelSize> demux;
+		RegEN<Size> regs[regs_num];
+		RegENSet(){
+			[&]<size_t ...I>(std::index_sequence<I...>){
+				add_comps(demux,regs[I]...);
+				add_wires(
+					clk.wire(regs[I].clk...),
+					input.wire(regs[I].input...),
+					demux.Y.sub<1>(I).wire(regs[I].en)...,
+					output[I].wire(regs[I].output)...
+				);
+			}(std::make_index_sequence<Size>{});
+		}
+	};
 /*
 	struct CPU:CompositeCircuit<std::add_pointer_t>{
 		Port<1> clk{PortMode::OUTPUT},clr{PortMode::OUTPUT};
