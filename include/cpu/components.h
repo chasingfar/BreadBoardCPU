@@ -131,7 +131,7 @@ namespace Circuit{
 		void update() override {
 			if(ce.is_enable()){
 				if(we.is_enable()){
-					std::cout<<"[Warnning]Try write to ROM"<<std::endl;
+					std::cout<<"[Warning]Try write to ROM"<<std::endl;
 				} else if(oe.is_enable()) {
 					D=data[A.get()];
 				}
