@@ -10,7 +10,7 @@
 namespace Circuit{
 	template<size_t Size>
 	struct Reg:Component{
-		Port<1> clk;
+		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
 		void update() override {
@@ -174,7 +174,7 @@ namespace Circuit{
 	template<size_t SelSize=2,size_t Size=8>
 	struct RegENSet:Circuit{
 		static constexpr size_t regs_num=1<<SelSize;
-		Port<1> clk;
+		Clock clk;
 		Enable en;
 		Port<SelSize> sel;
 		Port<Size> input,output[regs_num];
@@ -377,7 +377,7 @@ namespace Circuit{
  */
 	template<size_t Size>
 	struct Counter:Circuit{
-		Port<1> clk{Level::PullDown};
+		Clock clk{Level::PullDown};
 		Port<1> clr{Level::PullUp};
 		Adder<Size> adder{};
 		RegCLR<Size> reg{};
@@ -390,9 +390,6 @@ namespace Circuit{
 				adder.A.wire(reg.output)
 			);
 			adder.B.set(1);
-		}
-		void clock(){
-			reg.clk.set(~reg.clk.get());
 		}
 	};
 }

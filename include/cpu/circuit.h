@@ -194,6 +194,11 @@ E	E4	E4	E4	E4	E4	E1
 			return get()==0;
 		}
 	};
+	struct Clock:Port<1>{
+		void tick(){
+			set(~get());
+		}
+	};
 	struct Component{
 		virtual void update(){}
 		virtual std::ostream& print(std::ostream& os) const{
