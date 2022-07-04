@@ -40,7 +40,44 @@ struct A{
 		return c;
 	}
 };*/
+namespace Circuit{
+	struct CPU:Circuit{
+		Clock clk,clk_;
+		Port<1> clr;
 
+		Nand<1> nand;
+		Memory<16,8,8> mem{8,1};
+		CU cu;
+		ALU<8> alu;
+		IOControl ioctl;
+		RegENSet<2,8> regset;
+		RAM<4,8> reg;
+		CPU(){
+			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
+			add_wires(
+				clk.wire(nand.A,nand.B,cu.clk,regset.clk),
+				clk_.wire(nand.Y,cu.clk_),
+				clr.wire(cu.clr),
+				alu.Co.wire(cu.Ci),
+				regset.output[0].wire(cu.op),
+				regset.output[1].wire(alu.A),
+				regset.output[2].wire(mem.addr.sub<8>(0)),
+				regset.output[3].wire(mem.addr.sub<8>(8)),
+				ioctl.B.wire(alu.B),
+				ioctl.F.wire(alu.O,regset.input),
+				ioctl.R.wire(reg.D),
+				ioctl.M.wire(mem.data),
+				cu.CMS.wire(alu.CMS),
+				cu.bs.wire(reg.A),
+				cu.rs.wire(regset.sel),
+				cu.rs_en.wire(regset.en),
+				cu.dir.wire(ioctl.dir),
+				ioctl.ram_we.wire(mem.we),
+				ioctl.reg_we.wire(reg.we)
+			);
+		}
+	};
+}
 int main() {
 	using namespace Circuit;
 	Counter<8> counter{};
