@@ -195,6 +195,45 @@ namespace Circuit{
 			}(std::make_index_sequence<Size>{});
 		}
 	};
+	template<size_t ASize=19,size_t DSize=32,size_t OPSize=8>
+	struct CUBase:Circuit{
+		static constexpr size_t CSize=1;
+		static constexpr size_t STSize=ASize-OPSize-CSize;
+		Port<OPSize> op;
+		Clock clk,clk_;
+		Port<1> clr;
+
+		RegCLR<CSize> creg;
+		RegCLR<ASize> sreg;
+		ROM<ASize,DSize> tbl;
+		CUBase(){
+			add_comps(creg,sreg,tbl);
+			add_wires(
+				clk.wire(creg.clk),
+				clk_.wire(sreg.clk),
+				clr.wire(creg.clr,sreg.clr),
+				creg.output.wire(sreg.input.template sub<CSize>(0)),
+				(tbl.D.template sub<STSize>(0)).wire(sreg.input.template sub<STSize>(CSize)),
+				op.wire(sreg.input.template sub<OPSize>(CSize+STSize)),
+				sreg.output.wire(tbl.A)
+			);
+			tbl.ce.set(0);
+			tbl.we.set(1);
+			tbl.oe.set(0);
+		}
+	};
+	struct CU:CUBase<19,32,8>{
+		Port<6> CMS;
+		Port<4> bs;
+		Port<2> rs;
+		Port<2> dir;
+		CU(){
+			CMS.wire(tbl.D.sub<6>(STSize));
+			bs.wire(tbl.D.sub<4>(STSize+6));
+			rs.wire(tbl.D.sub<2>(STSize+6+4));
+			dir.wire(tbl.D.sub<2>(STSize+6+4+2));
+		}
+	};
 /*
 	struct CPU:CompositeCircuit<std::add_pointer_t>{
 		Port<1> clk{PortMode::OUTPUT},clr{PortMode::OUTPUT};
