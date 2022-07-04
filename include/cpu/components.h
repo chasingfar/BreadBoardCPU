@@ -211,7 +211,7 @@ namespace Circuit{
 		static constexpr size_t STSize=ASize-OPSize-CSize;
 		Port<OPSize> op;
 		Clock clk,clk_;
-		Port<1> clr;
+		Port<1> clr,Ci;
 
 		RegCLR<CSize> creg;
 		RegCLR<ASize> sreg;
@@ -221,6 +221,7 @@ namespace Circuit{
 			clk.wire(creg.clk);
 			clk_.wire(sreg.clk);
 			clr.wire(creg.clr,sreg.clr);
+			Ci.wire(creg.input);
 			op.wire(sreg.input.template sub<OPSize>(CSize+STSize));
 			add_wires(
 				creg.output.wire(sreg.input.template sub<CSize>(0)),
