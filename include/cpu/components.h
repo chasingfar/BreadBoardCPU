@@ -197,7 +197,7 @@ namespace Circuit{
 				add_wires(
 					en.wire(demux.G),
 					sel.wire(demux.S),
-					(demux.Y.sub<1>(I)).wire(regs[I].en)...,
+					(demux.Y.template sub<1>(I)).wire(regs[I].en)...,
 					clk.wire(regs[I].clk...),
 					input.wire(regs[I].input...),
 					output[I].wire(regs[I].output)...
