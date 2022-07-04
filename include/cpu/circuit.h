@@ -120,7 +120,7 @@ E	E4	E4	E4	E4	E4	E1
 			Pins::write(pins,val,zero,one);
 		}
 		val_t get() const{
-			Pins::read(pins);
+			return Pins::read(pins);
 		}
 		auto& operator =(val_t val){
 			set(val);
