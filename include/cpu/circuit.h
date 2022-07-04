@@ -195,7 +195,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Clock:Port<1>{
-		void tick(){
+		void clock(){
 			set(~get());
 		}
 	};

@@ -52,7 +52,7 @@ int main() {
 		std::cout<<counter.reg<<std::endl;
 		std::cout<<counter.adder<<std::endl;
 		std::cout<<std::endl;
-		counter.clk.tick();
+		counter.clk.clock();
 		counter.update();
 	}
 	/*BBCPU::ASM::ops_t program;
