@@ -300,7 +300,7 @@ namespace Circuit{
 			add_wires(
 				addr.wire(ram.A,rom.A),
 				data.wire(ram.D,rom.D),
-				cmp.Q.wire(addr.sub<CSize>(COff)),
+				cmp.Q.wire(addr.template sub<CSize>(COff)),
 				nand.A.wire(cmp.PeqQ),
 				nand.B.wire(cmp.PgtQ,rom.ce),
 				nand.Y.wire(ram.ce)
