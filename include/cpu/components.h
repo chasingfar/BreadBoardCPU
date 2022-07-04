@@ -167,7 +167,7 @@ namespace Circuit{
 		void update() override {
 			Y=-1;
 			if(G.is_enable()){
-				Y.sub<1>(S.get()).set(0);
+				Y.template sub<1>(S.get()).set(0);
 			}
 		}
 	};
@@ -202,7 +202,7 @@ namespace Circuit{
 					input.wire(regs[I].input...),
 					output[I].wire(regs[I].output)...
 				);
-			}(std::make_index_sequence<Size>{});
+			}(std::make_index_sequence<regs_num>{});
 		}
 	};
 	template<size_t ASize=19,size_t DSize=32,size_t OPSize=8>
@@ -218,13 +218,13 @@ namespace Circuit{
 		ROM<ASize,DSize> tbl;
 		CUBase(){
 			add_comps(creg,sreg,tbl);
+			clk.wire(creg.clk);
+			clk_.wire(sreg.clk);
+			clr.wire(creg.clr,sreg.clr);
+			op.wire(sreg.input.template sub<OPSize>(CSize+STSize));
 			add_wires(
-				clk.wire(creg.clk),
-				clk_.wire(sreg.clk),
-				clr.wire(creg.clr,sreg.clr),
 				creg.output.wire(sreg.input.template sub<CSize>(0)),
 				(tbl.D.template sub<STSize>(0)).wire(sreg.input.template sub<STSize>(CSize)),
-				op.wire(sreg.input.template sub<OPSize>(CSize+STSize)),
 				sreg.output.wire(tbl.A)
 			);
 			tbl.ce.set(0);
@@ -242,6 +242,49 @@ namespace Circuit{
 			bs.wire(tbl.D.sub<4>(STSize+6));
 			rs.wire(tbl.D.sub<2>(STSize+6+4));
 			dir.wire(tbl.D.sub<2>(STSize+6+4+2));
+		}
+	};
+	struct IOControl:Circuit{
+		Port<2> dir;
+		Clock clk,clk_;
+		Port<8> AH;
+		Port<8> F,B,R,M;
+		Enable ram_ce,ram_we,rom_ce,reg_we;
+
+		Demux<2> demux;
+		Nand<4> nand;
+		Cmp<8> cmp;
+		Bus<8> RiBo,RoFi,MiBo,MoFi;
+		IOControl(){
+			add_comps(demux,nand,cmp,RiBo,RoFi,MiBo,MoFi);
+			add_wires(
+				nand.A.sub<1>(1).wire(demux.Y.sub<1>(0)),
+				nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we),
+				nand.B.sub<1>(0).wire(demux.Y.sub<1>(2)),
+				nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,ram_we),
+				nand.Y.sub<1>(0).wire(RiBo.oe),
+				nand.Y.sub<1>(1).wire(RoFi.oe),
+				nand.A.sub<1>(3).wire(cmp.PeqQ),
+				nand.B.sub<1>(3).wire(cmp.PgtQ,rom_ce),
+				nand.Y.sub<1>(3).wire(ram_ce)
+			);
+			RiBo.dir.set(1);
+			RoFi.dir.set(0);
+			MiBo.dir.set(1);
+			MoFi.dir.set(0);
+
+			R.wire(RiBo.A,RoFi.A);
+			M.wire(MiBo.A,MoFi.A);
+			B.wire(RiBo.B,MiBo.B);
+			F.wire(RoFi.B,MoFi.B);
+			
+			cmp.P.set(1);
+			cmp.Q.wire(AH);
+			nand.A.sub<1>(2).wire(clk);
+			nand.B.sub<1>(2).set(1);
+			nand.Y.sub<1>(2).wire(clk_);
+			dir.wire(demux.S);
+			demux.G.set(0);
 		}
 	};
 /*
