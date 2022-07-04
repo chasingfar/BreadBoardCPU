@@ -375,22 +375,24 @@ namespace Circuit{
 		}
 	};
  */
-	struct Sim:Circuit{
-		Adder<8> adder{};
-		RegCLR<8> reg{};
-		Sim(){
+	template<size_t Size>
+	struct Counter:Circuit{
+		Port<1> clk{Level::PullDown};
+		Port<1> clr{Level::PullUp};
+		Adder<Size> adder{};
+		RegCLR<Size> reg{};
+		Counter(){
 			add_comps(adder,reg);
 			add_wires(
-					adder.O.wire(reg.input),
-					adder.A.wire(reg.output)
+				clk.wire(reg.clk),
+				clr.wire(reg.clr),
+				adder.O.wire(reg.input),
+				adder.A.wire(reg.output)
 			);
 			adder.B.set(1);
-			reg.clr.set(1);
-			reg.clk.set(0);
 		}
-		void update() override{
+		void clock(){
 			reg.clk.set(~reg.clk.get());
-			Circuit::update();
 		}
 	};
 }

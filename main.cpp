@@ -43,16 +43,17 @@ struct A{
 
 int main() {
 	using namespace Circuit;
-	Sim sim{};
-	sim.reg.clr.set(0);
-	sim.update();
-	sim.reg.clr.set(1);
+	Counter<8> counter{};
+	counter.clr.set(0);
+	counter.update();
+	counter.clr.set(1);
 
 	for(int i=0;i<10;i++){
-		std::cout<<sim.reg<<std::endl;
-		std::cout<<sim.adder<<std::endl;
+		std::cout<<counter.reg<<std::endl;
+		std::cout<<counter.adder<<std::endl;
 		std::cout<<std::endl;
-		sim.update();
+		counter.clock();
+		counter.update();
 	}
 	/*BBCPU::ASM::ops_t program;
 	{
