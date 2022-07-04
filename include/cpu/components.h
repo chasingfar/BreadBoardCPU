@@ -246,27 +246,21 @@ namespace Circuit{
 	};
 	struct IOControl:Circuit{
 		Port<2> dir;
-		Clock clk,clk_;
-		Port<8> AH;
 		Port<8> F,B,R,M;
-		Enable ram_ce,ram_we,rom_ce,reg_we;
+		Enable ram_we,reg_we;
 
 		Demux<2> demux;
-		Nand<4> nand;
-		Cmp<8> cmp;
+		Nand<2> nand;
 		Bus<8> RiBo,RoFi,MiBo,MoFi;
 		IOControl(){
-			add_comps(demux,nand,cmp,RiBo,RoFi,MiBo,MoFi);
+			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
 			add_wires(
 				nand.A.sub<1>(1).wire(demux.Y.sub<1>(0)),
 				nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we),
 				nand.B.sub<1>(0).wire(demux.Y.sub<1>(2)),
 				nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,ram_we),
 				nand.Y.sub<1>(0).wire(RiBo.oe),
-				nand.Y.sub<1>(1).wire(RoFi.oe),
-				nand.A.sub<1>(3).wire(cmp.PeqQ),
-				nand.B.sub<1>(3).wire(cmp.PgtQ,rom_ce),
-				nand.Y.sub<1>(3).wire(ram_ce)
+				nand.Y.sub<1>(1).wire(RoFi.oe)
 			);
 			RiBo.dir.set(1);
 			RoFi.dir.set(0);
@@ -278,13 +272,37 @@ namespace Circuit{
 			B.wire(RiBo.B,MiBo.B);
 			F.wire(RoFi.B,MoFi.B);
 			
-			cmp.P.set(1);
-			cmp.Q.wire(AH);
-			nand.A.sub<1>(2).wire(clk);
-			nand.B.sub<1>(2).set(1);
-			nand.Y.sub<1>(2).wire(clk_);
 			dir.wire(demux.S);
 			demux.G.set(0);
+		}
+	};
+	template<size_t ASize=16,size_t DSize=8,size_t CSize=8>
+	struct Memory:Circuit{
+		Port<ASize> addr;
+		Port<DSize> data;
+		Port<1> we;
+
+		Cmp<CSize> cmp;
+		Nand<1> nand;
+		RAM<ASize,DSize> ram;
+		ROM<ASize,DSize> rom;
+		Memory(size_t COff=8,size_t CVal=1){
+			add_comps(cmp,nand,ram,rom);
+
+			ram.we.wire(we);
+			
+			rom.oe.set(0);
+			rom.we.set(1);
+			
+			cmp.P.set(CVal);
+			add_wires(
+				addr.wire(ram.A,rom.A),
+				data.wire(ram.D,rom.D),
+				cmp.Q.wire(addr.sub<CSize>(COff)),
+				nand.A.wire(cmp.PeqQ),
+				nand.B.wire(cmp.PgtQ,rom.ce),
+				nand.Y.wire(ram.ce)
+			);
 		}
 	};
 /*
