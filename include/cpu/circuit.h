@@ -117,7 +117,7 @@ E	E4	E4	E4	E4	E4	E1
 	struct SubPort{
 		std::span<T,Size> pins;
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
-			Pins::write(pins,zero,one);
+			Pins::write(pins,val,zero,one);
 		}
 		val_t get() const{
 			Pins::read(pins);
