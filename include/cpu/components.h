@@ -175,7 +175,8 @@ namespace Circuit{
 	struct RegENSet:Circuit{
 		static constexpr size_t regs_num=1<<SelSize;
 		Port<1> clk;
-		Enable en[regs_num];
+		Enable en;
+		Port<SelSize> sel;
 		Port<Size> input,output[regs_num];
 
 		Demux<SelSize> demux;
@@ -184,9 +185,11 @@ namespace Circuit{
 			[&]<size_t ...I>(std::index_sequence<I...>){
 				add_comps(demux,regs[I]...);
 				add_wires(
+					en.wire(demux.G),
+					sel.wire(demux.S),
+					(demux.Y.sub<1>(I)).wire(regs[I].en)...,
 					clk.wire(regs[I].clk...),
 					input.wire(regs[I].input...),
-					demux.Y.sub<1>(I).wire(regs[I].en)...,
 					output[I].wire(regs[I].output)...
 				);
 			}(std::make_index_sequence<Size>{});
