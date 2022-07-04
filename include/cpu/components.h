@@ -171,6 +171,16 @@ namespace Circuit{
 			}
 		}
 	};
+	template<size_t Size=8>
+	struct Cmp:Component{
+		Port<Size> P,Q;
+		Port<1> PgtQ,PeqQ;
+		void update() override{
+			PgtQ=!(P.get()>Q.get());
+			PeqQ=!(P.get()==Q.get());
+		}
+	};
+
 	template<size_t SelSize=2,size_t Size=8>
 	struct RegENSet:Circuit{
 		static constexpr size_t regs_num=1<<SelSize;
