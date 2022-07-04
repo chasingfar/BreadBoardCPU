@@ -76,7 +76,7 @@ namespace Circuit{
 	template<size_t Size=8>
 	struct ALU:Component{
 		Port<Size> A,B,O;
-		Port<1> CMS;
+		Port<6> CMS;
 		Port<1> Co;
 		void update() override {
 			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
