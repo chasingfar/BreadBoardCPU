@@ -126,6 +126,10 @@ E	E4	E4	E4	E4	E4	E1
 			set(val);
 			return *this;
 		}
+		auto& operator =(Level level){
+			set(0,level);
+			return *this;
+		}
 		friend std::ostream& operator<<(std::ostream& os,const SubPort<Size,T>& port){
 			//return port.print_ptr(os);
 			try {
@@ -150,8 +154,8 @@ E	E4	E4	E4	E4	E4	E1
 	struct Port{
 		std::array<Wire,Size> pins;
 		Port()=default;
-		Port(val_t val){set(val);}
-		Port(Level level){set(0,level);}
+		explicit Port(val_t val){set(val);}
+		explicit Port(Level level){set(0,level);}
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			Pins::write(pins,val,zero,one);
 		}
@@ -160,6 +164,10 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		auto& operator =(val_t val){
 			set(val);
+			return *this;
+		}
+		auto& operator =(Level level){
+			set(0,level);
 			return *this;
 		}
 		friend std::ostream& operator<<(std::ostream& os,const Port<Size>& port){
@@ -190,11 +198,13 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Enable:Port<1>{
+		using Port<1>::Port;
 		bool is_enable(){
 			return get()==0;
 		}
 	};
 	struct Clock:Port<1>{
+		using Port<1>::Port;
 		void clock(){
 			set(~get());
 		}
