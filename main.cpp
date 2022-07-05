@@ -94,24 +94,13 @@ namespace Circuit{
 				ioctl.ram_we.wire(mem.we),
 				ioctl.reg_we.wire(reg.we)
 			);
+			auto tbl=BBCPU::OpCode::genOpTable();
+			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
 	};
 }
 int main() {
-	using namespace Circuit;
-	Counter<8> counter{};
-	counter.clr.set(0);
-	counter.update();
-	counter.clr.set(1);
-
-	for(int i=0;i<10;i++){
-		std::cout<<counter.reg<<std::endl;
-		std::cout<<counter.adder<<std::endl;
-		std::cout<<std::endl;
-		counter.clk.clock();
-		counter.update();
-	}
-	/*BBCPU::ASM::ops_t program;
+	BBCPU::ASM::ops_t program;
 	{
 		using namespace BBCPU::ASM;
 		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
@@ -120,10 +109,23 @@ int main() {
 			While{b,{{
 				a.set(add(a,b)),
 				b.set(sub(b,1_u8)),
-				}}},
+			}}},
 			halt(),
 		});
 	}
+	using namespace Circuit;
+	CPU cpu;
+	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
+	cpu.clr.set(0);
+	cpu.update();
+	cpu.clr.set(1);
+
+	for(int i=0;i<10;i++){
+		std::cout<<cpu.alu<<std::endl;
+		cpu.clk.clock();
+		cpu.update();
+	}
+	/*
 	Circuit::CPU cpu(program);
 	try {
 		for(int i=0;i<10;i++){
