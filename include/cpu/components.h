@@ -233,20 +233,6 @@ namespace Circuit{
 			tbl.oe.set(0);
 		}
 	};
-	struct CU:CUBase<19,32,8>{
-		Port<6> CMS;
-		Port<4> bs;
-		Port<2> rs;
-		Port<2> dir;
-		Enable rs_en;
-		CU(){
-			CMS.wire(tbl.D.sub<6>(STSize));
-			bs.wire(tbl.D.sub<4>(STSize+6));
-			rs.wire(tbl.D.sub<2>(STSize+6+4));
-			dir.wire(tbl.D.sub<2>(STSize+6+4+2));
-			rs_en.wire(tbl.D.sub<1>(STSize+6+4+2));
-		}
-	};
 	struct IOControl:Circuit{
 		Port<2> dir;
 		Port<8> F,B,R,M;

@@ -5,11 +5,12 @@
 #include <vector>
 /*
 #define CPU_DEBUG 0
+#include "cpu/regset_sram/mctrl.h"
 #include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"*/
 #include "include/cpu/components.h"
-//#include "include/lang/lang.h"
+#include "include/lang/lang.h"
 /*struct B:std::enable_shared_from_this<B>{
 	int i;
 	B(){
@@ -41,6 +42,24 @@ struct A{
 	}
 };*/
 namespace Circuit{
+	using namespace BBCPU;
+	using namespace Regs;
+
+	struct CU:CUBase<MARG::size,MCTRL::size,MARG::opcode::size>{
+		Port<MCTRL::alu::size> CMS;
+		Port<MCTRL::io::Bs::size> bs;
+		Port<MCTRL::io::Rs::size> rs;
+		Port<MCTRL::io::dir::size> dir;
+		Enable rs_en;
+		CU(){
+			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
+			 bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
+			 rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
+			dir.wire(tbl.D.sub<MCTRL::io::dir::size>(MCTRL::io::dir::low));
+			rs_en.wire(tbl.D.sub<1>(MCTRL::io::dir::low));
+		}
+	};
+
 	struct CPU:Circuit{
 		Clock clk,clk_;
 		Port<1> clr;
@@ -50,8 +69,8 @@ namespace Circuit{
 		CU cu;
 		ALU<8> alu;
 		IOControl ioctl;
-		RegENSet<2,8> regset;
-		RAM<4,8> reg;
+		RegENSet<MCTRL::io::Rs::size,8> regset;
+		RAM<MCTRL::io::Bs::size,8> reg;
 		CPU(){
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
 			add_wires(
@@ -59,10 +78,10 @@ namespace Circuit{
 				clk_.wire(nand.Y,cu.clk_),
 				clr.wire(cu.clr),
 				alu.Co.wire(cu.Ci),
-				regset.output[0].wire(cu.op),
-				regset.output[1].wire(alu.A),
-				regset.output[2].wire(mem.addr.sub<8>(0)),
-				regset.output[3].wire(mem.addr.sub<8>(8)),
+				regset.output[RegSet::I.v()].wire(cu.op),
+				regset.output[RegSet::A.v()].wire(alu.A),
+				regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0)),
+				regset.output[RegSet::H.v()].wire(mem.addr.sub<8>(8)),
 				ioctl.B.wire(alu.B),
 				ioctl.F.wire(alu.O,regset.input),
 				ioctl.R.wire(reg.D),
