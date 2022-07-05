@@ -116,6 +116,7 @@ int main() {
 	using namespace Circuit;
 	CPU cpu;
 	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
+	::Circuit::Circuit::ignoreReadFloating=true;
 	cpu.clr.set(0);
 	cpu.update();
 	cpu.clr.set(1);

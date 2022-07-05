@@ -75,7 +75,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 
-	struct PortNotValid:std::exception{};
+	struct ReadFloating:std::exception{};
 	namespace Pins{
 		inline void write(auto& pins,val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
@@ -89,7 +89,7 @@ E	E4	E4	E4	E4	E4	E1
 				if(int v=p.get();v>=0){
 					val|=v;
 				}else{
-					throw PortNotValid{};
+					throw ReadFloating{};
 				}
 				val=(val >> 1) | ((val&1) << (pins.size() - 1));
 			}
@@ -134,7 +134,7 @@ E	E4	E4	E4	E4	E4	E1
 			//return port.print_ptr(os);
 			try {
 				os<<Pins::read(port.pins,os);
-			} catch (const PortNotValid& e) {
+			} catch (const ReadFloating& e) {
 				Pins::print_bit(port.pins,os);
 			}
 			return os;
@@ -174,7 +174,7 @@ E	E4	E4	E4	E4	E4	E1
 			//return port.print_ptr(os);
 			try {
 				os<<Pins::read(port.pins);
-			} catch (const PortNotValid& e) {
+			} catch (const ReadFloating& e) {
 				Pins::print_bit(port.pins,os);
 			}
 			return os;
@@ -220,6 +220,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Circuit:Component{
+		inline static bool ignoreReadFloating=false;
 		std::vector<Wire*> wires;
 		std::vector<Component*> comps;
 		void wires_reset(){
@@ -236,16 +237,16 @@ E	E4	E4	E4	E4	E4	E1
 			return false;
 		}
 		void comps_update(){
-			bool has_PortNotValid=false;
+			bool hasReadFloating=false;
 			for(auto c:comps){
 				try{
 					c->update();
-				}catch(const PortNotValid& e){
-					has_PortNotValid=true;
+				}catch(const ReadFloating& e){
+					hasReadFloating=true;
 				}
 			}
-			if(has_PortNotValid){
-				std::cout<<"PortNotValid"<<std::endl;
+			if(hasReadFloating && !ignoreReadFloating){
+				std::cout<<"ReadFloating"<<std::endl;
 			}
 		}
 		void update() override{
