@@ -145,7 +145,7 @@ E	E4	E4	E4	E4	E4	E1
 		auto wire(Ts&&... ports) {
 			return [&]<size_t ...I>(std::index_sequence<I...>){
 				return std::vector{[&](size_t i){
-					return &(pins[i]<<...<<ports.pins[i]);
+					return (pins[i]>>...>>ports.pins[i]),&pins[i];
 				}(I)...};
 			}(std::make_index_sequence<Size>{});
 		}

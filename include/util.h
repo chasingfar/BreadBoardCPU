@@ -100,6 +100,9 @@ namespace Util{
 	template<typename T>
 	struct CircularList{
 		T* next=self();
+		~CircularList(){
+			remove_this();
+		}
 		auto self() const{return static_cast<const T*>(this);}
 		auto self() {return static_cast<T*>(this);}
 
@@ -109,25 +112,52 @@ namespace Util{
 		auto each(auto&& fn){
 			return loop(self(),std::forward<decltype(fn)>(fn));
 		}
-		bool has(T* node) const{
-			return each([node](auto&& cur){
+		bool has(const T* node) const{
+			return each([node](const T* cur){
 				return cur==node;
+			})!=nullptr;
+		}
+		bool check() const{
+			return each([](const T* cur){
+				return cur->next==nullptr;
+			})!=nullptr;
+		}
+		const T* prev() const{
+			return each([head=self()](const T* cur){
+				return cur->next==head;
+			});
+		}
+		T* prev() {
+			return each([head=self()](T* cur){
+				return cur->next==head;
 			});
 		}
 		T& link(T* list){
 			if(!has(list)){
 				std::swap(next,list->next);
 			}
-			return *self();
+			return *list;
 		}
-		T& operator <<(T& list){
+		T& operator >>(T& list){
 			return link(&list);
 		}
+		std::ostream& print_list(std::ostream& os){
+			each([&](auto&& cur){
+				os<<*cur<<"->";
+			});
+			return os<<*self();
+		}
+		void remove_next(){
+			next=next->next;
+		}
+		void remove_this(){
+			prev()->remove_next();
+		}
 	private:
-		//CRTP guard
+		//CRTP guard from https://www.fluentcpp.com/2017/05/12/curiously-recurring-template-pattern/
 		CircularList()=default;
 		friend T;
-
+		//loop list find cur:T* make fn return true, or return nullptr if not found.
 		static auto loop(auto head,auto&& fn){
 			constexpr bool return_void=std::is_same_v<decltype(fn(head)),void>;
 			auto cur=head;
@@ -136,13 +166,13 @@ namespace Util{
 					fn(cur);
 				}else{
 					if(fn(cur)){
-						return true;
+						return cur;
 					}
 				}
 				cur=cur->next;
-			}while(cur!=head);
+			}while(cur!=head && cur!=nullptr);
 			if constexpr(!return_void){
-				return false;
+				return static_cast<decltype(cur)>(nullptr);
 			}
 		}
 	};
