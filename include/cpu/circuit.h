@@ -21,7 +21,7 @@ namespace Circuit{
 		High     =  2,
 		Error    = INT8_MAX,
 	};
-	inline Level interact(Level o,Level n){
+	inline Level& operator+=(Level& o,Level n){
 		/*
 o\n	L	H	D	U	Z	E
 L	L1	E3	L4	L4	L4	E2
@@ -34,28 +34,32 @@ E	E4	E4	E4	E4	E4	E1
 		if(n==o){return o;}//1
 		int cmp=abs(static_cast<int8_t>(n))-abs(static_cast<int8_t>(o));
 		if(cmp>0){//2
-			return n;
+			return o=n;
 		}else if(cmp==0){//3
-			return Level::Error;
+			return o=Level::Error;
 		}
-		return o;
-		//4
+		return o;//4
 	}
-	inline int read_level(Level level){
+	inline Level operator+(Level o,Level n){
+		Level t=o;
+		return t+=n;
+	}
+	struct ReadFloating:std::exception{};
+	inline uint8_t operator+(Level level){
 		if(level==Level::Floating || level==Level::Error){
-			return -1;
+			throw ReadFloating{};
 		}
 		return static_cast<int8_t>(level)>0?1:0;
 	}
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
 		bool updated=false;
-		int get() const{
+		uint8_t get() const{
 			Level tmp=level;
 			each([&tmp](const Wire* cur){
-				tmp=interact(tmp, cur->level);
+				tmp+=cur->level;
 			});
-			return read_level(tmp);
+			return +tmp;
 		}
 		void set(Level new_level){
 			if(level!=new_level){
@@ -75,7 +79,6 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 
-	struct ReadFloating:std::exception{};
 	namespace Pins{
 		inline void write(auto& pins,val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
@@ -86,11 +89,7 @@ E	E4	E4	E4	E4	E4	E1
 		inline val_t read(const auto& pins){
 			val_t val=0;
 			for(auto& p:pins){
-				if(int v=p.get();v>=0){
-					val|=v;
-				}else{
-					throw ReadFloating{};
-				}
+				val|=p.get();
 				val=(val >> 1) | ((val&1) << (pins.size() - 1));
 			}
 			return val;
