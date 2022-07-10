@@ -209,7 +209,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Component{
-		virtual void update(){}
+		virtual void run(){}
 		virtual std::ostream& print(std::ostream& os) const{
 			return os;
 		}
@@ -239,7 +239,7 @@ E	E4	E4	E4	E4	E4	E1
 			bool hasReadFloating=false;
 			for(auto c:comps){
 				try{
-					c->update();
+					c->run();
 				}catch(const ReadFloating& e){
 					hasReadFloating=true;
 				}
@@ -248,7 +248,7 @@ E	E4	E4	E4	E4	E4	E1
 				std::cout<<"ReadFloating"<<std::endl;
 			}
 		}
-		void update() override{
+		void run() override{
 			do{
 				wires_reset();
 				comps_update();

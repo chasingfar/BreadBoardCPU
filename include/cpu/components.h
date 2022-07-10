@@ -13,7 +13,7 @@ namespace Circuit{
 		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
-		void update() override {
+		void run() override {
 			if(clk.get() == 0){
 				output=data;
 			}else{
@@ -32,9 +32,9 @@ namespace Circuit{
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable en;
-		void update() override {
+		void run() override {
 			if(en.is_enable()){
-				Base::update();
+				Base::run();
 			}
 		}
 		std::ostream& print(std::ostream& os) const override{
@@ -45,11 +45,11 @@ namespace Circuit{
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable clr;
-		void update() override {
+		void run() override {
 			if(clr.is_enable()){
 				Base::reset();
 			} else {
-				Base::update();
+				Base::run();
 			}
 		}
 		std::ostream& print(std::ostream& os) const override{
@@ -59,14 +59,14 @@ namespace Circuit{
 	template<size_t Size>
 	struct Nand:Component{
 		Port<Size> A,B,Y;
-		void update() override{
+		void run() override{
 			Y=~(A.get()&B.get());
 		}
 	};
 	template<size_t Size>
 	struct Adder:Component{
 		Port<Size> A,B,O;
-		void update() override{
+		void run() override{
 			O=A.get()+B.get();
 		}
 		std::ostream& print(std::ostream& os) const override{
@@ -78,7 +78,7 @@ namespace Circuit{
 		Port<Size> A,B,O;
 		Port<6> CMS;
 		Port<1> Co;
-		void update() override {
+		void run() override {
 			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
 			                                static_cast<ALU74181::Method>(CMS.sub<1>(4).get()),
 			                                CMS.sub<4>(0).get(),
@@ -105,7 +105,7 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		void update() override {
+		void run() override {
 			D=Level::Floating;
 			if(ce.is_enable()){
 				if(we.is_enable()){
@@ -128,7 +128,7 @@ namespace Circuit{
 			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size), data);
 		}
 
-		void update() override {
+		void run() override {
 			if(ce.is_enable()){
 				if(we.is_enable()){
 					std::cout<<"[Warning]Try write to ROM"<<std::endl;
@@ -145,7 +145,7 @@ namespace Circuit{
 		Enable oe;
 		Port<1> dir;
 		Port<Size> A,B;
-		void update() override {
+		void run() override {
 			A=Level::Floating;
 			B=Level::Floating;
 			if(oe.is_enable()){
@@ -164,7 +164,7 @@ namespace Circuit{
 		Enable G;
 		Port<output_size> Y;
 
-		void update() override {
+		void run() override {
 			Y=-1;
 			if(G.is_enable()){
 				Y.template sub<1>(S.get()).set(0);
@@ -175,7 +175,7 @@ namespace Circuit{
 	struct Cmp:Component{
 		Port<Size> P,Q;
 		Port<1> PgtQ,PeqQ;
-		void update() override{
+		void run() override{
 			PgtQ=!(P.get()>Q.get());
 			PeqQ=!(P.get()==Q.get());
 		}

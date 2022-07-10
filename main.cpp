@@ -114,17 +114,24 @@ int main() {
 		});
 	}
 	using namespace Circuit;
-	CPU cpu;
+	/*CPU cpu;
 	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
 	::Circuit::Circuit::ignoreReadFloating=true;
 	cpu.clr.set(0);
-	cpu.update();
+	cpu.run();
 	cpu.clr.set(1);
 
 	for(int i=0;i<10;i++){
 		std::cout<<cpu.alu<<std::endl;
 		cpu.clk.clock();
-		cpu.update();
+		cpu.run();
+	}*/
+	Counter<8> cnt;
+	cnt.clk.clock();
+	for(int i=0;i<10;i++){
+		std::cout<<cnt<<std::endl;
+		cnt.clk.clock();
+		cnt.run();
 	}
 	/*
 	Circuit::CPU cpu(program);
