@@ -79,14 +79,22 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 
-	namespace Pins{
-		inline void write(auto& pins,val_t val,Level zero=Level::Low,Level one=Level::High){
+	template<size_t Size,typename Pins=std::array<Wire,Size> >
+	struct Port{
+		Pins pins;
+
+		Port()=default;
+		explicit Port(Pins&& pins):pins{pins}{}
+		explicit Port(val_t val){set(val);}
+		explicit Port(Level level){set(0,level);}
+
+		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
 				p.set((val&1u)==1u?one:zero);
 				val>>=1;
 			}
 		}
-		inline val_t read(const auto& pins){
+		val_t get() const{
 			val_t val=0;
 			for(auto& p:pins){
 				val|=p.get();
@@ -94,13 +102,22 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return val;
 		}
-		inline std::ostream& print_ptr(const auto& pins,std::ostream& os){
+		auto& operator =(val_t val){
+			set(val);
+			return *this;
+		}
+		auto& operator =(Level level){
+			set(0,level);
+			return *this;
+		}
+
+		std::ostream& print_ptr(std::ostream& os) const{
 			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
 				os<<*it<<" ";
 			}
 			return os;
 		}
-		inline std::ostream& print_bit(const auto& pins,std::ostream& os){
+		std::ostream& print_bit(std::ostream& os) const{
 			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
 				try {
 					os<<it->get();
@@ -110,90 +127,46 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return os;
 		}
-	}
-
-	template<size_t Size,typename T>
-	struct SubPort{
-		std::span<T,Size> pins;
-		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
-			Pins::write(pins,val,zero,one);
-		}
-		val_t get() const{
-			return Pins::read(pins);
-		}
-		auto& operator =(val_t val){
-			set(val);
-			return *this;
-		}
-		auto& operator =(Level level){
-			set(0,level);
-			return *this;
-		}
-		friend std::ostream& operator<<(std::ostream& os,const SubPort<Size,T>& port){
+		friend std::ostream& operator<<(std::ostream& os,const Port<Size,Pins>& port){
 			//return port.print_ptr(os);
 			try {
-				os<<Pins::read(port.pins,os);
+				os<<port.get();
 			} catch (const ReadFloating& e) {
-				Pins::print_bit(port.pins,os);
+				port.print_bit(os);
 			}
 			return os;
 		}
 
+		operator Port<Size,std::span<const Wire,Size>>() const{
+			return pins;
+		}
+		operator Port<Size,std::span<Wire,Size>>() const{
+			return pins;
+		}
+
+		template<size_t NewSize=Size,size_t Offset=0>
+		auto sub(size_t offset=Offset) {
+			return Port<NewSize,std::span<Wire,NewSize>>{
+				std::span<Wire,NewSize>{&pins[offset],NewSize}
+			};
+		}
+		template<size_t NewSize=Size,size_t Offset=0>
+		auto sub(size_t offset=Offset) const{
+			return Port<NewSize,std::span<const Wire,NewSize>>{
+				std::span<const Wire,NewSize>{&pins[offset],NewSize}
+			};
+		}
+
 		template<typename ...Ts>
-		requires (sizeof...(Ts)>0&&((std::is_convertible_v<Ts,SubPort<Size,T>>)&&...))
+		requires (sizeof...(Ts)>0&&(
+			(std::is_convertible_v<std::remove_cvref_t<decltype(std::declval<Ts>().pins[0])>,Wire>)&&...
+		))
 		auto wire(Ts&&... ports) {
 			return [&]<size_t ...I>(std::index_sequence<I...>){
 				return std::vector{[&](size_t i){
 					return (pins[i]>>...>>ports.pins[i]),&pins[i];
 				}(I)...};
 			}(std::make_index_sequence<Size>{});
-		}
-	};
-	template<size_t Size>
-	struct Port{
-		std::array<Wire,Size> pins;
-		Port()=default;
-		explicit Port(val_t val){set(val);}
-		explicit Port(Level level){set(0,level);}
-		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
-			Pins::write(pins,val,zero,one);
-		}
-		val_t get() const{
-			return Pins::read(pins);
-		}
-		auto& operator =(val_t val){
-			set(val);
-			return *this;
-		}
-		auto& operator =(Level level){
-			set(0,level);
-			return *this;
-		}
-		friend std::ostream& operator<<(std::ostream& os,const Port<Size>& port){
-			//return port.print_ptr(os);
-			try {
-				os<<Pins::read(port.pins);
-			} catch (const ReadFloating& e) {
-				Pins::print_bit(port.pins,os);
-			}
-			return os;
-		}
-		operator SubPort<Size,const Wire>() const{
-			return pins;
-		}
-		operator SubPort<Size,Wire>() {
-			return pins;
-		}
-		template<size_t NewSize=Size,size_t Offset=0>
-		auto sub(size_t offset=Offset) {
-			return SubPort<NewSize,Wire>{std::span<Wire,NewSize>{&pins[offset],NewSize}};
-		}
-		template<size_t NewSize=Size,size_t Offset=0>
-		auto sub(size_t offset=Offset) const{
-			return SubPort<NewSize,const Wire>{std::span<const Wire,NewSize>{&pins[offset],NewSize}};
-		}
-		auto wire(auto&& ...ports){
-			return sub().wire(ports...);
 		}
 	};
 	struct Enable:Port<1>{
