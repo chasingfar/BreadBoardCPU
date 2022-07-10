@@ -490,6 +490,11 @@ namespace Circuit{
 			);
 			adder.B.set(1);
 		}
+		std::ostream &print(std::ostream &os) const override {
+			return os
+				<<"adder="<<adder<<std::endl
+				<<"reg="<<reg<<std::endl;
+		}
 	};
 }
 #endif //BBCPU_COMPONENTS_H
