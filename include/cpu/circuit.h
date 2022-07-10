@@ -102,9 +102,9 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		inline std::ostream& print_bit(const auto& pins,std::ostream& os){
 			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
-				if(auto v=it->get();v>=0){
-					os<<v;
-				}else{
+				try {
+					os<<it->get();
+				} catch (const ReadFloating& e) {
 					os<<"E";
 				}
 			}
