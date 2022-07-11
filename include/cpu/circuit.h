@@ -53,7 +53,6 @@ E	E4	E4	E4	E4	E4	E1
 	}
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
-		bool updated=false;
 		uint8_t get() const{
 			Level tmp=level;
 			each([&tmp](const Wire* cur){
@@ -64,27 +63,17 @@ E	E4	E4	E4	E4	E4	E1
 		void set(Level new_level){
 			if(level!=new_level){
 				level=new_level;
-				updated=true;
 			}
-		}
-		void reset(){
-			each([](Wire* cur){
-				cur->updated=false;
-			});
-		}
-		bool has_updated(){
-			return each([](Wire* cur){
-				return cur->updated;
-			});
 		}
 	};
 
 	template<size_t Size,typename Pins=std::array<Wire,Size> >
 	struct Port{
 		Pins pins;
+		size_t offset=0;
 
 		Port()=default;
-		explicit Port(Pins&& pins):pins{pins}{}
+		explicit Port(Pins&& pins,size_t offset=0):pins{pins},offset{offset}{}
 		explicit Port(val_t val){set(val);}
 		explicit Port(Level level){set(0,level);}
 
@@ -136,24 +125,24 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return os;
 		}
-
+/*
 		operator Port<Size,std::span<const Wire,Size>>() const{
 			return pins;
 		}
 		operator Port<Size,std::span<Wire,Size>>() const{
 			return pins;
 		}
-
-		template<size_t NewSize=Size,size_t Offset=0>
-		auto sub(size_t offset=Offset) {
+*/
+		template<size_t NewSize=Size,size_t Start=0>
+		auto sub(size_t start=Start) {
 			return Port<NewSize,std::span<Wire,NewSize>>{
-				std::span<Wire,NewSize>{&pins[offset],NewSize}
+				std::span<Wire,NewSize>{&pins[start],NewSize},offset+start
 			};
 		}
-		template<size_t NewSize=Size,size_t Offset=0>
-		auto sub(size_t offset=Offset) const{
+		template<size_t NewSize=Size,size_t Start=0>
+		auto sub(size_t start=Start) const{
 			return Port<NewSize,std::span<const Wire,NewSize>>{
-				std::span<const Wire,NewSize>{&pins[offset],NewSize}
+				std::span<const Wire,NewSize>{&pins[start],NewSize},offset+start
 			};
 		}
 
@@ -182,8 +171,33 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Component{
+		std::vector<Wire*> pins;
+		template<size_t ...Sizes>
+		void add_ports(Port<Sizes>&... ports){
+			pins.reserve((pins.size()+...+Sizes));
+			([&](auto& port){
+				port.offset=pins.size();
+				for(auto& w:port.pins){
+					pins.push_back(&w);
+				}
+			}(ports),...);
+		}
+		auto save(){
+			std::vector<Level> state{pins.size()};
+			std::transform(pins.begin(),pins.end(),state.begin(),[](Wire* w){
+				return w->level;
+			});
+			return state;
+		}
+
+		virtual bool update(){
+			auto before=save();
+			run();
+			auto after=save();
+			return before==after;
+		}
 		virtual void run(){}
-		virtual std::ostream& print(std::ostream& os) const{
+		virtual std::ostream& print(std::ostream& os,) const{
 			return os;
 		}
 		virtual void reset(){}
@@ -193,26 +207,13 @@ E	E4	E4	E4	E4	E4	E1
 	};
 	struct Circuit:Component{
 		inline static bool ignoreReadFloating=false;
-		std::vector<Wire*> wires;
 		std::vector<Component*> comps;
-		void wires_reset(){
-			for(auto w:wires){
-				w->reset();
-			}
-		}
-		bool wires_is_updated(){
-			for(auto w:wires){
-				if(w->has_updated()){
-					return true;
-				}
-			}
-			return false;
-		}
-		void comps_update(){
+		bool comps_update(){
 			bool hasReadFloating=false;
+			bool hasUpdate=false;
 			for(auto c:comps){
 				try{
-					c->run();
+					hasUpdate=hasUpdate||c->update();
 				}catch(const ReadFloating& e){
 					hasReadFloating=true;
 				}
@@ -220,18 +221,14 @@ E	E4	E4	E4	E4	E4	E1
 			if(hasReadFloating && !ignoreReadFloating){
 				std::cout<<"ReadFloating"<<std::endl;
 			}
+			return hasUpdate;
 		}
-		void run() override{
-			do{
-				wires_reset();
-				comps_update();
-			}while(wires_is_updated());
-		}
-		
-		template<typename ...Ts>
-		requires ((std::is_same_v<decltype(wires),Ts>)&&...)
-		void add_wires(const Ts&... w){
-			(wires.insert(wires.end(),w.begin(),w.end()),...);
+		bool update() override{
+			bool hasUpdate=false;
+			while(comps_update()){
+				hasUpdate=true;
+			};
+			return hasUpdate;
 		}
 
 		template<typename ...Ts>

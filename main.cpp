@@ -73,27 +73,27 @@ namespace Circuit{
 		RAM<MCTRL::io::Bs::size,8> reg;
 		CPU(){
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
-			add_wires(
-				clk.wire(nand.A,nand.B,cu.clk,regset.clk),
-				clk_.wire(nand.Y,cu.clk_),
-				clr.wire(cu.clr),
-				alu.Co.wire(cu.Ci),
-				regset.output[RegSet::I.v()].wire(cu.op),
-				regset.output[RegSet::A.v()].wire(alu.A),
-				regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0)),
-				regset.output[RegSet::H.v()].wire(mem.addr.sub<8>(8)),
-				ioctl.B.wire(alu.B),
-				ioctl.F.wire(alu.O,regset.input),
-				ioctl.R.wire(reg.D),
-				ioctl.M.wire(mem.data),
-				cu.CMS.wire(alu.CMS),
-				cu.bs.wire(reg.A),
-				cu.rs.wire(regset.sel),
-				cu.rs_en.wire(regset.en),
-				cu.dir.wire(ioctl.dir),
-				ioctl.ram_we.wire(mem.we),
-				ioctl.reg_we.wire(reg.we)
-			);
+
+			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
+			clk_.wire(nand.Y,cu.clk_);
+			clr.wire(cu.clr);
+			alu.Co.wire(cu.Ci);
+			regset.output[RegSet::I.v()].wire(cu.op);
+			regset.output[RegSet::A.v()].wire(alu.A);
+			regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0));
+			regset.output[RegSet::H.v()].wire(mem.addr.sub<8>(8));
+			ioctl.B.wire(alu.B);
+			ioctl.F.wire(alu.O,regset.input);
+			ioctl.R.wire(reg.D);
+			ioctl.M.wire(mem.data);
+			cu.CMS.wire(alu.CMS);
+			cu.bs.wire(reg.A);
+			cu.rs.wire(regset.sel);
+			cu.rs_en.wire(regset.en);
+			cu.dir.wire(ioctl.dir);
+			ioctl.ram_we.wire(mem.we);
+			ioctl.reg_we.wire(reg.we);
+
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
@@ -131,7 +131,7 @@ int main() {
 	for(int i=0;i<10;i++){
 		std::cout<<cnt<<std::endl;
 		cnt.clk.clock();
-		cnt.run();
+		cnt.update();
 	}
 	/*
 	Circuit::CPU cpu(program);

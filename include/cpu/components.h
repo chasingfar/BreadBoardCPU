@@ -13,6 +13,9 @@ namespace Circuit{
 		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
+		Reg(){
+			add_ports(clk,input,output);
+		}
 		void run() override {
 			if(clk.get() == 0){
 				output=data;
@@ -32,6 +35,9 @@ namespace Circuit{
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable en;
+		RegEN(){
+			Base::add_ports(en);
+		}
 		void run() override {
 			if(en.is_enable()){
 				Base::run();
@@ -45,6 +51,9 @@ namespace Circuit{
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable clr;
+		RegCLR(){
+			Base::add_ports(clr);
+		}
 		void run() override {
 			if(clr.is_enable()){
 				Base::reset();
@@ -59,6 +68,9 @@ namespace Circuit{
 	template<size_t Size>
 	struct Nand:Component{
 		Port<Size> A,B,Y;
+		Nand(){
+			add_ports(A,B,Y);
+		}
 		void run() override{
 			Y=~(A.get()&B.get());
 		}
@@ -66,6 +78,9 @@ namespace Circuit{
 	template<size_t Size>
 	struct Adder:Component{
 		Port<Size> A,B,O;
+		Adder(){
+			add_ports(A,B,O);
+		}
 		void run() override{
 			O=A.get()+B.get();
 		}
@@ -78,6 +93,9 @@ namespace Circuit{
 		Port<Size> A,B,O;
 		Port<6> CMS;
 		Port<1> Co;
+		ALU(){
+			add_ports(A,B,O,CMS,Co);
+		}
 		void run() override {
 			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
 			                                static_cast<ALU74181::Method>(CMS.sub<1>(4).get()),
@@ -105,6 +123,9 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
+		RAM(){
+			add_ports(ce,oe,we,A,D);
+		}
 		void run() override {
 			D=Level::Floating;
 			if(ce.is_enable()){
@@ -124,6 +145,9 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
+		ROM(){
+			add_ports(ce,oe,we,A,D);
+		}
 		void load(const std::vector<val_t>& new_data){
 			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size), data);
 		}
@@ -145,6 +169,10 @@ namespace Circuit{
 		Enable oe;
 		Port<1> dir;
 		Port<Size> A,B;
+
+		Bus(){
+			add_ports(oe,dir,A,B);
+		}
 		void run() override {
 			A=Level::Floating;
 			B=Level::Floating;
@@ -164,6 +192,9 @@ namespace Circuit{
 		Enable G;
 		Port<output_size> Y;
 
+		Demux(){
+			add_ports(S,G,Y);
+		}
 		void run() override {
 			Y=-1;
 			if(G.is_enable()){
@@ -175,6 +206,10 @@ namespace Circuit{
 	struct Cmp:Component{
 		Port<Size> P,Q;
 		Port<1> PgtQ,PeqQ;
+
+		Cmp(){
+			add_ports(P,Q,PgtQ,PeqQ);
+		}
 		void run() override{
 			PgtQ=!(P.get()>Q.get());
 			PeqQ=!(P.get()==Q.get());
@@ -194,14 +229,13 @@ namespace Circuit{
 		RegENSet(){
 			[&]<size_t ...I>(std::index_sequence<I...>){
 				add_comps(demux,regs[I]...);
-				add_wires(
-					en.wire(demux.G),
-					sel.wire(demux.S),
-					(demux.Y.template sub<1>(I)).wire(regs[I].en)...,
-					clk.wire(regs[I].clk...),
-					input.wire(regs[I].input...),
-					output[I].wire(regs[I].output)...
-				);
+
+				en.wire(demux.G);
+				sel.wire(demux.S);
+				((demux.Y.template sub<1>(I)).wire(regs[I].en),...);
+				clk.wire(regs[I].clk...);
+				input.wire(regs[I].input...);
+				(output[I].wire(regs[I].output),...);
 			}(std::make_index_sequence<regs_num>{});
 		}
 	};
@@ -218,16 +252,16 @@ namespace Circuit{
 		ROM<ASize,DSize> tbl;
 		CUBase(){
 			add_comps(creg,sreg,tbl);
+
 			clk.wire(creg.clk);
 			clk_.wire(sreg.clk);
 			clr.wire(creg.clr,sreg.clr);
 			Ci.wire(creg.input);
 			op.wire(sreg.input.template sub<OPSize>(CSize+STSize));
-			add_wires(
-				creg.output.wire(sreg.input.template sub<CSize>(0)),
-				(tbl.D.template sub<STSize>(0)).wire(sreg.input.template sub<STSize>(CSize)),
-				sreg.output.wire(tbl.A)
-			);
+			creg.output.wire(sreg.input.template sub<CSize>(0));
+			(tbl.D.template sub<STSize>(0)).wire(sreg.input.template sub<STSize>(CSize));
+			sreg.output.wire(tbl.A);
+
 			tbl.ce.set(0);
 			tbl.we.set(1);
 			tbl.oe.set(0);
@@ -243,14 +277,14 @@ namespace Circuit{
 		Bus<8> RiBo,RoFi,MiBo,MoFi;
 		IOControl(){
 			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
-			add_wires(
-				nand.A.sub<1>(1).wire(demux.Y.sub<1>(0)),
-				nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we),
-				nand.B.sub<1>(0).wire(demux.Y.sub<1>(2)),
-				nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,ram_we),
-				nand.Y.sub<1>(0).wire(RiBo.oe),
-				nand.Y.sub<1>(1).wire(RoFi.oe)
-			);
+
+			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
+			nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we);
+			nand.B.sub<1>(0).wire(demux.Y.sub<1>(2));
+			nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,ram_we);
+			nand.Y.sub<1>(0).wire(RiBo.oe);
+			nand.Y.sub<1>(1).wire(RoFi.oe);
+
 			RiBo.dir.set(1);
 			RoFi.dir.set(0);
 			MiBo.dir.set(1);
@@ -284,14 +318,13 @@ namespace Circuit{
 			rom.we.set(1);
 			
 			cmp.P.set(CVal);
-			add_wires(
-				addr.wire(ram.A,rom.A),
-				data.wire(ram.D,rom.D),
-				cmp.Q.wire(addr.template sub<CSize>(COff)),
-				nand.A.wire(cmp.PeqQ),
-				nand.B.wire(cmp.PgtQ,rom.ce),
-				nand.Y.wire(ram.ce)
-			);
+
+			addr.wire(ram.A,rom.A);
+			data.wire(ram.D,rom.D);
+			cmp.Q.wire(addr.template sub<CSize>(COff));
+			nand.A.wire(cmp.PeqQ);
+			nand.B.wire(cmp.PgtQ,rom.ce);
+			nand.Y.wire(ram.ce);
 		}
 	};
 /*
@@ -482,12 +515,11 @@ namespace Circuit{
 		RegCLR<Size> reg{};
 		Counter(){
 			add_comps(adder,reg);
-			add_wires(
-				clk.wire(reg.clk),
-				clr.wire(reg.clr),
-				adder.O.wire(reg.input),
-				adder.A.wire(reg.output)
-			);
+
+			clk.wire(reg.clk);
+			clr.wire(reg.clr);
+			adder.O.wire(reg.input);
+			adder.A.wire(reg.output);
 			adder.B.set(1);
 		}
 		std::ostream &print(std::ostream &os) const override {
