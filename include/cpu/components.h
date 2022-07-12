@@ -28,8 +28,8 @@ namespace Circuit{
 			output=0;
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
+			return [&](std::ostream& os){
+				os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
 			};
 		}
 	};
@@ -46,8 +46,8 @@ namespace Circuit{
 			}
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os<<Base::print(s)<<"(en="<<en(s)<<")";
+			return [&](std::ostream& os){
+				os<<Base::print(s)<<"(en="<<en(s)<<")";
 			};
 		}
 	};
@@ -66,8 +66,8 @@ namespace Circuit{
 			}
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os<<Base::print(s)<<"(clr="<<clr(s)<<")";
+			return [&](std::ostream& os){
+				os<<Base::print(s)<<"(clr="<<clr(s)<<")";
 			};
 		}
 	};
@@ -91,8 +91,8 @@ namespace Circuit{
 			O=A.get()+B.get();
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os<<A(s)<<"+"<<B(s)<<"="<<O(s);
+			return [&](std::ostream& os){
+				os<<A(s)<<"+"<<B(s)<<"="<<O(s);
 			};
 		}
 	};
@@ -115,12 +115,12 @@ namespace Circuit{
 		}
 
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
-				                                static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
-				                                CMS.sub<4>(0)(s).get(),
-				                                std::to_string(A(s).get()),
-				                                std::to_string(B(s).get()));
+			return [&](std::ostream& os){
+				os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
+										 static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
+										 CMS.sub<4>(0)(s).get(),
+										 std::to_string(A(s).get()),
+										 std::to_string(B(s).get()));
 			};
 		}
 	};
@@ -533,9 +533,8 @@ namespace Circuit{
 			adder.B.set(1);
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
-			return [&](std::ostream& os)->std::ostream&{
-				return os
-					<<"adder="<<adder.print(adder.save())
+			return [&](std::ostream& os){
+				os<<"adder="<<adder.print(adder.save())
 					<<"reg="<<reg.print(reg.save());
 			};
 		}

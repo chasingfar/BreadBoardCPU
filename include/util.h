@@ -178,16 +178,11 @@ namespace Util{
 	};
 
 	struct Printer{
-		std::function<std::ostream&(std::ostream&)> fn;
-		template<typename T> requires std::is_same_v<std::invoke_result_t<T,std::ostream&>,std::ostream&>
-		Printer(T&& fn):fn(fn){}
-		template<typename T> requires std::is_same_v<std::invoke_result_t<T,std::ostream&>,void>
-		Printer(T&& fn):fn([=](std::ostream& os)->std::ostream&{
-			fn(os);
-			return os;
-		}){}
+		std::function<void(std::ostream&)> fn;
+		Printer(auto fn):fn(std::move(fn)){}
 		friend std::ostream& operator<<(std::ostream& os,const Printer& printer){
-			return printer.fn(os);
+			printer.fn(os);
+			return os;
 		}
 	};
 }

@@ -207,7 +207,7 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		virtual void run(){}
 		virtual Util::Printer print(const std::vector<Level>& state) const{
-			return [](std::ostream& os)->std::ostream&{return os;};
+			return [](std::ostream& os){};
 		}
 		virtual void reset(){}
 		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
