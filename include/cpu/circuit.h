@@ -131,14 +131,13 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			return os;
 		}
-/*
-		operator Port<Size,std::span<const Wire,Size>>() const{
-			return pins;
+
+		auto operator()(const std::vector<Level>& state) const{
+			return Port<Size,std::span<const Level>>{
+				std::span<const Level,Size>{&state[offset],Size}
+			};
 		}
-		operator Port<Size,std::span<Wire,Size>>() const{
-			return pins;
-		}
-*/
+
 		template<size_t NewSize=Size,size_t Start=0>
 		auto sub(size_t start=Start) {
 			return Port<NewSize,std::span<Wire,NewSize>>{
@@ -188,10 +187,10 @@ E	E4	E4	E4	E4	E4	E1
 				}
 			}(ports),...);
 		}
-		auto save(){
+		auto save() const{
 			std::vector<Level> state{pins.size()};
 			std::transform(pins.begin(),pins.end(),state.begin(),[](Wire* w){
-				return w->level;
+				return w->get();
 			});
 			return state;
 		}
@@ -200,15 +199,20 @@ E	E4	E4	E4	E4	E4	E1
 			auto before=save();
 			run();
 			auto after=save();
-			return before==after;
+			if(before!=after){
+				print(std::cout<<"{",before)<<"}=>";
+				print(std::cout<<"{",after)<<"}"<<std::endl;
+				return true;
+			}
+			return false;
 		}
 		virtual void run(){}
-		virtual std::ostream& print(std::ostream& os,) const{
+		virtual std::ostream& print(std::ostream& os,const std::vector<Level>& state) const{
 			return os;
 		}
 		virtual void reset(){}
 		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
-			return comp.print(os);
+			return comp.print(os,comp.save());
 		}
 	};
 	struct Circuit:Component{

@@ -127,11 +127,10 @@ int main() {
 		cpu.run();
 	}*/
 	Counter<8> cnt;
-	cnt.clk.clock();
 	for(int i=0;i<10;i++){
+		cnt.update();
 		std::cout<<cnt<<std::endl;
 		cnt.clk.clock();
-		cnt.update();
 	}
 	/*
 	Circuit::CPU cpu(program);
