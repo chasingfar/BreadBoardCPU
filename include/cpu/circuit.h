@@ -200,19 +200,18 @@ E	E4	E4	E4	E4	E4	E1
 			run();
 			auto after=save();
 			if(before!=after){
-				print(std::cout<<"{",before)<<"}=>";
-				print(std::cout<<"{",after)<<"}"<<std::endl;
+				std::cout<<"{"<<print(before)<<"}=>{"<<print(after)<<"}"<<std::endl;
 				return true;
 			}
 			return false;
 		}
 		virtual void run(){}
-		virtual std::ostream& print(std::ostream& os,const std::vector<Level>& state) const{
-			return os;
+		virtual Util::Printer print(const std::vector<Level>& state) const{
+			return [](std::ostream& os)->std::ostream&{return os;};
 		}
 		virtual void reset(){}
 		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
-			return comp.print(os,comp.save());
+			return os<<comp.print(comp.save());
 		}
 	};
 	struct Circuit:Component{

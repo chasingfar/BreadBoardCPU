@@ -27,8 +27,10 @@ namespace Circuit{
 			data=0;
 			output=0;
 		}
-		std::ostream& print(std::ostream& os,const std::vector<Level>& s) const override{
-			return os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
+			};
 		}
 	};
 	template<size_t Size>
@@ -43,8 +45,10 @@ namespace Circuit{
 				Base::run();
 			}
 		}
-		std::ostream& print(std::ostream& os,const std::vector<Level>& s) const override{
-			return Base::print(os,s)<<"(en="<<en(s)<<")";
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os<<Base::print(s)<<"(en="<<en(s)<<")";
+			};
 		}
 	};
 	template<size_t Size>
@@ -61,8 +65,10 @@ namespace Circuit{
 				Base::run();
 			}
 		}
-		std::ostream& print(std::ostream& os,const std::vector<Level>& s) const override{
-			return Base::print(os,s)<<"(clr="<<clr(s)<<")";
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os<<Base::print(s)<<"(clr="<<clr(s)<<")";
+			};
 		}
 	};
 	template<size_t Size>
@@ -84,8 +90,10 @@ namespace Circuit{
 		void run() override{
 			O=A.get()+B.get();
 		}
-		std::ostream& print(std::ostream& os,const std::vector<Level>& s) const override{
-			return os<<A(s)<<"+"<<B(s)<<"="<<O(s);
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os<<A(s)<<"+"<<B(s)<<"="<<O(s);
+			};
 		}
 	};
 	template<size_t Size=8>
@@ -106,12 +114,14 @@ namespace Circuit{
 			O=o;
 		}
 
-		std::ostream &print(std::ostream &os,const std::vector<Level>& s) const override {
-			return os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
-			                                static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
-			                                CMS.sub<4>(0)(s).get(),
-			                                std::to_string(A(s).get()),
-			                                std::to_string(B(s).get()));
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
+				                                static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
+				                                CMS.sub<4>(0)(s).get(),
+				                                std::to_string(A(s).get()),
+				                                std::to_string(B(s).get()));
+			};
 		}
 	};
 	
@@ -522,10 +532,12 @@ namespace Circuit{
 			adder.A.wire(reg.output);
 			adder.B.set(1);
 		}
-		std::ostream &print(std::ostream &os,const std::vector<Level>& s) const override {
-			adder.print(os<<"adder=",adder.save())<<",";
-			reg.print(os<<"reg=",reg.save());
-			return os;
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os)->std::ostream&{
+				return os
+					<<"adder="<<adder.print(adder.save())
+					<<"reg="<<reg.print(reg.save());
+			};
 		}
 	};
 }
