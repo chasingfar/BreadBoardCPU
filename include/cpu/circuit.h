@@ -45,7 +45,7 @@ E	E4	E4	E4	E4	E4	E1
 		return t+=n;
 	}
 	struct ReadFloating:std::exception{};
-	inline uint8_t operator+(Level level){
+	inline uint8_t operator*(Level level){
 		if(level==Level::Floating || level==Level::Error){
 			throw ReadFloating{};
 		}
@@ -53,20 +53,26 @@ E	E4	E4	E4	E4	E4	E1
 	}
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
-		uint8_t get() const{
+		Level get() const{
 			Level tmp=level;
 			each([&tmp](const Wire* cur){
 				tmp+=cur->level;
 			});
-			return +tmp;
+			return tmp;
 		}
 		void set(Level new_level){
 			if(level!=new_level){
 				level=new_level;
 			}
 		}
+		uint8_t operator*() const{
+			return *get();
+		}
+		Wire& operator=(Level new_level){
+			set(new_level);
+			return *this;
+		}
 	};
-
 	template<size_t Size,typename Pins=std::array<Wire,Size> >
 	struct Port{
 		Pins pins;
@@ -79,14 +85,14 @@ E	E4	E4	E4	E4	E4	E1
 
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
-				p.set((val&1u)==1u?one:zero);
+				p=(val&1u)==1u?one:zero;
 				val>>=1;
 			}
 		}
 		val_t get() const{
 			val_t val=0;
 			for(auto& p:pins){
-				val|=p.get();
+				val|=*p;
 				val=(val >> 1) | ((val&1) << (pins.size() - 1));
 			}
 			return val;
@@ -109,7 +115,7 @@ E	E4	E4	E4	E4	E4	E1
 		std::ostream& print_bit(std::ostream& os) const{
 			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
 				try {
-					os<<it->get();
+					os<<**it;
 				} catch (const ReadFloating& e) {
 					os<<"E";
 				}
