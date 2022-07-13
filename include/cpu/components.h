@@ -80,6 +80,11 @@ namespace Circuit{
 		void run() override{
 			Y=~(A.get()&B.get());
 		}
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"A("<<A(s)<<") NAND ("<<B(s)<<") = "<<Y(s);
+			};
+		}
 	};
 	template<size_t Size>
 	struct Adder:Component{
@@ -146,6 +151,11 @@ namespace Circuit{
 				}
 			}
 		}
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"RAM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
+			};
+		}
 	};
 	template<size_t ASize=19,size_t DSize=8>
 	struct ROM:Component{
@@ -173,6 +183,11 @@ namespace Circuit{
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"ROM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
+			};
+		}
 	};
 	template<size_t Size=8>
 	struct Bus:Component{
@@ -194,6 +209,11 @@ namespace Circuit{
 				}
 			}
 		}
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"BUS"<<A(s)<<(dir(s).get()==1?"->":"<-")<<B(s)<<"(oe="<<oe(s)<<")";
+			};
+		}
 	};
 	template<size_t SelSize=2>
 	struct Demux:Component{
@@ -211,6 +231,11 @@ namespace Circuit{
 				Y.template sub<1>(S.get()).set(0);
 			}
 		}
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"Demux["<<S(s)<<"]"<<Y(s)<<"(G="<<G(s)<<")";
+			};
+		}
 	};
 	template<size_t Size=8>
 	struct Cmp:Component{
@@ -223,6 +248,11 @@ namespace Circuit{
 		void run() override{
 			PgtQ=!(P.get()>Q.get());
 			PeqQ=!(P.get()==Q.get());
+		}
+		Util::Printer print(const std::vector<Level>& s) const override{
+			return [&](std::ostream& os){
+				os<<"Demux"<<P(s)<<"<=>"<<Q(s)<<"(P>Q:"<<PgtQ(s)<<",P==Q:"<<PeqQ<<")";
+			};
 		}
 	};
 
