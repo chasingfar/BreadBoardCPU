@@ -51,7 +51,7 @@ namespace Circuit{
 		Port<MCTRL::io::Rs::size> rs;
 		Port<MCTRL::io::dir::size> dir;
 		Enable rs_en;
-		CU(){
+		CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
 			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
 			 bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
 			 rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
@@ -64,14 +64,14 @@ namespace Circuit{
 		Clock clk,clk_;
 		Port<1> clr;
 
-		Nand<1> nand;
-		Memory<16,8,8> mem{8,1};
-		CU cu;
-		ALU<8> alu;
-		IOControl ioctl;
-		RegENSet<MCTRL::io::Rs::size,8> regset;
-		RAM<MCTRL::io::Bs::size,8> reg;
-		CPU(){
+		Nand<1> nand{"[ClkNot]"};
+		Memory<16,8,8> mem{8,1,"[Memory]"};
+		CU cu{"[CU]"};
+		ALU<8> alu{"[ALU]"};
+		IOControl ioctl{"[IOctl]"};
+		RegENSet<MCTRL::io::Rs::size,8> regset{"[RegSet]"};
+		RAM<MCTRL::io::Bs::size,8> reg{"[RegFile]"};
+		CPU(std::string name=""):Circuit(std::move(name)){
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
 
 			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
@@ -114,24 +114,25 @@ int main() {
 		});
 	}
 	using namespace Circuit;
-	/*CPU cpu;
+	CPU cpu{"[CPU]"};
 	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
 	::Circuit::Circuit::ignoreReadFloating=true;
 	cpu.clr.set(0);
-	cpu.run();
+	cpu.clk.set(0);
+	cpu.update();
 	cpu.clr.set(1);
 
 	for(int i=0;i<10;i++){
-		std::cout<<cpu.alu<<std::endl;
+		cpu.update();
+		//std::cout<<cpu.alu<<std::endl;
 		cpu.clk.clock();
-		cpu.run();
-	}*/
-	Counter<8> cnt;
+	}
+	/*Counter<8> cnt;
 	for(int i=0;i<10;i++){
 		cnt.update();
 		std::cout<<cnt<<std::endl;
 		cnt.clk.clock();
-	}
+	}*/
 	/*
 	Circuit::CPU cpu(program);
 	try {

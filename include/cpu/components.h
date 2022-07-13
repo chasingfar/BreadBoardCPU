@@ -6,6 +6,8 @@
 #define BBCPU_COMPONENTS_H
 #include "circuit.h"
 #include "alu.h"
+#include <ostream>
+#include <string>
 
 namespace Circuit{
 	template<size_t Size>
@@ -13,7 +15,7 @@ namespace Circuit{
 		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
-		Reg(){
+		Reg(std::string name=""):Component(std::move(name)){
 			add_ports(clk,input,output);
 		}
 		void run() override {
@@ -37,7 +39,7 @@ namespace Circuit{
 	struct RegEN:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable en;
-		RegEN(){
+		RegEN(std::string name=""):Base(std::move(name)){
 			Base::add_ports(en);
 		}
 		void run() override {
@@ -55,7 +57,7 @@ namespace Circuit{
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable clr;
-		RegCLR(){
+		RegCLR(std::string name=""):Base(std::move(name)){
 			Base::add_ports(clr);
 		}
 		void run() override {
@@ -74,7 +76,7 @@ namespace Circuit{
 	template<size_t Size>
 	struct Nand:Component{
 		Port<Size> A,B,Y;
-		Nand(){
+		Nand(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,Y);
 		}
 		void run() override{
@@ -89,7 +91,7 @@ namespace Circuit{
 	template<size_t Size>
 	struct Adder:Component{
 		Port<Size> A,B,O;
-		Adder(){
+		Adder(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,O);
 		}
 		void run() override{
@@ -106,7 +108,7 @@ namespace Circuit{
 		Port<Size> A,B,O;
 		Port<6> CMS;
 		Port<1> Co;
-		ALU(){
+		ALU(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,O,CMS,Co);
 		}
 		void run() override {
@@ -138,7 +140,7 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		RAM(){
+		RAM(std::string name=""):Component(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void run() override {
@@ -165,7 +167,7 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		ROM(){
+		ROM(std::string name=""):Component(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void load(const std::vector<val_t>& new_data){
@@ -195,7 +197,7 @@ namespace Circuit{
 		Port<1> dir;
 		Port<Size> A,B;
 
-		Bus(){
+		Bus(std::string name=""):Component(std::move(name)){
 			add_ports(oe,dir,A,B);
 		}
 		void run() override {
@@ -203,9 +205,9 @@ namespace Circuit{
 			B=Level::Floating;
 			if(oe.is_enable()){
 				if(dir.get()==1){
-					B=A;
+					B=A.get();
 				}else{
-					A=B;
+					A=B.get();
 				}
 			}
 		}
@@ -222,7 +224,7 @@ namespace Circuit{
 		Enable G;
 		Port<output_size> Y;
 
-		Demux(){
+		Demux(std::string name=""):Component(std::move(name)){
 			add_ports(S,G,Y);
 		}
 		void run() override {
@@ -242,7 +244,7 @@ namespace Circuit{
 		Port<Size> P,Q;
 		Port<1> PgtQ,PeqQ;
 
-		Cmp(){
+		Cmp(std::string name=""):Component(std::move(name)){
 			add_ports(P,Q,PgtQ,PeqQ);
 		}
 		void run() override{
@@ -264,9 +266,12 @@ namespace Circuit{
 		Port<SelSize> sel;
 		Port<Size> input,output[regs_num];
 
-		Demux<SelSize> demux;
+		Demux<SelSize> demux{name+"[DeMux]"};
 		RegEN<Size> regs[regs_num];
-		RegENSet(){
+		RegENSet(std::string name=""):Circuit(std::move(name)){
+			for(size_t i=0;i<regs_num;++i){
+				regs[i].name=name+"[Reg"+std::to_string(i)+"]";
+			}
 			[&]<size_t ...I>(std::index_sequence<I...>){
 				add_comps(demux,regs[I]...);
 
@@ -287,10 +292,10 @@ namespace Circuit{
 		Clock clk,clk_;
 		Port<1> clr,Ci;
 
-		RegCLR<CSize> creg;
-		RegCLR<ASize> sreg;
-		ROM<ASize,DSize> tbl;
-		CUBase(){
+		RegCLR<CSize> creg{name+"[cReg]"};
+		RegCLR<ASize> sreg{name+"[sReg]"};
+		ROM<ASize,DSize> tbl{name+"[TBL]"};
+		CUBase(std::string name=""):Circuit(std::move(name)){
 			add_comps(creg,sreg,tbl);
 
 			clk.wire(creg.clk);
@@ -312,10 +317,13 @@ namespace Circuit{
 		Port<8> F,B,R,M;
 		Enable ram_we,reg_we;
 
-		Demux<2> demux;
-		Nand<2> nand;
-		Bus<8> RiBo,RoFi,MiBo,MoFi;
-		IOControl(){
+		Demux<2> demux{name+"[DeMux]"};
+		Nand<2> nand{name+"[NAND]"};
+		Bus<8> RiBo{name+"[RiBo]"},
+			RoFi{name+"[RoFi]"},
+			MiBo{name+"[MiBo]"},
+			MoFi{name+"[MoFi]"};
+		IOControl(std::string name=""):Circuit(std::move(name)){
 			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
 
 			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
@@ -338,6 +346,10 @@ namespace Circuit{
 			dir.wire(demux.S);
 			demux.G.set(0);
 		}
+		bool update() override{
+			std::cout<<std::flush;
+			return Circuit::update();
+		}
 	};
 	template<size_t ASize=16,size_t DSize=8,size_t CSize=8>
 	struct Memory:Circuit{
@@ -345,11 +357,11 @@ namespace Circuit{
 		Port<DSize> data;
 		Port<1> we;
 
-		Cmp<CSize> cmp;
-		Nand<1> nand;
-		RAM<ASize,DSize> ram;
-		ROM<ASize,DSize> rom;
-		Memory(size_t COff=8,size_t CVal=1){
+		Cmp<CSize> cmp{"[MEM][CMP]"};
+		Nand<1> nand{"[MEM][NAND]"};
+		RAM<ASize,DSize> ram{"[MEM][RAM]"};
+		ROM<ASize,DSize> rom{"[MEM][ROM]"};
+		Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
 			ram.we.wire(we);

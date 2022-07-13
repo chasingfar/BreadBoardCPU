@@ -177,6 +177,8 @@ E	E4	E4	E4	E4	E4	E1
 	};
 	struct Component{
 		std::vector<Wire*> pins;
+		std::string name="";
+		Component(std::string name=""):name(std::move(name)){}
 		template<size_t ...Sizes>
 		void add_ports(Port<Sizes>&... ports){
 			pins.reserve((pins.size()+...+Sizes));
@@ -200,7 +202,7 @@ E	E4	E4	E4	E4	E4	E1
 			run();
 			auto after=save();
 			if(before!=after){
-				std::cout<<"{"<<print(before)<<"}=>{"<<print(after)<<"}"<<std::endl;
+				std::cout<<name<<"{"<<print(before)<<"}=>{"<<print(after)<<"}"<<std::endl;
 				return true;
 			}
 			return false;
@@ -217,6 +219,7 @@ E	E4	E4	E4	E4	E4	E1
 	struct Circuit:Component{
 		inline static bool ignoreReadFloating=false;
 		std::vector<Component*> comps;
+		Circuit(std::string name=""):Component(std::move(name)){}
 		bool comps_update(){
 			bool hasReadFloating=false;
 			bool hasUpdate=false;
@@ -237,6 +240,9 @@ E	E4	E4	E4	E4	E4	E1
 			while(comps_update()){
 				hasUpdate=true;
 			};
+			if(hasUpdate){
+				std::cout<<name<<std::endl;
+			}
 			return hasUpdate;
 		}
 
