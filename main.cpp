@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
@@ -124,10 +125,26 @@ int main() {
 	cpu.update();
 	cpu.clr.set(1);
 std::cout<<std::endl;
-	for(int i=0;i<10;i++){
+	for(int i=0;i<500;i++){
 		cpu.clk.clock();
 		cpu.update();
-std::cout<<std::endl;
+		std::cout<<std::endl;
+		std::cout<<"OP:"<<OpCode::Ops::all::parse(cpu.cu.op.get()).first<<std::endl;
+		std::cout<<"MCTRL:"<<MCTRL::decode(cpu.cu.tbl.D.get(),cpu.mem.addr.get())<<std::endl;
+		std::cout<<"INDEX:"<<MCTRL::state::index::get(cpu.cu.tbl.D.get())<<std::endl;
+		for(size_t i=0;i<4;++i){
+			std::cout<<"RS["<<RegSet(i).str()<<"]="<<cpu.regset.output[i].get()<<" ";
+		}
+		std::cout<<std::endl;
+		for(size_t i=0;i<16;++i){
+			std::cout<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<cpu.reg.data[i];
+			if(i%8==7){
+				std::cout<<std::endl;
+			}else{
+				std::cout<<" ";
+			}
+		}
+		std::cout<<std::endl;
 		//std::cout<<cpu.alu<<std::endl;
 	}
 	/*Counter<8> cnt;
