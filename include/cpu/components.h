@@ -7,7 +7,6 @@
 #include "circuit.h"
 #include "alu.h"
 #include <ostream>
-#include <sstream>
 #include <string>
 
 namespace Circuit{
@@ -131,26 +130,17 @@ namespace Circuit{
 
 		Util::Printer print(const std::vector<Level>& s) const override{
 			return [&](std::ostream& os){
-				os<<"CMS="<<CMS(s)
-				<<",A="<<A(s)
-				<<",B="<<B(s)
-				<<",O="<<O(s)
-				<<",Co="<<Co(s);
-				/*std::string Astr,Bstr;
+				std::string fn_str="";
+				auto cms=CMS(s);
 				try{
-					std::stringstream ss;
-					ss<<A(s);
-					ss>>Astr;
-					ss<<B(s);
-					ss>>Bstr;
-				os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
-										 static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
-										 CMS.sub<4>(0)(s).get(),
-										 Astr,
-										 Bstr);
-				}catch(const ReadFloating& e){
-					os<<"CMS="<<CMS(s);
-				}*/
+					fn_str=ALU74181::get_fn_str(
+						static_cast<ALU74181::Carry>(cms.sub<1>(5).get()),
+						static_cast<ALU74181::Method>(cms.sub<1>(4).get()),
+						cms.sub<4>(0).get(),
+						"A",
+						"B");
+				}catch(const ReadFloating& e){}
+				os<<"CMS="<<cms<<"(O="<<fn_str<<"),A="<<A(s)<<",B="<<B(s)<<",O="<<O(s)<<",Co="<<Co(s);
 			};
 		}
 	};
