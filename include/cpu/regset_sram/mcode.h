@@ -137,6 +137,10 @@ namespace BBCPU{
 			if(step()){mctrl=MCTRL::MtoReg(mctrl, RegSet::I);}
 			end();
 		}
+		void init_op(){
+			LOG(i);
+			if(step()){mctrl=MCTRL::zero(mctrl, RegSet::I);}
+		}
 		void save(Reg from,Reg16 to){
 			LOG(from,to);
 			load_reg(from);

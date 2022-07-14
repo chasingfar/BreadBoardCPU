@@ -111,6 +111,11 @@ namespace BBCPU {
 			o=io::setBw(o,reg);
 			return o;
 		}
+		static auto zero(auto o,RegSet reg){
+			o=alu::zero(o);
+			o=io::setBr(o, Reg::OPR, reg);
+			return o;
+		}
 		static auto minusOne(auto o,Reg reg){
 			o=alu::minusOne(o);
 			o=io::setBw(o,reg);

@@ -388,6 +388,7 @@ namespace BBCPU::OpCode {
 		}
 		static void gen(MCode& ctx){
 			LOG("Init");
+			ctx.init_op();
 			ctx.set_minus_one16(Reg16::SP);//Reg16::SP=0xFFFF
 			ctx.set_zero16(Reg16::PC);//Reg16::PC=0x0000
 			ctx.load_op();//load op from MEM[0]
