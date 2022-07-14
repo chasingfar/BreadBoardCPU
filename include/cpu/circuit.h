@@ -140,15 +140,13 @@ E	E4	E4	E4	E4	E4	E1
 
 		template<size_t NewSize=Size,size_t Start=0>
 		auto sub(size_t start=Start) {
-			return Port<NewSize,std::span<Wire,NewSize>>{
-				std::span<Wire,NewSize>{&pins[start],NewSize},offset+start
-			};
+			using SPAN=std::span<std::remove_reference_t<decltype(pins[0])>,NewSize>;
+			return Port<NewSize,SPAN>{SPAN{&pins[start],NewSize},offset+start};
 		}
 		template<size_t NewSize=Size,size_t Start=0>
 		auto sub(size_t start=Start) const{
-			return Port<NewSize,std::span<const Wire,NewSize>>{
-				std::span<const Wire,NewSize>{&pins[start],NewSize},offset+start
-			};
+			using SPAN=std::span<std::remove_reference_t<decltype(pins[0])>,NewSize>;
+			return Port<NewSize,SPAN>{SPAN{&pins[start],NewSize},offset+start};
 		}
 
 		template<typename ...Ts>
