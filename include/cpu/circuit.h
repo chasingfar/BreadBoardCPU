@@ -199,12 +199,14 @@ E	E4	E4	E4	E4	E4	E1
 
 		virtual bool update(){
 			auto before=save();
+			std::cout<<name<<"{"<<print(before)<<"}";
 			run();
 			auto after=save();
 			if(before!=after){
-				std::cout<<name<<"{"<<print(before)<<"}=>{"<<print(after)<<"}"<<std::endl;
+				std::cout<<"=>{"<<print(after)<<"}[updated!!!!!]"<<std::endl;
 				return true;
 			}
+			std::cout<<std::endl;
 			return false;
 		}
 		virtual void run(){}
@@ -225,8 +227,11 @@ E	E4	E4	E4	E4	E4	E1
 			bool hasUpdate=false;
 			for(auto c:comps){
 				try{
-					hasUpdate=hasUpdate||c->update();
+					if(c->update()){
+						hasUpdate=true;
+					}
 				}catch(const ReadFloating& e){
+					std::cout<<std::endl;
 					hasReadFloating=true;
 				}
 			}

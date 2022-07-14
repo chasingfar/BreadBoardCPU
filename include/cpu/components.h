@@ -7,6 +7,7 @@
 #include "circuit.h"
 #include "alu.h"
 #include <ostream>
+#include <sstream>
 #include <string>
 
 namespace Circuit{
@@ -43,8 +44,10 @@ namespace Circuit{
 			Base::add_ports(en);
 		}
 		void run() override {
-			if(en.is_enable()){
-				Base::run();
+			if(Base::clk.get() == 0){
+				Base::output=Base::data;
+			}else if(en.is_enable()){
+				Base::data=Base::input.get();
 			}
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
@@ -112,22 +115,42 @@ namespace Circuit{
 			add_ports(A,B,O,CMS,Co);
 		}
 		void run() override {
-			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(CMS.sub<1>(5).get()),
-			                                static_cast<ALU74181::Method>(CMS.sub<1>(4).get()),
-			                                CMS.sub<4>(0).get(),
-			                                A.get(),
-			                                B.get());
+			auto Cn=CMS.sub<1>(5).get();
+			auto M=CMS.sub<1>(4).get();
+			auto S=CMS.sub<4>(0).get();
+			auto Ai=A.get();
+			auto Bi=B.get();
+			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(Cn),
+			                                static_cast<ALU74181::Method>(M),
+			                                S,
+			                                Ai,
+			                                Bi);
 			Co=static_cast<val_t>(carry);
 			O=o;
 		}
 
 		Util::Printer print(const std::vector<Level>& s) const override{
 			return [&](std::ostream& os){
+				os<<"CMS="<<CMS(s)
+				<<",A="<<A(s)
+				<<",B="<<B(s)
+				<<",O="<<O(s)
+				<<",Co="<<Co(s);
+				/*std::string Astr,Bstr;
+				try{
+					std::stringstream ss;
+					ss<<A(s);
+					ss>>Astr;
+					ss<<B(s);
+					ss>>Bstr;
 				os<<ALU74181::get_fn_str(static_cast<ALU74181::Carry>(CMS.sub<1>(5)(s).get()),
 										 static_cast<ALU74181::Method>(CMS.sub<1>(4)(s).get()),
 										 CMS.sub<4>(0)(s).get(),
-										 std::to_string(A(s).get()),
-										 std::to_string(B(s).get()));
+										 Astr,
+										 Bstr);
+				}catch(const ReadFloating& e){
+					os<<"CMS="<<CMS(s);
+				}*/
 			};
 		}
 	};
@@ -315,7 +338,7 @@ namespace Circuit{
 	struct IOControl:Circuit{
 		Port<2> dir;
 		Port<8> F,B,R,M;
-		Enable ram_we,reg_we;
+		Enable mem_we,reg_we,reg_oe,mem_oe;
 
 		Demux<2> demux{name+"[DeMux]"};
 		Nand<2> nand{name+"[NAND]"};
@@ -329,9 +352,9 @@ namespace Circuit{
 			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
 			nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we);
 			nand.B.sub<1>(0).wire(demux.Y.sub<1>(2));
-			nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,ram_we);
-			nand.Y.sub<1>(0).wire(RiBo.oe);
-			nand.Y.sub<1>(1).wire(RoFi.oe);
+			nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,mem_we);
+			nand.Y.sub<1>(0).wire(RiBo.oe,reg_oe);
+			nand.Y.sub<1>(1).wire(MiBo.oe,mem_oe);
 
 			RiBo.dir.set(1);
 			RoFi.dir.set(0);
@@ -355,7 +378,7 @@ namespace Circuit{
 	struct Memory:Circuit{
 		Port<ASize> addr;
 		Port<DSize> data;
-		Port<1> we;
+		Port<1> oe,we;
 
 		Cmp<CSize> cmp{"[MEM][CMP]"};
 		Nand<1> nand{"[MEM][NAND]"};
@@ -364,6 +387,7 @@ namespace Circuit{
 		Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
+			ram.oe.wire(oe);
 			ram.we.wire(we);
 			
 			rom.oe.set(0);
@@ -379,186 +403,6 @@ namespace Circuit{
 			nand.Y.wire(ram.ce);
 		}
 	};
-/*
-	struct CPU:CompositeCircuit<std::add_pointer_t>{
-		Port<1> clk{PortMode::OUTPUT},clr{PortMode::OUTPUT};
-		RAM<16,8> ram;
-		ROM<16,8> rom;
-		RAM<4,8> reg;
-		enum {OP,AX,AL,AH};
-		RegEN<8> regs[4];
-		RegCLR<1> creg;
-		RegCLR<19> sreg;
-		ROM<19,32> cu;
-		ALU<8> alu;
-		Demux<2> demux_regs,demux_dir;
-		Nand<4> nand;
-		Cmp<8> cmp;
-		Bus<8> RiBo,RoFi,MiBo,MoFi;
-
-		Wire<1> const_enable,const_disable;
-		Wire<1> wclr,wclk,wclk_,wc;
-		Wire<10> state;
-		Wire<8> op;
-		Wire<19> marg;
-
-		Wire<4> alu_s;
-		Wire<1> alu_m,alu_c;
-
-		Wire<8> reg_a;
-		Wire<2> regs_s,dir_s;
-		Wire<1> is_mem;
-		Wire<1> regs_sel0,regs_sel1,regs_sel2,regs_sel3;
-		Wire<8> A,addr_L,addr_H;
-		Wire<8> cmp_addr;
-		Wire<1> cmp_gt,cmp_eq,cmp_lt;
-		Wire<1> dir_RiBo,dir_RoFi,dir_MiBo,dir_MoFi;
-		Wire<1> rr,rw,mr,mw,ri,mi;
-		Wire<8> F,B,R,M;
-
-
-		explicit CPU():
-			const_enable(const_port<0>,demux_dir.G,cu.oe),
-			const_disable(const_port<1>,rom.we,cu.we),
-			wclr(clr,creg.clr,sreg.clr),
-			wclk(clk, creg.clk, regs[0].clk, regs[1].clk, regs[2].clk, regs[3].clk,
-			     nand.A.sub(2, 1), nand.B.sub(2, 1)),
-			wclk_(nand.Y.sub(2, 1), sreg.clk, reg.ce),
-			wc(creg.output, sreg.input.sub(0, 1)),
-			state(cu.D.sub(0, 10), sreg.input.sub(1, 10)),
-			op(regs[OP].output, sreg.input.sub(11, 8)),
-			marg(sreg.output, cu.A),
-			alu_s(cu.D.sub(10, 4), alu.S),
-			alu_m(cu.D.sub(14, 1), alu.M),
-			alu_c(cu.D.sub(15, 1), alu.Cn),
-			reg_a(cu.D.sub(16, 4), reg.A),
-			regs_s(cu.D.sub(20, 2), demux_regs.S),
-			dir_s(cu.D.sub(22, 2), demux_dir.S),
-			is_mem(cu.D.sub(22, 1), demux_regs.G),
-			regs_sel0(demux_regs.Y.sub(0, 1), regs[0].en),
-			regs_sel1(demux_regs.Y.sub(1, 1), regs[1].en),
-			regs_sel2(demux_regs.Y.sub(2, 1), regs[2].en),
-			regs_sel3(demux_regs.Y.sub(3, 1), regs[3].en),
-			A(regs[AX].output, alu.A),
-			addr_L(regs[AL].output, ram.A.sub(0, 8), rom.A.sub(0, 8)),
-			addr_H(regs[AH].output, ram.A.sub(8, 8), rom.A.sub(8, 8), cmp.Q),
-			cmp_addr(cmp.P, const_port<1>),
-			cmp_gt(cmp.PgtQ, nand.A.sub(3, 1), rom.ce),
-			cmp_eq(cmp.PeqQ, nand.B.sub(3, 1)),
-			cmp_lt(nand.Y.sub(3, 1), ram.ce),
-			dir_RiBo(RiBo.dir, const_port<1>),
-			dir_RoFi(RoFi.dir, const_port<0>),
-			dir_MiBo(MiBo.dir, const_port<1>),
-			dir_MoFi(MoFi.dir, const_port<0>),
-			rr(demux_dir.Y.sub(0, 1), nand.A.sub(1, 1)),
-			rw(demux_dir.Y.sub(1, 1), nand.A.sub(0, 1), RoFi.oe, reg.we),
-			mr(demux_dir.Y.sub(2, 1), nand.B.sub(0, 1)),
-			mw(demux_dir.Y.sub(3, 1), nand.B.sub(1, 1), MoFi.oe, ram.we),
-			ri(nand.Y.sub(0, 1), RiBo.oe, reg.oe),
-			mi(nand.Y.sub(1, 1), MiBo.oe, ram.oe, rom.oe),
-			F(alu.O, RoFi.B, MoFi.B, regs[0].input, regs[1].input, regs[2].input, regs[3].input),
-			B(alu.B, RiBo.B, MiBo.B),
-			R(reg.D, RoFi.A, RiBo.A),
-			M(ram.D, rom.D, MiBo.A, MoFi.A)
-			{
-			Circuit* c_arr[]{
-				&ram, &rom, &reg, &cu, &alu,
-				&creg,&sreg,
-				&demux_regs, &demux_dir,
-				&nand, &cmp,
-				&RiBo, &RoFi, &MiBo, &MoFi,
-			};
-			for (auto c:c_arr) {
-				circuits.push_back(c);
-			}
-			for (auto& c:regs) {
-				circuits.push_back(&c);
-			}
-			IWire* w_arr[]{
-				&const_enable,&const_disable,
-				&wclr,&wclk,&wclk_,&wc,
-				&state,
-				&op,
-				&marg,
-
-				&alu_s,
-				&alu_m,&alu_c,
-
-				&reg_a,
-				&regs_s,&dir_s,
-				&is_mem,
-				&regs_sel0,&regs_sel1,&regs_sel2,&regs_sel3,
-				&A,&addr_L,&addr_H,
-				&cmp_addr,
-				&cmp_gt,&cmp_eq,&cmp_lt,
-				&dir_RiBo,&dir_RoFi,&dir_MiBo,&dir_MoFi,
-				&rr,&rw,&mr,&mw,&ri,&mi,
-				&F,&B,&R,&M
-			};
-			for (auto w:w_arr) {
-				wires.push_back(w);
-			}
-#if 0
-				auto wclr = wire<1>(clr, creg.clr, sreg.clr);
-				auto wclk = wire<1>(clk, creg.clk, regs[0].clk, regs[1].clk, regs[2].clk, regs[3].clk,
-				                    nand.A.sub(2, 1), nand.B.sub(2, 1));
-				auto wclk_ = wire<1>(nand.Y.sub(2, 1), sreg.clk, reg.ce);
-
-				auto wc = wire<1>(creg.output, sreg.input.sub(0, 1));
-				auto state = wire<10>(cu.D.sub(0, 10), sreg.input.sub(1, 10));
-				auto op = wire<8>(regs[OP].output, sreg.input.sub(11, 8));
-				auto marg = wire<19>(sreg.output, cu.A);
-
-				auto alu_s = wire<4>(cu.D.sub(10, 4), alu.S);
-				auto alu_m = wire<1>(cu.D.sub(14, 1), alu.M);
-				auto alu_c = wire<1>(cu.D.sub(15, 1), alu.Cn);
-
-				auto reg_a = wire<4>(cu.D.sub(16, 4), reg.A);
-
-				auto regs_s = wire<2>(cu.D.sub(20, 2), demux_regs.S);
-				auto dir_s = wire<2>(cu.D.sub(22, 2), demux_dir.S);
-				auto is_mem = wire<1>(cu.D.sub(22, 1), demux_regs.G);
-				//constant<1>(demux_dir.G, 0);
-
-				wire<1>(demux_regs.Y.sub(0, 1), regs[0].en);
-				wire<1>(demux_regs.Y.sub(1, 1), regs[1].en);
-				wire<1>(demux_regs.Y.sub(2, 1), regs[2].en);
-				wire<1>(demux_regs.Y.sub(3, 1), regs[3].en);
-
-				auto alu_L = wire<8>(regs[AX].output, alu.A);
-				auto addr_L = wire<8>(regs[AL].output, ram.A.sub(0, 8), rom.A.sub(0, 8));
-				auto addr_H = wire<8>(regs[AH].output, ram.A.sub(8, 8), rom.A.sub(8, 8), cmp.Q);
-
-				//constant<8>(cmp.P, 1);
-				wire<1>(cmp.PgtQ, nand.A.sub(3, 1), rom.ce);
-				wire<1>(cmp.PeqQ, nand.B.sub(3, 1));
-				wire<1>(nand.Y.sub(3, 1), ram.ce);
-
-				//constant<1>(RiBo.dir, 1);
-				//constant<1>(RoFi.dir, 0);
-				//constant<1>(MiBo.dir, 1);
-				//constant<1>(MoFi.dir, 0);
-				auto rr = wire<1>(demux_dir.Y.sub(0, 1), nand.A.sub(1, 1));
-				auto rw = wire<1>(demux_dir.Y.sub(1, 1), nand.A.sub(0, 1), RoFi.oe, reg.we);
-				auto mr = wire<1>(demux_dir.Y.sub(2, 1), nand.B.sub(0, 1));
-				auto mw = wire<1>(demux_dir.Y.sub(3, 1), nand.B.sub(1, 1), MoFi.oe, ram.we);
-				          wire<1>(nand.Y.sub(0, 1), RiBo.oe, reg.oe);
-				          wire<1>(nand.Y.sub(1, 1), MiBo.oe, ram.oe);
-
-
-				wire<8>(alu.O, RoFi.B, MoFi.B, regs[0].input, regs[1].input, regs[2].input, regs[3].input);
-				wire<8>(alu.B, RiBo.B, MiBo.B);
-				wire<8>(reg.D, RoFi.A, RiBo.A);
-				wire<8>(ram.D, rom.D, MiBo.A, MoFi.A);
-#endif
-			auto tbl=BBCPU::OpCode::genOpTable();
-			std::copy(tbl.begin(), tbl.end(), cu.data);
-		}
-		explicit CPU(const std::vector<uint8_t>& program):CPU(){
-			std::copy(program.begin(),program.end(),rom.data);
-		}
-	};
- */
 	template<size_t Size>
 	struct Counter:Circuit{
 		Clock clk{Level::PullDown};

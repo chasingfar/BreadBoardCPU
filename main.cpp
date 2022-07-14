@@ -75,7 +75,7 @@ namespace Circuit{
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
 
 			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
-			clk_.wire(nand.Y,cu.clk_);
+			clk_.wire(nand.Y,cu.clk_,reg.ce);
 			clr.wire(cu.clr);
 			alu.Co.wire(cu.Ci);
 			regset.output[RegSet::I.v()].wire(cu.op);
@@ -91,7 +91,9 @@ namespace Circuit{
 			cu.rs.wire(regset.sel);
 			cu.rs_en.wire(regset.en);
 			cu.dir.wire(ioctl.dir);
-			ioctl.ram_we.wire(mem.we);
+			ioctl.mem_oe.wire(mem.oe);
+			ioctl.mem_we.wire(mem.we);
+			ioctl.reg_oe.wire(reg.oe);
 			ioctl.reg_we.wire(reg.we);
 
 			auto tbl=BBCPU::OpCode::genOpTable();
@@ -121,11 +123,12 @@ int main() {
 	cpu.clk.set(0);
 	cpu.update();
 	cpu.clr.set(1);
-
+std::cout<<std::endl;
 	for(int i=0;i<10;i++){
-		cpu.update();
-		//std::cout<<cpu.alu<<std::endl;
 		cpu.clk.clock();
+		cpu.update();
+std::cout<<std::endl;
+		//std::cout<<cpu.alu<<std::endl;
 	}
 	/*Counter<8> cnt;
 	for(int i=0;i<10;i++){
