@@ -42,6 +42,34 @@ namespace BBCPU {
 		static auto setMw(auto o){
 			return set(o,Reg::OPR,RegSet::A,DirMode::Mw);
 		}
+		static std::tuple<std::string,std::string,std::string> decode(auto o,std::string addr=""){
+			std::string L="RS["+RegSet::A.str()+"]",R,O,
+				REG="Reg["+Reg(Bs::get(o)).str()+"]",
+				RS="RS["+RegSet(Rs::get(o)).str()+"]",
+				MEM="MEM["+addr+"]";
+			switch (static_cast<DirMode>(dir::get(o))) {
+				case DirMode::Br:
+					R=REG;
+					O=RS;
+					break;
+				case DirMode::Bw:
+					R=RS;
+					O=REG;
+					break;
+				case DirMode::Mr:
+					R=MEM;
+					O=RS;
+					break;
+				case DirMode::Mw:
+					R=RS;
+					O=MEM;
+					break;
+			}
+			return {L,R,O};
+		}
+		static auto decode(auto o,size_t addr){
+			return decode(o,std::to_string(addr));
+		}
 	};
 	struct MCTRL : BitField<24,StartAt<0> > {
 		using state  = STATE<9,StartAt<0> >;
@@ -148,6 +176,15 @@ namespace BBCPU {
 			o=alu::dec(o,carry);
 			o=io::setRs(o,RegSet::A);
 			return o;
+		}
+
+		static std::string decode(auto o,std::string addr){
+			auto [L,R,O]=MCTRL::io::decode(o,addr);
+			auto fn_str=MCTRL::alu::get_fn_str(o, L, R);
+			return O+"="+fn_str;
+		}
+		static auto decode(auto o,size_t addr){
+			return decode(o,std::to_string(addr));
 		}
 	};
 	static auto incIndex(auto marg,auto mctrl){
