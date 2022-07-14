@@ -369,10 +369,6 @@ namespace Circuit{
 			dir.wire(demux.S);
 			demux.G.set(0);
 		}
-		bool update() override{
-			std::cout<<std::flush;
-			return Circuit::update();
-		}
 	};
 	template<size_t ASize=16,size_t DSize=8,size_t CSize=8>
 	struct Memory:Circuit{
