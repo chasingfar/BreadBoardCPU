@@ -164,6 +164,8 @@ namespace Circuit{
 				} else if(oe.is_enable()) {
 					D=data[A.get()];
 				}
+			}else{
+				D=Level::Floating;
 			}
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
@@ -194,6 +196,8 @@ namespace Circuit{
 				} else if(oe.is_enable()) {
 					D=data[A.get()];
 				}
+			}else{
+				D=Level::Floating;
 			}
 		}
 		auto begin() { return &data[0]; }
