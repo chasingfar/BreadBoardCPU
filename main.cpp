@@ -105,10 +105,12 @@ namespace Circuit{
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.get()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.get(),mem.addr.get())<<std::endl;
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.get())<<std::endl;
+				
 				for(size_t i=0;i<4;++i){
 					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].get()<<" ";
 				}
 				os<<std::endl;
+				
 				for(size_t i=0;i<16;++i){
 					os<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<reg.data[i];
 					if(i%8==7){
@@ -117,6 +119,11 @@ namespace Circuit{
 						os<<" ";
 					}
 				}
+
+				for(size_t i=mem.ram.data_size-5;i<mem.ram.data_size;++i){
+					os<<"RAM["<<i<<"]="<<mem.ram.data[i]<<" ";
+				}
+				os<<std::endl;
 			};
 		}
 	};
@@ -144,10 +151,10 @@ int main() {
 	cpu.update();
 	cpu.clr.set(1);
 std::cout<<std::endl;
-	for(int i=0;i<500;i++){
+	for(int i=0;i<2150;i++){
 		cpu.clk.clock();
 		cpu.update();
-		std::cout<<std::endl;
+		std::cout<<i<<std::endl;
 		std::cout<<cpu;
 		std::cout<<std::endl;
 		//std::cout<<cpu.alu<<std::endl;
