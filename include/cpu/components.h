@@ -36,22 +36,21 @@ namespace Circuit{
 		}
 	};
 	template<size_t Size>
-	struct RegEN:Reg<Size>{
+	struct RegCE: Reg<Size>{
 		using Base=Reg<Size>;
-		Enable en;
-		RegEN(std::string name=""):Base(std::move(name)){
-			Base::add_ports(en);
+		Enable ce;
+		RegCE(std::string name=""): Base(std::move(name)){
+			Base::add_ports(ce);
 		}
 		void run() override {
-			if(Base::clk.get() == 0){
-				Base::output=Base::data;
-			}else if(en.is_enable()){
-				Base::data=Base::input.get();
+			Base::run();
+			if(!ce.is_enable()){
+				Base::data=Base::output.get();
 			}
 		}
 		Util::Printer print(const std::vector<Level>& s) const override{
 			return [&](std::ostream& os){
-				os<<Base::print(s)<<"(en="<<en(s)<<")";
+				os << Base::print(s) << "(en=" << ce(s) << ")";
 			};
 		}
 	};
@@ -276,7 +275,7 @@ namespace Circuit{
 	};
 
 	template<size_t SelSize=2,size_t Size=8>
-	struct RegENSet:Circuit{
+	struct RegCESet:Circuit{
 		static constexpr size_t regs_num=1<<SelSize;
 		Clock clk;
 		Enable en;
@@ -284,8 +283,8 @@ namespace Circuit{
 		Port<Size> input,output[regs_num];
 
 		Demux<SelSize> demux{name+"[DeMux]"};
-		RegEN<Size> regs[regs_num];
-		RegENSet(std::string name=""):Circuit(std::move(name)){
+		RegCE<Size> regs[regs_num];
+		RegCESet(std::string name=""):Circuit(std::move(name)){
 			for(size_t i=0;i<regs_num;++i){
 				regs[i].name=name+"[Reg"+std::to_string(i)+"]";
 			}
@@ -294,7 +293,7 @@ namespace Circuit{
 
 				en.wire(demux.G);
 				sel.wire(demux.S);
-				((demux.Y.template sub<1>(I)).wire(regs[I].en),...);
+				((demux.Y.template sub<1>(I)).wire(regs[I].ce),...);
 				clk.wire(regs[I].clk...);
 				input.wire(regs[I].input...);
 				(output[I].wire(regs[I].output),...);

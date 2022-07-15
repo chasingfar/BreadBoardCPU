@@ -70,7 +70,7 @@ namespace Circuit{
 		CU cu{"[CU]"};
 		ALU<8> alu{"[ALU]"};
 		IOControl ioctl{"[IOctl]"};
-		RegENSet<MCTRL::io::Rs::size,8> regset{"[RegSet]"};
+		RegCESet<MCTRL::io::Rs::size,8> regset{"[RegSet]"};
 		RAM<MCTRL::io::Bs::size,8> reg{"[RegFile]"};
 		CPU(std::string name=""):Circuit(std::move(name)){
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
