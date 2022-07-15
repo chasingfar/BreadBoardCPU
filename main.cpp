@@ -52,7 +52,7 @@ namespace Circuit{
 		Port<MCTRL::io::Rs::size> rs;
 		Port<MCTRL::io::dir::size> dir;
 		Enable rs_en;
-		CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
+		explicit CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
 			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
 			 bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
 			 rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
@@ -72,7 +72,7 @@ namespace Circuit{
 		IOControl ioctl{"[IOctl]"};
 		RegCESet<MCTRL::io::Rs::size,8> regset{"[RegSet]"};
 		RAM<MCTRL::io::Bs::size,8> reg{"[RegFile]"};
-		CPU(std::string name=""):Circuit(std::move(name)){
+		explicit CPU(std::string name=""):Circuit(std::move(name)){
 			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
 
 			clk.wire(nand.A,nand.B,cu.clk,regset.clk);

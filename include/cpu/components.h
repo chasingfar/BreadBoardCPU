@@ -15,7 +15,7 @@ namespace Circuit{
 		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
-		Reg(std::string name=""):Component(std::move(name)){
+		explicit Reg(std::string name=""):Component(std::move(name)){
 			add_ports(clk,input,output);
 		}
 		void run() override {
@@ -39,7 +39,7 @@ namespace Circuit{
 	struct RegCE: Reg<Size>{
 		using Base=Reg<Size>;
 		Enable ce;
-		RegCE(std::string name=""): Base(std::move(name)){
+		explicit RegCE(std::string name=""): Base(std::move(name)){
 			Base::add_ports(ce);
 		}
 		void run() override {
@@ -58,7 +58,7 @@ namespace Circuit{
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
 		Enable clr;
-		RegCLR(std::string name=""):Base(std::move(name)){
+		explicit RegCLR(std::string name=""):Base(std::move(name)){
 			Base::add_ports(clr);
 		}
 		void run() override {
@@ -77,7 +77,7 @@ namespace Circuit{
 	template<size_t Size>
 	struct Nand:Component{
 		Port<Size> A,B,Y;
-		Nand(std::string name=""):Component(std::move(name)){
+		explicit Nand(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,Y);
 		}
 		void run() override{
@@ -92,7 +92,7 @@ namespace Circuit{
 	template<size_t Size>
 	struct Adder:Component{
 		Port<Size> A,B,O;
-		Adder(std::string name=""):Component(std::move(name)){
+		explicit Adder(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,O);
 		}
 		void run() override{
@@ -109,7 +109,7 @@ namespace Circuit{
 		Port<Size> A,B,O;
 		Port<6> CMS;
 		Port<1> Co;
-		ALU(std::string name=""):Component(std::move(name)){
+		explicit ALU(std::string name=""):Component(std::move(name)){
 			add_ports(A,B,O,CMS,Co);
 		}
 		void run() override {
@@ -152,7 +152,7 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		RAM(std::string name=""):Component(std::move(name)){
+		explicit RAM(std::string name=""):Component(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void run() override {
@@ -181,7 +181,7 @@ namespace Circuit{
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		ROM(std::string name=""):Component(std::move(name)){
+		explicit ROM(std::string name=""):Component(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void load(const std::vector<val_t>& new_data){
@@ -213,7 +213,7 @@ namespace Circuit{
 		Port<1> dir;
 		Port<Size> A,B;
 
-		Bus(std::string name=""):Component(std::move(name)){
+		explicit Bus(std::string name=""):Component(std::move(name)){
 			add_ports(oe,dir,A,B);
 		}
 		void run() override {
@@ -240,7 +240,7 @@ namespace Circuit{
 		Enable G;
 		Port<output_size> Y;
 
-		Demux(std::string name=""):Component(std::move(name)){
+		explicit Demux(std::string name=""):Component(std::move(name)){
 			add_ports(S,G,Y);
 		}
 		void run() override {
@@ -260,7 +260,7 @@ namespace Circuit{
 		Port<Size> P,Q;
 		Port<1> PgtQ,PeqQ;
 
-		Cmp(std::string name=""):Component(std::move(name)){
+		explicit Cmp(std::string name=""):Component(std::move(name)){
 			add_ports(P,Q,PgtQ,PeqQ);
 		}
 		void run() override{
@@ -284,7 +284,7 @@ namespace Circuit{
 
 		Demux<SelSize> demux{name+"[DeMux]"};
 		RegCE<Size> regs[regs_num];
-		RegCESet(std::string name=""):Circuit(std::move(name)){
+		explicit RegCESet(std::string name=""):Circuit(std::move(name)){
 			for(size_t i=0;i<regs_num;++i){
 				regs[i].name=name+"[Reg"+std::to_string(i)+"]";
 			}
@@ -311,7 +311,7 @@ namespace Circuit{
 		RegCLR<CSize> creg{name+"[cReg]"};
 		RegCLR<ASize> sreg{name+"[sReg]"};
 		ROM<ASize,DSize> tbl{name+"[TBL]"};
-		CUBase(std::string name=""):Circuit(std::move(name)){
+		explicit CUBase(std::string name=""):Circuit(std::move(name)){
 			add_comps(creg,sreg,tbl);
 
 			clk.wire(creg.clk);
@@ -339,7 +339,7 @@ namespace Circuit{
 			RoFi{name+"[RoFi]"},
 			MiBo{name+"[MiBo]"},
 			MoFi{name+"[MoFi]"};
-		IOControl(std::string name=""):Circuit(std::move(name)){
+		explicit IOControl(std::string name=""):Circuit(std::move(name)){
 			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
 
 			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
@@ -373,7 +373,7 @@ namespace Circuit{
 		Nand<1> nand{"[MEM][NAND]"};
 		RAM<ASize,DSize> ram{"[MEM][RAM]"};
 		ROM<ASize,DSize> rom{"[MEM][ROM]"};
-		Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
+		explicit Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
 			ram.oe.wire(oe);
