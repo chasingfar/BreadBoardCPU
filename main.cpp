@@ -100,7 +100,7 @@ namespace Circuit{
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
-		virtual Util::Printer print(const std::vector<Level>& state) const{
+		Util::Printer print(const std::vector<Level>& state) const override{
 			return [&](std::ostream& os){
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.get()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.get(),mem.addr.get())<<std::endl;
