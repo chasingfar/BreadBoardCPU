@@ -145,7 +145,7 @@ int main() {
 	using namespace Circuit;
 	CPU cpu{"[CPU]"};
 	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
-	::Circuit::Circuit::ignoreReadFloating=true;
+	Component::log_read_floating=false;
 	cpu.clr.set(0);
 	cpu.clk.set(0);
 	cpu.update();

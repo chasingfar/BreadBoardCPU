@@ -174,6 +174,9 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Component{
+		inline static bool log_read_floating=true;
+		inline static bool log_state=true;
+		inline static bool log_change=true;
 		std::vector<Wire*> pins;
 		std::string name="";
 		Component(std::string name=""):name(std::move(name)){}
@@ -197,12 +200,18 @@ E	E4	E4	E4	E4	E4	E1
 
 		virtual bool update(){
 			auto before=save();
-			run();
+			try{
+				run();
+			}catch(const ReadFloating& e){
+				if(log_read_floating){ std::cout<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
+			}
 			auto after=save();
+			if(log_state||log_change){ std::cout<<name<<"{"<<print(before)<<"}"; }
 			if(before!=after){
-				std::cout<<name<<"{"<<print(before)<<"}=>{"<<print(after)<<"}"<<std::endl;
+				if(log_change){ std::cout<<"{"<<print(after)<<"}"<<std::endl; }
 				return true;
 			}
+			if(log_state){std::cout<<std::endl;}
 			return false;
 		}
 		virtual void run(){}
@@ -215,23 +224,14 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Circuit:Component{
-		inline static bool ignoreReadFloating=false;
 		std::vector<Component*> comps;
 		Circuit(std::string name=""):Component(std::move(name)){}
 		bool comps_update(){
-			bool hasReadFloating=false;
 			bool hasUpdate=false;
 			for(auto c:comps){
-				try{
-					if(c->update()){
-						hasUpdate=true;
-					}
-				}catch(const ReadFloating& e){
-					hasReadFloating=true;
+				if(c->update()){
+					hasUpdate=true;
 				}
-			}
-			if(hasReadFloating && !ignoreReadFloating){
-				std::cout<<"ReadFloating"<<std::endl;
 			}
 			return hasUpdate;
 		}
