@@ -129,7 +129,7 @@ namespace Circuit{
 
 		Util::Printer print(const std::vector<Level>& s) const override{
 			return [&](std::ostream& os){
-				std::string fn_str="";
+				std::string fn_str;
 				auto cms=CMS(s);
 				try{
 					fn_str=ALU74181::get_fn_str(
