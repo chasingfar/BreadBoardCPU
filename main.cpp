@@ -100,6 +100,25 @@ namespace Circuit{
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
+		virtual Util::Printer print(const std::vector<Level>& state) const{
+			return [&](std::ostream& os){
+				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.get()).first<<std::endl;
+				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.get(),mem.addr.get())<<std::endl;
+				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.get())<<std::endl;
+				for(size_t i=0;i<4;++i){
+					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].get()<<" ";
+				}
+				os<<std::endl;
+				for(size_t i=0;i<16;++i){
+					os<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<reg.data[i];
+					if(i%8==7){
+						os<<std::endl;
+					}else{
+						os<<" ";
+					}
+				}
+			};
+		}
 	};
 }
 int main() {
@@ -129,21 +148,7 @@ std::cout<<std::endl;
 		cpu.clk.clock();
 		cpu.update();
 		std::cout<<std::endl;
-		std::cout<<"OP:"<<OpCode::Ops::all::parse(cpu.cu.op.get()).first<<std::endl;
-		std::cout<<"MCTRL:"<<MCTRL::decode(cpu.cu.tbl.D.get(),cpu.mem.addr.get())<<std::endl;
-		std::cout<<"INDEX:"<<MCTRL::state::index::get(cpu.cu.tbl.D.get())<<std::endl;
-		for(size_t i=0;i<4;++i){
-			std::cout<<"RS["<<RegSet(i).str()<<"]="<<cpu.regset.output[i].get()<<" ";
-		}
-		std::cout<<std::endl;
-		for(size_t i=0;i<16;++i){
-			std::cout<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<cpu.reg.data[i];
-			if(i%8==7){
-				std::cout<<std::endl;
-			}else{
-				std::cout<<" ";
-			}
-		}
+		std::cout<<cpu;
 		std::cout<<std::endl;
 		//std::cout<<cpu.alu<<std::endl;
 	}
