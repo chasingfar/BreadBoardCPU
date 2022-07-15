@@ -286,7 +286,7 @@ namespace Circuit{
 		RegCE<Size> regs[regs_num];
 		explicit RegCESet(std::string name=""):Circuit(std::move(name)){
 			for(size_t i=0;i<regs_num;++i){
-				regs[i].name=name+"[Reg"+std::to_string(i)+"]";
+				regs[i].name=Circuit::name+"[Reg"+std::to_string(i)+"]";
 			}
 			[&]<size_t ...I>(std::index_sequence<I...>){
 				add_comps(demux,regs[I]...);
@@ -369,10 +369,10 @@ namespace Circuit{
 		Port<DSize> data;
 		Port<1> oe,we;
 
-		Cmp<CSize> cmp{"[MEM][CMP]"};
-		Nand<1> nand{"[MEM][NAND]"};
-		RAM<ASize,DSize> ram{"[MEM][RAM]"};
-		ROM<ASize,DSize> rom{"[MEM][ROM]"};
+		Cmp<CSize> cmp{name+"[CMP]"};
+		Nand<1> nand{name+"[NAND]"};
+		RAM<ASize,DSize> ram{name+"[RAM]"};
+		ROM<ASize,DSize> rom{name+"[ROM]"};
 		explicit Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
@@ -396,9 +396,9 @@ namespace Circuit{
 	struct Counter:Circuit{
 		Clock clk{Level::PullDown};
 		Port<1> clr{Level::PullUp};
-		Adder<Size> adder{};
-		RegCLR<Size> reg{};
-		Counter(){
+		Adder<Size> adder{name+"[Adder]"};
+		RegCLR<Size> reg{name+"[Reg]"};
+		explicit Counter(std::string name=""):Circuit(std::move(name)){
 			add_comps(adder,reg);
 
 			clk.wire(reg.clk);
