@@ -11,11 +11,11 @@
 
 namespace Circuit{
 	template<size_t Size>
-	struct Reg:Component{
+	struct Reg:Chip{
 		Clock clk;
 		Port<Size> input,output;
 		val_t data{};
-		explicit Reg(std::string name=""):Component(std::move(name)){
+		explicit Reg(std::string name=""):Chip(std::move(name)){
 			add_ports(clk,input,output);
 		}
 		void run() override {
@@ -25,11 +25,11 @@ namespace Circuit{
 				data=input.get();
 			}
 		}
-		void reset() override{
+		void reset() {
 			data=0;
 			output=0;
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
 			};
@@ -48,7 +48,7 @@ namespace Circuit{
 				Base::data=Base::output.get();
 			}
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os << Base::print(s) << "(en=" << ce(s) << ")";
 			};
@@ -68,48 +68,48 @@ namespace Circuit{
 				Base::run();
 			}
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<Base::print(s)<<"(clr="<<clr(s)<<")";
 			};
 		}
 	};
 	template<size_t Size>
-	struct Nand:Component{
+	struct Nand:Chip{
 		Port<Size> A,B,Y;
-		explicit Nand(std::string name=""):Component(std::move(name)){
+		explicit Nand(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,Y);
 		}
 		void run() override{
 			Y=~(A.get()&B.get());
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"A("<<A(s)<<") NAND ("<<B(s)<<") = "<<Y(s);
 			};
 		}
 	};
 	template<size_t Size>
-	struct Adder:Component{
+	struct Adder:Chip{
 		Port<Size> A,B,O;
-		explicit Adder(std::string name=""):Component(std::move(name)){
+		explicit Adder(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,O);
 		}
 		void run() override{
 			O=A.get()+B.get();
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<A(s)<<"+"<<B(s)<<"="<<O(s);
 			};
 		}
 	};
 	template<size_t Size=8>
-	struct ALU:Component{
+	struct ALU:Chip{
 		Port<Size> A,B,O;
 		Port<6> CMS;
 		Port<1> Co;
-		explicit ALU(std::string name=""):Component(std::move(name)){
+		explicit ALU(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,O,CMS,Co);
 		}
 		void run() override {
@@ -127,7 +127,7 @@ namespace Circuit{
 			O=o;
 		}
 
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				std::string fn_str;
 				auto cms=CMS(s);
@@ -145,14 +145,14 @@ namespace Circuit{
 	};
 	
 	template<size_t ASize=19,size_t DSize=8>
-	struct RAM:Component{
+	struct RAM:Chip{
 		static constexpr size_t data_size=1<<ASize;
 		Enable ce,oe,we;
 		Port<ASize> A;
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		explicit RAM(std::string name=""):Component(std::move(name)){
+		explicit RAM(std::string name=""):Chip(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void run() override {
@@ -167,21 +167,21 @@ namespace Circuit{
 				D=Level::Floating;
 			}
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"RAM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
 	};
 	template<size_t ASize=19,size_t DSize=8>
-	struct ROM:Component{
+	struct ROM:Chip{
 		static constexpr size_t data_size=1<<ASize;
 		Enable ce,oe,we;
 		Port<ASize> A;
 		Port<DSize> D;
 		val_t data[data_size]{0};
 
-		explicit ROM(std::string name=""):Component(std::move(name)){
+		explicit ROM(std::string name=""):Chip(std::move(name)){
 			add_ports(ce,oe,we,A,D);
 		}
 		void load(const std::vector<val_t>& new_data){
@@ -201,19 +201,19 @@ namespace Circuit{
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"ROM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
 	};
 	template<size_t Size=8>
-	struct Bus:Component{
+	struct Bus:Chip{
 		Enable oe;
 		Port<1> dir;
 		Port<Size> A,B;
 
-		explicit Bus(std::string name=""):Component(std::move(name)){
+		explicit Bus(std::string name=""):Chip(std::move(name)){
 			add_ports(oe,dir,A,B);
 		}
 		void run() override {
@@ -227,20 +227,20 @@ namespace Circuit{
 				}
 			}
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"BUS"<<A(s)<<(dir(s).get()==1?"->":"<-")<<B(s)<<"(oe="<<oe(s)<<")";
 			};
 		}
 	};
 	template<size_t SelSize=2>
-	struct Demux:Component{
+	struct Demux:Chip{
 		static constexpr size_t output_size=1<<SelSize;
 		Port<SelSize> S;
 		Enable G;
 		Port<output_size> Y;
 
-		explicit Demux(std::string name=""):Component(std::move(name)){
+		explicit Demux(std::string name=""):Chip(std::move(name)){
 			add_ports(S,G,Y);
 		}
 		void run() override {
@@ -249,25 +249,25 @@ namespace Circuit{
 				Y.template sub<1>(S.get()).set(0);
 			}
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"Demux["<<S(s)<<"]"<<Y(s)<<"(G="<<G(s)<<")";
 			};
 		}
 	};
 	template<size_t Size=8>
-	struct Cmp:Component{
+	struct Cmp:Chip{
 		Port<Size> P,Q;
 		Port<1> PgtQ,PeqQ;
 
-		explicit Cmp(std::string name=""):Component(std::move(name)){
+		explicit Cmp(std::string name=""):Chip(std::move(name)){
 			add_ports(P,Q,PgtQ,PeqQ);
 		}
 		void run() override{
 			PgtQ=!(P.get()>Q.get());
 			PeqQ=!(P.get()==Q.get());
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print(std::span<const Level> s) const override{
 			return [&](std::ostream& os){
 				os<<"Demux"<<P(s)<<"<=>"<<Q(s)<<"(P>Q:"<<PgtQ(s)<<",P==Q:"<<PeqQ<<")";
 			};
@@ -407,7 +407,7 @@ namespace Circuit{
 			adder.A.wire(reg.output);
 			adder.B.set(1);
 		}
-		Util::Printer print(const std::vector<Level>& s) const override{
+		Util::Printer print() const override{
 			return [&](std::ostream& os){
 				os<<"adder="<<adder.print(adder.save())
 					<<"reg="<<reg.print(reg.save());

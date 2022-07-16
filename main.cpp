@@ -100,7 +100,7 @@ namespace Circuit{
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
-		Util::Printer print(const std::vector<Level>& state) const override{
+		Util::Printer print() const override{
 			return [&](std::ostream& os){
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.get()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.get(),mem.addr.get())<<std::endl;
@@ -145,15 +145,15 @@ int main() {
 	using namespace Circuit;
 	CPU cpu{"[CPU]"};
 	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
-	Component::log_read_floating=false;
+	Chip::log_read_floating=false;
 	cpu.clr.set(0);
 	cpu.clk.set(0);
-	cpu.update();
+	cpu.run();
 	cpu.clr.set(1);
 std::cout<<std::endl;
 	for(int i=0;i<2150;i++){
 		cpu.clk.clock();
-		cpu.update();
+		cpu.run();
 		std::cout<<i<<std::endl;
 		std::cout<<cpu;
 		std::cout<<std::endl;

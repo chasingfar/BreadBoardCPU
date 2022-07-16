@@ -132,10 +132,8 @@ E	E4	E4	E4	E4	E4	E1
 			return os;
 		}
 
-		auto operator()(const std::vector<Level>& state) const{
-			return Port<Size,std::span<const Level>>{
-				std::span<const Level,Size>{&state[offset],Size}
-			};
+		auto operator()(std::span<const Level> state) const{
+			return Port<Size,std::span<const Level>>{state.subspan(offset,Size)};
 		}
 
 		template<size_t NewSize=Size,size_t Start=0>
@@ -174,12 +172,58 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Component{
+		std::string name;
+		explicit Component(std::string name=""):name(std::move(name)){}
+
+		virtual bool update()=0;
+		virtual void run()=0;
+
+		virtual Util::Printer print() const{
+			return [](std::ostream& os){};
+		}
+		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
+			return os<<comp.print();
+		}
+	};
+	struct Chip:Component{
 		inline static bool log_read_floating=true;
 		inline static bool log_state=true;
 		inline static bool log_change=true;
+
 		std::vector<Wire*> pins;
-		std::string name="";
-		Component(std::string name=""):name(std::move(name)){}
+		std::vector<Level> last_state;
+
+		explicit Chip(std::string name=""):Component(std::move(name)){}
+
+		auto save() const{
+			std::vector<Level> state{pins.size()};
+			std::transform(pins.begin(),pins.end(),state.begin(),[](Wire* w){
+				return w->get();
+			});
+			return state;
+		}
+		bool update() override{
+			auto before=save();
+			if(before==last_state){
+				return false;
+			}
+			try{
+				run();
+			}catch(const ReadFloating& e){
+				if(log_read_floating){ std::cout<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
+				return false;
+			}
+			auto new_state=save();
+			if(log_state||log_change){ std::cout<<name<<"{"<<print(before)<<"}"; }
+			if(before!=new_state){
+				last_state=new_state;
+				if(log_change){ std::cout<<"{"<<print(new_state)<<"}"<<std::endl; }
+				return true;
+			}
+			if(log_state){std::cout<<std::endl;}
+			return false;
+		}
+
 		template<size_t ...Sizes>
 		void add_ports(Port<Sizes>&... ports){
 			pins.reserve((pins.size()+...+Sizes));
@@ -190,57 +234,26 @@ E	E4	E4	E4	E4	E4	E1
 				}
 			}(ports),...);
 		}
-		auto save() const{
-			std::vector<Level> state{pins.size()};
-			std::transform(pins.begin(),pins.end(),state.begin(),[](Wire* w){
-				return w->get();
-			});
-			return state;
-		}
-
-		virtual bool update(){
-			auto before=save();
-			try{
-				run();
-			}catch(const ReadFloating& e){
-				if(log_read_floating){ std::cout<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
-			}
-			auto after=save();
-			if(log_state||log_change){ std::cout<<name<<"{"<<print(before)<<"}"; }
-			if(before!=after){
-				if(log_change){ std::cout<<"{"<<print(after)<<"}"<<std::endl; }
-				return true;
-			}
-			if(log_state){std::cout<<std::endl;}
-			return false;
-		}
-		virtual void run(){}
-		virtual Util::Printer print(const std::vector<Level>& state) const{
+		virtual Util::Printer print(std::span<const Level> state) const{
 			return [](std::ostream& os){};
 		}
-		virtual void reset(){}
-		friend std::ostream& operator<<(std::ostream& os,const Component& comp){
-			return os<<comp.print(comp.save());
+		Util::Printer print() const override{
+			return [&](std::ostream& os){
+				os<<print(save());
+			};
 		}
 	};
 	struct Circuit:Component{
 		std::vector<Component*> comps;
-		Circuit(std::string name=""):Component(std::move(name)){}
-		bool comps_update(){
-			bool hasUpdate=false;
-			for(auto c:comps){
-				if(c->update()){
-					hasUpdate=true;
-				}
-			}
-			return hasUpdate;
-		}
+		explicit Circuit(std::string name=""):Component(std::move(name)){}
+
 		bool update() override{
-			bool hasUpdate=false;
-			while(comps_update()){
-				hasUpdate=true;
-			};
-			return hasUpdate;
+			return std::any_of(comps.begin(),comps.end(),[](auto c){
+				return c->update();
+			});
+		}
+		void run() override {
+			while(update()){}
 		}
 
 		template<typename ...Ts>
