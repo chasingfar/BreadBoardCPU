@@ -44,10 +44,9 @@ E	E4	E4	E4	E4	E4	E1
 		Level t=o;
 		return t+=n;
 	}
-	struct ReadFloating:std::exception{};
-	inline uint8_t operator*(Level level){
+	inline std::optional<uint8_t> read(const Level level){
 		if(level==Level::Floating || level==Level::Error){
-			throw ReadFloating{};
+			return {};
 		}
 		return static_cast<int8_t>(level)>0?1:0;
 	}
@@ -65,14 +64,14 @@ E	E4	E4	E4	E4	E4	E1
 				level=new_level;
 			}
 		}
-		uint8_t operator*() const{
-			return *get();
-		}
 		Wire& operator=(Level new_level){
 			set(new_level);
 			return *this;
 		}
 	};
+	inline std::optional<uint8_t> read(const Wire& wire){
+		return read(wire.get());
+	}
 	template<size_t Size,typename Pins=std::array<Wire,Size> >
 	struct Port{
 		Pins pins;
@@ -89,13 +88,20 @@ E	E4	E4	E4	E4	E4	E1
 				val>>=1;
 			}
 		}
-		val_t get() const{
+		std::optional<val_t> get() const{
 			val_t val=0;
 			for(auto& p:pins){
-				val|=*p;
-				val=(val >> 1) | ((val&1) << (pins.size() - 1));
+				if(auto v=read(p);v){
+					val|=*v;
+					val=(val >> 1u) | ((val&1u) << (pins.size() - 1u));
+				}else{
+					return {};
+				}
 			}
 			return val;
+		}
+		val_t value() const{
+			return get().value();
 		}
 		auto& operator =(val_t val){
 			set(val);
@@ -114,19 +120,19 @@ E	E4	E4	E4	E4	E4	E1
 		}
 		std::ostream& print_bit(std::ostream& os) const{
 			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
-				try {
-					os<<**it;
-				} catch (const ReadFloating& e) {
-					os<<"E";
+				if(auto v=read(*it);v) {
+					os << *v;
+				}else{
+					os << "E";
 				}
 			}
 			return os;
 		}
 		friend std::ostream& operator<<(std::ostream& os,const Port<Size,Pins>& port){
 			//return port.print_ptr(os);
-			try {
-				os<<port.get();
-			} catch (const ReadFloating& e) {
+			if(auto v=port.get();v) {
+				os << *v;
+			}else{
 				port.print_bit(os);
 			}
 			return os;
@@ -162,13 +168,13 @@ E	E4	E4	E4	E4	E4	E1
 	struct Enable:Port<1>{
 		using Port<1>::Port;
 		bool is_enable(){
-			return get()==0;
+			return value()==0;
 		}
 	};
 	struct Clock:Port<1>{
 		using Port<1>::Port;
 		void clock(){
-			set(~get());
+			set(~value());
 		}
 	};
 	struct Component{
@@ -209,7 +215,7 @@ E	E4	E4	E4	E4	E4	E1
 			}
 			try{
 				run();
-			}catch(const ReadFloating& e){
+			}catch(const std::bad_optional_access& e){
 				if(log_read_floating){ std::cout<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
 				return false;
 			}

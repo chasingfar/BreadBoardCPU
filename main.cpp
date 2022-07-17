@@ -102,12 +102,12 @@ namespace Circuit{
 		}
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
-				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.get()).first<<std::endl;
-				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.get(),mem.addr.get())<<std::endl;
-				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.get())<<std::endl;
+				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
+				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
+				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
 				
 				for(size_t i=0;i<4;++i){
-					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].get()<<" ";
+					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].value()<<" ";
 				}
 				os<<std::endl;
 				

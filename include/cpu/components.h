@@ -19,10 +19,10 @@ namespace Circuit{
 			add_ports(clk,input,output);
 		}
 		void run() override {
-			if(clk.get() == 0){
+			if(clk.value() == 0){
 				output=data;
 			}else{
-				data=input.get();
+				data=input.value();
 			}
 		}
 		void reset() {
@@ -30,7 +30,7 @@ namespace Circuit{
 			output=0;
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
 			};
 		}
@@ -45,11 +45,11 @@ namespace Circuit{
 		void run() override {
 			Base::run();
 			if(!ce.is_enable()){
-				Base::data=Base::output.get();
+				Base::data=Base::output.value();
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os << Base::print(s) << "(en=" << ce(s) << ")";
 			};
 		}
@@ -69,7 +69,7 @@ namespace Circuit{
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<Base::print(s)<<"(clr="<<clr(s)<<")";
 			};
 		}
@@ -81,10 +81,10 @@ namespace Circuit{
 			add_ports(A,B,Y);
 		}
 		void run() override{
-			Y=~(A.get()&B.get());
+			Y=~(A.value()&B.value());
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<"A("<<A(s)<<") NAND ("<<B(s)<<") = "<<Y(s);
 			};
 		}
@@ -96,10 +96,10 @@ namespace Circuit{
 			add_ports(A,B,O);
 		}
 		void run() override{
-			O=A.get()+B.get();
+			O=A.value()+B.value();
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<A(s)<<"+"<<B(s)<<"="<<O(s);
 			};
 		}
@@ -113,11 +113,11 @@ namespace Circuit{
 			add_ports(A,B,O,CMS,Co);
 		}
 		void run() override {
-			auto Cn=CMS.sub<1>(5).get();
-			auto M=CMS.sub<1>(4).get();
-			auto S=CMS.sub<4>(0).get();
-			auto Ai=A.get();
-			auto Bi=B.get();
+			auto Cn=CMS.sub<1>(5).value();
+			auto M=CMS.sub<1>(4).value();
+			auto S=CMS.sub<4>(0).value();
+			auto Ai=A.value();
+			auto Bi=B.value();
 			auto [carry,o]=ALU74181::run<Size>(static_cast<ALU74181::Carry>(Cn),
 			                                static_cast<ALU74181::Method>(M),
 			                                S,
@@ -128,17 +128,17 @@ namespace Circuit{
 		}
 
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				std::string fn_str;
 				auto cms=CMS(s);
 				try{
 					fn_str=ALU74181::get_fn_str(
-						static_cast<ALU74181::Carry>(cms.sub<1>(5).get()),
-						static_cast<ALU74181::Method>(cms.sub<1>(4).get()),
-						cms.sub<4>(0).get(),
+						static_cast<ALU74181::Carry>(cms.sub<1>(5).value()),
+						static_cast<ALU74181::Method>(cms.sub<1>(4).value()),
+						cms.sub<4>(0).value(),
 						"A",
 						"B");
-				}catch(const ReadFloating& e){}
+				}catch(const std::bad_optional_access& e){}
 				os<<"CMS="<<cms<<"(O="<<fn_str<<"),A="<<A(s)<<",B="<<B(s)<<",O="<<O(s)<<",Co="<<Co(s);
 			};
 		}
@@ -159,16 +159,16 @@ namespace Circuit{
 			D=Level::Floating;
 			if(ce.is_enable()){
 				if(we.is_enable()){
-					data[A.get()]=D.get();
+					data[A.value()]=D.value();
 				} else if(oe.is_enable()) {
-					D=data[A.get()];
+					D=data[A.value()];
 				}
 			}else{
 				D=Level::Floating;
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<"RAM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
@@ -193,7 +193,7 @@ namespace Circuit{
 				if(we.is_enable()){
 					std::cout<<"[Warning]Try write to ROM"<<std::endl;
 				} else if(oe.is_enable()) {
-					D=data[A.get()];
+					D=data[A.value()];
 				}
 			}else{
 				D=Level::Floating;
@@ -202,7 +202,7 @@ namespace Circuit{
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<"ROM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
@@ -220,16 +220,16 @@ namespace Circuit{
 			A=Level::Floating;
 			B=Level::Floating;
 			if(oe.is_enable()){
-				if(dir.get()==1){
-					B=A.get();
+				if(dir.value()==1){
+					B=A.value();
 				}else{
-					A=B.get();
+					A=B.value();
 				}
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
-				os<<"BUS"<<A(s)<<(dir(s).get()==1?"->":"<-")<<B(s)<<"(oe="<<oe(s)<<")";
+			return [=](std::ostream& os){
+				os<<"BUS"<<A(s)<<(dir(s).value()==1?"->":"<-")<<B(s)<<"(oe="<<oe(s)<<")";
 			};
 		}
 	};
@@ -246,11 +246,11 @@ namespace Circuit{
 		void run() override {
 			Y=-1;
 			if(G.is_enable()){
-				Y.template sub<1>(S.get()).set(0);
+				Y.template sub<1>(S.value()).set(0);
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<"Demux["<<S(s)<<"]"<<Y(s)<<"(G="<<G(s)<<")";
 			};
 		}
@@ -264,11 +264,11 @@ namespace Circuit{
 			add_ports(P,Q,PgtQ,PeqQ);
 		}
 		void run() override{
-			PgtQ=!(P.get()>Q.get());
-			PeqQ=!(P.get()==Q.get());
+			PgtQ=!(P.value()>Q.value());
+			PeqQ=!(P.value()==Q.value());
 		}
 		Util::Printer print(std::span<const Level> s) const override{
-			return [&](std::ostream& os){
+			return [=](std::ostream& os){
 				os<<"Demux"<<P(s)<<"<=>"<<Q(s)<<"(P>Q:"<<PgtQ(s)<<",P==Q:"<<PeqQ<<")";
 			};
 		}
@@ -409,8 +409,7 @@ namespace Circuit{
 		}
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
-				os<<"adder="<<adder.print(adder.save())
-					<<"reg="<<reg.print(reg.save());
+				os<<"adder="<<adder<<"reg="<<reg;
 			};
 		}
 	};
