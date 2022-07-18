@@ -62,11 +62,13 @@ namespace Circuit{
 	};
 
 	struct CPU:Circuit{
+		using addr_t = uint16_t;
+		using op_t = uint8_t;
 		Clock clk,clk_;
 		Port<1> clr;
 
 		Nand<1> nand{"[ClkNot]"};
-		Memory<16,8,8> mem{8,1,"[Memory]"};
+		Memory<16,8,8,8,1,addr_t,op_t> mem{"[Memory]"};
 		CU cu{"[CU]"};
 		ALU<8> alu{"[ALU]"};
 		IOControl ioctl{"[IOctl]"};
@@ -100,6 +102,29 @@ namespace Circuit{
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 		}
+		void init(){
+			clk.set(0);
+			clr.set(0);
+			run();
+			clr.set(1);
+		}
+		bool is_halt(){
+			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
+		}
+		void tick(){
+			clk.clock();
+			run();
+			clk.clock();
+			run();
+		}
+		void tick_op(){
+			do{
+				tick();
+			}while(MARG::getIndex(cu.tbl.A.value())!=0);
+		}
+		addr_t get_reg16(Reg16 reg16) const{
+			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
+		}
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
@@ -120,9 +145,11 @@ namespace Circuit{
 					}
 				}
 
-				for(size_t i=mem.ram.data_size-5;i<mem.ram.data_size;++i){
-					os<<"RAM["<<i<<"]="<<mem.ram.data[i]<<" ";
-				}
+				mem.print_ptrs(os,{
+					{get_reg16(Reg16::PC),"PC"},
+					{get_reg16(Reg16::SP),"SP"},
+					{get_reg16(Reg16::HL),"HL"},
+				},3);
 				os<<std::endl;
 			};
 		}
@@ -144,19 +171,17 @@ int main() {
 	}
 	using namespace Circuit;
 	CPU cpu{"[CPU]"};
-	std::copy(program.begin(), program.end(), cpu.mem.rom.data);
-	Chip::log_read_floating=false;
-	cpu.clr.set(0);
-	cpu.clk.set(0);
-	cpu.run();
-	cpu.clr.set(1);
-std::cout<<std::endl;
-	for(int i=0;i<2150;i++){
-		cpu.clk.clock();
-		cpu.run();
+	cpu.mem.rom.load(program);
+	cpu.init();
+	std::cout<<std::endl;
+	for(int i=0;i<300;i++){
+		cpu.tick_op();
 		std::cout<<i<<std::endl;
 		std::cout<<cpu;
 		std::cout<<std::endl;
+		if(cpu.is_halt()){
+			break;
+		}
 		//std::cout<<cpu.alu<<std::endl;
 	}
 	/*Counter<8> cnt;

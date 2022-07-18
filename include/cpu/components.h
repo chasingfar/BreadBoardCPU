@@ -6,6 +6,10 @@
 #define BBCPU_COMPONENTS_H
 #include "circuit.h"
 #include "alu.h"
+#include <numeric>
+#include <map>
+#include <iomanip>
+#include <sstream>
 #include <ostream>
 #include <string>
 
@@ -352,8 +356,14 @@ namespace Circuit{
 			demux.G.set(0);
 		}
 	};
-	template<size_t ASize=16,size_t DSize=8,size_t CSize=8,typename addr_t=size_t,typename data_t=val_t>
+	template<
+		size_t ASize=16,size_t DSize=8,
+		size_t CSize=8,size_t COff=8,size_t CVal=1,
+		typename addr_t=size_t,typename data_t=val_t
+	>
 	struct Memory:Circuit{
+		constexpr static addr_t addr_min=0;
+		constexpr static addr_t addr_max=(1<<ASize)-1;
 		Port<ASize> addr;
 		Port<DSize> data;
 		Port<1> oe,we;
@@ -362,7 +372,7 @@ namespace Circuit{
 		Nand<1> nand{name+"[NAND]"};
 		RAM<ASize,DSize,addr_t,data_t> ram{name+"[RAM]"};
 		ROM<ASize,DSize,addr_t,data_t> rom{name+"[ROM]"};
-		explicit Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
+		explicit Memory(std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
 			ram.oe.wire(oe);
@@ -379,6 +389,82 @@ namespace Circuit{
 			nand.A.wire(cmp.PeqQ);
 			nand.B.wire(cmp.PgtQ,rom.ce);
 			nand.Y.wire(ram.ce);
+		}
+		static constexpr bool is_ram(addr_t index) { return (index>>COff)>CVal;}
+		static constexpr bool is_dev(addr_t index) { return (index>>COff)==CVal;}
+		static constexpr bool is_rom(addr_t index) { return (index>>COff)<CVal;}
+		std::optional<data_t> get_data(addr_t index) const{
+			if(is_ram(index)){
+				return ram.data[index];
+			}else if(is_rom(index)){
+				return rom.data[index];
+			}
+			return {};
+		}
+		std::string get_data_str(addr_t index) const{
+			if(auto v=get_data(index);v){
+				return std::to_string(*v);
+			}else{
+				return "DEV";
+			}
+		}
+		static std::vector<addr_t> get_ranges(const std::multimap<addr_t,std::string>& ptrs,addr_t d=2){
+			std::vector<addr_t> addrs;
+			for(auto [v,name]:ptrs){
+
+				addr_t s=(v-std::min(addr_min,v)>d)?v-d:std::min(addr_min,v);
+				addr_t e=(std::max(addr_max,v)-v>d)?v+d:std::max(addr_max,v);
+				
+				size_t mid=addrs.size();
+				addrs.resize(mid+1+e-s);
+				
+				std::iota(addrs.begin()+mid,addrs.end(),s);
+		        std::inplace_merge(addrs.begin(), addrs.begin()+mid, addrs.end());
+			}
+		    addrs.erase(std::unique(addrs.begin(), addrs.end()), addrs.end());
+			return addrs;
+		}
+		static std::string get_names(const std::multimap<addr_t,std::string>& ptrs,addr_t v,std::string dem="/"){
+			auto [first,last] = ptrs.equal_range(v);
+			std::string names;
+			for(auto it = first; it != last; ++it ){
+				if(it!=first){ names += dem; }
+				names += it->second;
+			}
+			return names;
+		}
+		void print_ptrs(std::ostream& os,const std::multimap<addr_t,std::string>& ptrs,addr_t d=2) const{
+			std::vector<addr_t> addrs=get_ranges(ptrs,d);
+			std::stringstream addr_ss,data_ss;
+
+			addr_ss<<std::hex;
+			size_t addr_max_size=1+((ASize-1)>>2);
+			for ( auto addr_it = addrs.begin(); addr_it != addrs.end(); ++addr_it ){
+				std::string names=get_names(ptrs,*addr_it,"/");
+				std::string data_str=get_data_str(*addr_it);
+
+				size_t col_size=std::max({names.size(),addr_max_size,data_str.size()});
+				
+				     os<<std::setw(col_size)<<names;
+				addr_ss<<std::setw(col_size)<<*addr_it;
+				data_ss<<std::setw(col_size)<<data_str;
+
+				if(auto it_next=std::next(addr_it);it_next!=addrs.end()){
+					if(*it_next-*addr_it>1){
+						     os<<" ... ";
+						addr_ss<<" ... ";
+						data_ss<<" ... ";
+					}else{
+						     os<<" ";
+						addr_ss<<" ";
+						data_ss<<" ";
+					}
+				}else{
+					             os<<std::endl
+					<<addr_ss.str()<<std::endl
+					<<data_ss.str()<<std::endl;
+				}
+			}
 		}
 	};
 	template<size_t Size>
