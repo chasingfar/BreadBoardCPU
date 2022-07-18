@@ -193,9 +193,9 @@ E	E4	E4	E4	E4	E4	E1
 		}
 	};
 	struct Chip:Component{
-		inline static bool log_read_floating=true;
-		inline static bool log_state=true;
-		inline static bool log_change=true;
+		inline static bool log_read_floating=false;
+		inline static bool log_state=false;
+		inline static bool log_change=false;
 
 		std::vector<Wire*> pins;
 		std::vector<Level> last_state;
