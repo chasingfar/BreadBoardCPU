@@ -352,7 +352,7 @@ namespace Circuit{
 			demux.G.set(0);
 		}
 	};
-	template<size_t ASize=16,size_t DSize=8,size_t CSize=8>
+	template<size_t ASize=16,size_t DSize=8,size_t CSize=8,typename addr_t=size_t,typename data_t=val_t>
 	struct Memory:Circuit{
 		Port<ASize> addr;
 		Port<DSize> data;
@@ -360,8 +360,8 @@ namespace Circuit{
 
 		Cmp<CSize> cmp{name+"[CMP]"};
 		Nand<1> nand{name+"[NAND]"};
-		RAM<ASize,DSize> ram{name+"[RAM]"};
-		ROM<ASize,DSize> rom{name+"[ROM]"};
+		RAM<ASize,DSize,addr_t,data_t> ram{name+"[RAM]"};
+		ROM<ASize,DSize,addr_t,data_t> rom{name+"[ROM]"};
 		explicit Memory(size_t COff=8,size_t CVal=1,std::string name=""):Circuit(std::move(name)){
 			add_comps(cmp,nand,ram,rom);
 
