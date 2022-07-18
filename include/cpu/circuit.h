@@ -9,6 +9,7 @@
 #include <iostream>
 #include <array>
 #include <span>
+#include <optional>
 #include "../util.h"
 
 namespace Circuit{
