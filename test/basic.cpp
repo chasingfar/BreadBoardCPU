@@ -17,9 +17,9 @@ TEST_CASE("load and save","[asm][basic]"){
 	REQUIRE(_STACK_TOP == 34);
 
 	_RUN_OP(save(Reg16::BA));
-	REQUIRE(cpu.RAM[0xABCD]==34);
+	REQUIRE(cpu.mem.ram.data[0xABCD]==34);
 	_RUN_OP(save(Reg16::BA,1));
-	REQUIRE(cpu.RAM[0xABCE]==12);
+	REQUIRE(cpu.mem.ram.data[0xABCE]==12);
 }
 
 TEST_CASE("push and pop","[asm][basic]"){

@@ -93,7 +93,7 @@ namespace BBCPU::OpCode {
 		X(ADD) X(SUB) \
 		X(ADC) X(SUC) \
 
-#include "../define_enum_x.h"
+#include "../../define_enum_x.h"
 		using fn = OPField<3,FN,id>;
 		static layout_t parse(MCode ctx){
 			return {name+" "+std::string(fn::get(ctx.marg)),1};
@@ -141,7 +141,7 @@ namespace BBCPU::OpCode {
 		X(OR ) \
 		X(XOR) \
 
-#include "../define_enum_x.h"
+#include "../../define_enum_x.h"
 		using fn = OPField<2,FN, id>;
 		static layout_t parse(MCode ctx){
 			return {name+" "+fn::get(ctx.marg).str(),1};

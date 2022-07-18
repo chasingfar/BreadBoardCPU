@@ -5,8 +5,203 @@
 #ifndef BBCPU_CPU_CPU_H
 #define BBCPU_CPU_CPU_H
 #include "opcode.h"
+#include "../components.h"
+namespace Circuit::CPU_RegSet_SRAM{
+	using namespace BBCPU;
+
+	template<size_t SelSize=2,size_t Size=8>
+	struct RegCESet:Circuit{
+		static constexpr size_t regs_num=1<<SelSize;
+		Clock clk;
+		Enable en;
+		Port<SelSize> sel;
+		Port<Size> input,output[regs_num];
+
+		Demux<SelSize> demux{name+"[DeMux]"};
+		RegCE<Size> regs[regs_num];
+		RegCESet(std::string name,std::array<std::string,regs_num> reg_names):Circuit(std::move(name)){
+			[&]<size_t ...I>(std::index_sequence<I...>){
+				((regs[I].name=reg_names[I]),...);
+				add_comps(demux,regs[I]...);
+
+				en.wire(demux.G);
+				sel.wire(demux.S);
+				((demux.Y.template sub<1>(I)).wire(regs[I].ce),...);
+				clk.wire(regs[I].clk...);
+				input.wire(regs[I].input...);
+				(output[I].wire(regs[I].output),...);
+			}(std::make_index_sequence<regs_num>{});
+		}
+		explicit RegCESet(const std::string& name=""):RegCESet(
+			name,
+			[name]<size_t ...I>(std::index_sequence<I...>){
+				return std::array{
+					(name+"[Reg"+std::to_string(I)+"]")...
+				};
+			}(std::make_index_sequence<regs_num>{})
+		){}
+	};
+	struct IOControl:Circuit{
+		Port<2> dir;
+		Port<8> F,B,R,M;
+		Enable mem_we,reg_we,reg_oe,mem_oe;
+
+		Demux<2> demux{name+"[DeMux]"};
+		Nand<2> nand{name+"[NAND]"};
+		Bus<8> RiBo{name+"[RiBo]"},
+				RoFi{name+"[RoFi]"},
+				MiBo{name+"[MiBo]"},
+				MoFi{name+"[MoFi]"};
+		explicit IOControl(std::string name=""):Circuit(std::move(name)){
+			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
+
+			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
+			nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we);
+			nand.B.sub<1>(0).wire(demux.Y.sub<1>(2));
+			nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,mem_we);
+			nand.Y.sub<1>(0).wire(RiBo.oe,reg_oe);
+			nand.Y.sub<1>(1).wire(MiBo.oe,mem_oe);
+
+			RiBo.dir.set(1);
+			RoFi.dir.set(0);
+			MiBo.dir.set(1);
+			MoFi.dir.set(0);
+
+			R.wire(RiBo.A,RoFi.A);
+			M.wire(MiBo.A,MoFi.A);
+			B.wire(RiBo.B,MiBo.B);
+			F.wire(RoFi.B,MoFi.B);
+
+			dir.wire(demux.S);
+			demux.G.set(0);
+		}
+	};
+	struct CU:CUBase<MARG::size,MCTRL::size,MARG::opcode::size>{
+		Port<MCTRL::alu::size> CMS;
+		Port<MCTRL::io::Bs::size> bs;
+		Port<MCTRL::io::Rs::size> rs;
+		Port<MCTRL::io::dir::size> dir;
+		Enable rs_en;
+		explicit CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
+			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
+			bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
+			rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
+			dir.wire(tbl.D.sub<MCTRL::io::dir::size>(MCTRL::io::dir::low));
+			rs_en.wire(tbl.D.sub<1>(MCTRL::io::dir::low));
+		}
+	};
+
+	struct CPU:Circuit{
+		using Reg = Regs::Reg;
+		using Reg16 = Regs::Reg16;
+		using addr_t = uint16_t;
+		using op_t = uint8_t;
+
+		Clock clk,clk_;
+		Port<1> clr;
+
+		Nand<1> nand{"[ClkNot]"};
+		Memory<sizeof(addr_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,1,addr_t,op_t> mem{"[Memory]"};
+		CU cu{"[CU]"};
+		ALU<8> alu{"[ALU]"};
+		IOControl ioctl{"[IOctl]"};
+		RegCESet<MCTRL::io::Rs::size,sizeof(op_t)*8> regset{"[RegSet]"};
+		RAM<MCTRL::io::Bs::size,sizeof(op_t)*8> reg{"[RegFile]"};
+		explicit CPU(std::string name=""):Circuit(std::move(name)){
+			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
+
+			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
+			clk_.wire(nand.Y,cu.clk_,reg.ce);
+			clr.wire(cu.clr);
+			alu.Co.wire(cu.Ci);
+			regset.output[RegSet::I.v()].wire(cu.op);
+			regset.output[RegSet::A.v()].wire(alu.A);
+			regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0));
+			regset.output[RegSet::H.v()].wire(mem.addr.sub<8>(8));
+			ioctl.B.wire(alu.B);
+			ioctl.F.wire(alu.O,regset.input);
+			ioctl.R.wire(reg.D);
+			ioctl.M.wire(mem.data);
+			cu.CMS.wire(alu.CMS);
+			cu.bs.wire(reg.A);
+			cu.rs.wire(regset.sel);
+			cu.rs_en.wire(regset.en);
+			cu.dir.wire(ioctl.dir);
+			ioctl.mem_oe.wire(mem.oe);
+			ioctl.mem_we.wire(mem.we);
+			ioctl.reg_oe.wire(reg.oe);
+			ioctl.reg_we.wire(reg.we);
+
+			auto tbl=BBCPU::OpCode::genOpTable();
+			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
+		}
+		void init(){
+			clk.set(0);
+			clr.set(0);
+			run();
+			clr.set(1);
+		}
+		void load(const std::vector<op_t>& data,addr_t start=0){
+			mem.rom.load(data,start);
+		}
+		void load_op(const std::vector<op_t>& op){
+			load(op, get_ptr(Reg16::PC));
+			regset.regs[RegSet::I.v()].output=op[0];
+			cu.sreg.output=MARG::opcode::set(cu.sreg.output.value(),op[0]);
+		}
+		bool is_halt(){
+			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
+		}
+		void tick(){
+			clk.clock();
+			run();
+			clk.clock();
+			run();
+		}
+		void tick_op(){
+			do{
+				tick();
+			}while(MARG::getIndex(cu.tbl.A.value())!=0);
+		}
+		addr_t get_ptr(Reg16 reg16) const{
+			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
+		}
+		op_t read_ptr(Reg16 reg16,int16_t offset=0) const{
+			return mem.get_data(get_ptr(reg16)+offset).value_or(0);
+		}
+		Util::Printer print() const override{
+			return [&](std::ostream& os){
+				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
+				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
+				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
+
+				for(size_t i=0;i<4;++i){
+					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].value()<<" ";
+				}
+				os<<std::endl;
+
+				for(size_t i=0;i<16;++i){
+					os<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<reg.data[i];
+					if(i%8==7){
+						os<<std::endl;
+					}else{
+						os<<" ";
+					}
+				}
+
+				mem.print_ptrs(os,{
+					{get_ptr(Reg16::PC),"PC"},
+					{get_ptr(Reg16::SP),"SP"},
+					{get_ptr(Reg16::HL),"HL"},
+				},3);
+				os<<std::endl;
+			};
+		}
+	};
+}
 namespace BBCPU{
-	struct CPU{
+	using CPU=Circuit::CPU_RegSet_SRAM::CPU;
+	/*struct CPU{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
 		using op_t = uint8_t;
@@ -131,6 +326,6 @@ namespace BBCPU{
 				std::cout<<std::endl;
 			}
 		}
-	};
+	};*/
 }
 #endif //BBCPU_CPU_H

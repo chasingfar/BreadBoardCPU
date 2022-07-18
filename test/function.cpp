@@ -330,9 +330,9 @@ TEST_CASE("function pointer","[asm][function]"){
 		global,
 		heap
 	},{aa});
-	REQUIRE(cpu.RAM[*heap] == 3);
+	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 3);
 	run(cpu);
-	REQUIRE(cpu.RAM[*heap] == 4);
+	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 4);
 	REQUIRE(_REG16(BA) == *heap);
 }
 TEST_CASE("library function","[asm][function]"){

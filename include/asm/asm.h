@@ -13,7 +13,7 @@ namespace BBCPU::ASM {
 		if (!fout) { return; }
 		fout<<ROM(program);
 	}
-	inline void simulate(const std::string& name,auto program) {
+	/*inline void simulate(const std::string& name,auto program) {
 		std::cout<<name<<std::endl;
 		CPU cpu;
 		cpu.load(program);
@@ -24,7 +24,7 @@ namespace BBCPU::ASM {
 			cpu.print_stack();
 			std::cout<<std::endl;
 		}
-	}
+	}*/
 	inline void generateASMROM() {
 		ASM program{};
 		generate("program",program

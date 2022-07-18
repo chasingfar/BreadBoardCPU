@@ -180,8 +180,8 @@ namespace Circuit{
 				os<<"data["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
-		void load(const std::vector<data_t>& new_data){
-			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size), data);
+		void load(const std::vector<data_t>& new_data,addr_t start=0){
+			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size-start), &data[start]);
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
@@ -261,38 +261,6 @@ namespace Circuit{
 		}
 	};
 
-	template<size_t SelSize=2,size_t Size=8>
-	struct RegCESet:Circuit{
-		static constexpr size_t regs_num=1<<SelSize;
-		Clock clk;
-		Enable en;
-		Port<SelSize> sel;
-		Port<Size> input,output[regs_num];
-
-		Demux<SelSize> demux{name+"[DeMux]"};
-		RegCE<Size> regs[regs_num];
-		RegCESet(std::string name,std::array<std::string,regs_num> reg_names):Circuit(std::move(name)){
-			[&]<size_t ...I>(std::index_sequence<I...>){
-				((regs[I].name=reg_names[I]),...);
-				add_comps(demux,regs[I]...);
-
-				en.wire(demux.G);
-				sel.wire(demux.S);
-				((demux.Y.template sub<1>(I)).wire(regs[I].ce),...);
-				clk.wire(regs[I].clk...);
-				input.wire(regs[I].input...);
-				(output[I].wire(regs[I].output),...);
-			}(std::make_index_sequence<regs_num>{});
-		}
-		explicit RegCESet(const std::string& name=""):RegCESet(
-			name,
-			[name]<size_t ...I>(std::index_sequence<I...>){
-				return std::array{
-					(name+"[Reg"+std::to_string(I)+"]")...
-				};
-			}(std::make_index_sequence<regs_num>{})
-		){}
-	};
 	template<size_t ASize=19,size_t DSize=32,size_t OPSize=8>
 	struct CUBase:Circuit{
 		static constexpr size_t CSize=1;
@@ -319,41 +287,6 @@ namespace Circuit{
 			tbl.ce.set(0);
 			tbl.we.set(1);
 			tbl.oe.set(0);
-		}
-	};
-	struct IOControl:Circuit{
-		Port<2> dir;
-		Port<8> F,B,R,M;
-		Enable mem_we,reg_we,reg_oe,mem_oe;
-
-		Demux<2> demux{name+"[DeMux]"};
-		Nand<2> nand{name+"[NAND]"};
-		Bus<8> RiBo{name+"[RiBo]"},
-			RoFi{name+"[RoFi]"},
-			MiBo{name+"[MiBo]"},
-			MoFi{name+"[MoFi]"};
-		explicit IOControl(std::string name=""):Circuit(std::move(name)){
-			add_comps(demux,nand,RiBo,RoFi,MiBo,MoFi);
-
-			nand.A.sub<1>(1).wire(demux.Y.sub<1>(0));
-			nand.A.sub<1>(0).wire(demux.Y.sub<1>(1),RoFi.oe,reg_we);
-			nand.B.sub<1>(0).wire(demux.Y.sub<1>(2));
-			nand.B.sub<1>(1).wire(demux.Y.sub<1>(3),MoFi.oe,mem_we);
-			nand.Y.sub<1>(0).wire(RiBo.oe,reg_oe);
-			nand.Y.sub<1>(1).wire(MiBo.oe,mem_oe);
-
-			RiBo.dir.set(1);
-			RoFi.dir.set(0);
-			MiBo.dir.set(1);
-			MoFi.dir.set(0);
-
-			R.wire(RiBo.A,RoFi.A);
-			M.wire(MiBo.A,MoFi.A);
-			B.wire(RiBo.B,MiBo.B);
-			F.wire(RoFi.B,MoFi.B);
-			
-			dir.wire(demux.S);
-			demux.G.set(0);
 		}
 	};
 	template<

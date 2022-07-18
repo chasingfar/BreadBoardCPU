@@ -10,7 +10,7 @@
 #include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"*/
-#include "include/cpu/components.h"
+#include "include/cpu/regset_sram/cpu.h"
 #include "include/lang/lang.h"
 /*struct B:std::enable_shared_from_this<B>{
 	int i;
@@ -42,119 +42,6 @@ struct A{
 		return c;
 	}
 };*/
-namespace Circuit{
-	using namespace BBCPU;
-	using namespace Regs;
-
-	struct CU:CUBase<MARG::size,MCTRL::size,MARG::opcode::size>{
-		Port<MCTRL::alu::size> CMS;
-		Port<MCTRL::io::Bs::size> bs;
-		Port<MCTRL::io::Rs::size> rs;
-		Port<MCTRL::io::dir::size> dir;
-		Enable rs_en;
-		explicit CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
-			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
-			 bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
-			 rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
-			dir.wire(tbl.D.sub<MCTRL::io::dir::size>(MCTRL::io::dir::low));
-			rs_en.wire(tbl.D.sub<1>(MCTRL::io::dir::low));
-		}
-	};
-
-	struct CPU:Circuit{
-		using addr_t = uint16_t;
-		using op_t = uint8_t;
-		Clock clk,clk_;
-		Port<1> clr;
-
-		Nand<1> nand{"[ClkNot]"};
-		Memory<16,8,8,8,1,addr_t,op_t> mem{"[Memory]"};
-		CU cu{"[CU]"};
-		ALU<8> alu{"[ALU]"};
-		IOControl ioctl{"[IOctl]"};
-		RegCESet<MCTRL::io::Rs::size,8> regset{"[RegSet]"};
-		RAM<MCTRL::io::Bs::size,8> reg{"[RegFile]"};
-		explicit CPU(std::string name=""):Circuit(std::move(name)){
-			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
-
-			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
-			clk_.wire(nand.Y,cu.clk_,reg.ce);
-			clr.wire(cu.clr);
-			alu.Co.wire(cu.Ci);
-			regset.output[RegSet::I.v()].wire(cu.op);
-			regset.output[RegSet::A.v()].wire(alu.A);
-			regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0));
-			regset.output[RegSet::H.v()].wire(mem.addr.sub<8>(8));
-			ioctl.B.wire(alu.B);
-			ioctl.F.wire(alu.O,regset.input);
-			ioctl.R.wire(reg.D);
-			ioctl.M.wire(mem.data);
-			cu.CMS.wire(alu.CMS);
-			cu.bs.wire(reg.A);
-			cu.rs.wire(regset.sel);
-			cu.rs_en.wire(regset.en);
-			cu.dir.wire(ioctl.dir);
-			ioctl.mem_oe.wire(mem.oe);
-			ioctl.mem_we.wire(mem.we);
-			ioctl.reg_oe.wire(reg.oe);
-			ioctl.reg_we.wire(reg.we);
-
-			auto tbl=BBCPU::OpCode::genOpTable();
-			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
-		}
-		void init(){
-			clk.set(0);
-			clr.set(0);
-			run();
-			clr.set(1);
-		}
-		bool is_halt(){
-			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
-		}
-		void tick(){
-			clk.clock();
-			run();
-			clk.clock();
-			run();
-		}
-		void tick_op(){
-			do{
-				tick();
-			}while(MARG::getIndex(cu.tbl.A.value())!=0);
-		}
-		addr_t get_reg16(Reg16 reg16) const{
-			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
-		}
-		Util::Printer print() const override{
-			return [&](std::ostream& os){
-				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
-				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
-				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
-				
-				for(size_t i=0;i<4;++i){
-					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].value()<<" ";
-				}
-				os<<std::endl;
-				
-				for(size_t i=0;i<16;++i){
-					os<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<reg.data[i];
-					if(i%8==7){
-						os<<std::endl;
-					}else{
-						os<<" ";
-					}
-				}
-
-				mem.print_ptrs(os,{
-					{get_reg16(Reg16::PC),"PC"},
-					{get_reg16(Reg16::SP),"SP"},
-					{get_reg16(Reg16::HL),"HL"},
-				},3);
-				os<<std::endl;
-			};
-		}
-	};
-}
 int main() {
 	BBCPU::ASM::ops_t program;
 	{
@@ -169,8 +56,7 @@ int main() {
 			halt(),
 		});
 	}
-	using namespace Circuit;
-	CPU cpu{"[CPU]"};
+	BBCPU::CPU cpu{"[CPU]"};
 	cpu.mem.rom.load(program);
 	cpu.init();
 	std::cout<<std::endl;

@@ -4,7 +4,7 @@
 
 #ifndef BBCPU_LIBRARY_H
 #define BBCPU_LIBRARY_H
-
+#include <unordered_map>
 #include "operator.h"
 namespace BBCPU::ASM::Library{
 	struct Lib{

@@ -18,7 +18,7 @@ namespace BBCPU{
 			X(E  ) X(F  ) \
 			X(L  ) X(H  ) \
 
-		#include "../define_enum_x.h"
+		#include "../../define_enum_x.h"
 
 
 		#define ENUM_NAME(...) UReg##__VA_ARGS__
@@ -32,7 +32,7 @@ namespace BBCPU{
 		Reg toReg() const { return Reg(v()+(Reg::A).v());} \
 		explicit operator Reg() const {return toReg();}    \
 
-		#include "../define_enum_x.h"
+		#include "../../define_enum_x.h"
 
 		#define ENUM_NAME(...) Reg16##__VA_ARGS__
 		#define ENUM_TABLE \
@@ -51,7 +51,7 @@ namespace BBCPU{
 		Reg L() const {return Reg(toReg().v()+0);} \
 		Reg H() const {return Reg(toReg().v()+1);} \
 
-		#include "../define_enum_x.h"
+		#include "../../define_enum_x.h"
 
 
 		#define ENUM_NAME(...) UReg16##__VA_ARGS__
@@ -71,7 +71,7 @@ namespace BBCPU{
 		UReg L() const {return UReg(toUReg().v()+0);} \
 		UReg H() const {return UReg(toUReg().v()+1);} \
 
-		#include "../define_enum_x.h"
+		#include "../../define_enum_x.h"
 
 
 		#define ENUM_NAME(...) RegSet##__VA_ARGS__
@@ -81,7 +81,7 @@ namespace BBCPU{
 			X(L ) \
 			X(H ) \
 
-		#include "../define_enum_x.h"
+		#include "../../define_enum_x.h"
 
 		static Reg user(UReg ureg){
 			return ureg.toReg();
