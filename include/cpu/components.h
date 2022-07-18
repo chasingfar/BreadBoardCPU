@@ -144,67 +144,50 @@ namespace Circuit{
 		}
 	};
 	
-	template<size_t ASize=19,size_t DSize=8>
+	template<size_t ASize=19,size_t DSize=8,typename addr_t=size_t,typename data_t=val_t>
 	struct RAM:Chip{
 		static constexpr size_t data_size=1<<ASize;
 		Enable ce,oe,we;
 		Port<ASize> A;
 		Port<DSize> D;
-		val_t data[data_size]{0};
+		data_t data[data_size]{0};
 
 		explicit RAM(std::string name=""):Chip(std::move(name)){
 			add_ports(ce,oe,we,A,D);
+		}
+		virtual void do_write(){
+			data[A.value()]=D.value();
+		}
+		virtual void do_read(){
+			D=data[A.value()];
 		}
 		void run() override {
 			D=Level::Floating;
 			if(ce.is_enable()){
 				if(we.is_enable()){
-					data[A.value()]=D.value();
+					do_write();
 				} else if(oe.is_enable()) {
-					D=data[A.value()];
+					do_read();
 				}
-			}else{
-				D=Level::Floating;
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{
 			return [=](std::ostream& os){
-				os<<"RAM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
+				os<<"data["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
 			};
 		}
-	};
-	template<size_t ASize=19,size_t DSize=8>
-	struct ROM:Chip{
-		static constexpr size_t data_size=1<<ASize;
-		Enable ce,oe,we;
-		Port<ASize> A;
-		Port<DSize> D;
-		val_t data[data_size]{0};
-
-		explicit ROM(std::string name=""):Chip(std::move(name)){
-			add_ports(ce,oe,we,A,D);
-		}
-		void load(const std::vector<val_t>& new_data){
+		void load(const std::vector<data_t>& new_data){
 			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size), data);
-		}
-
-		void run() override {
-			if(ce.is_enable()){
-				if(we.is_enable()){
-					std::cout<<"[Warning]Try write to ROM"<<std::endl;
-				} else if(oe.is_enable()) {
-					D=data[A.value()];
-				}
-			}else{
-				D=Level::Floating;
-			}
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
-		Util::Printer print(std::span<const Level> s) const override{
-			return [=](std::ostream& os){
-				os<<"ROM["<<A(s)<<"]="<<D(s)<<"(cow="<<ce(s)<<oe(s)<<we(s)<<")";
-			};
+	};
+	template<size_t ASize=19,size_t DSize=8,typename addr_t=size_t,typename data_t=val_t>
+	struct ROM:RAM<ASize,DSize,addr_t,data_t>{
+		using Base=RAM<ASize,DSize,addr_t,data_t>;
+		explicit ROM(std::string name=""):Base(std::move(name)){}
+		void do_write() override{
+			std::cout<<"[Warning]Try write to ROM"<<std::endl;
 		}
 	};
 	template<size_t Size=8>
