@@ -284,11 +284,9 @@ namespace Circuit{
 
 		Demux<SelSize> demux{name+"[DeMux]"};
 		RegCE<Size> regs[regs_num];
-		explicit RegCESet(std::string name=""):Circuit(std::move(name)){
-			for(size_t i=0;i<regs_num;++i){
-				regs[i].name=Circuit::name+"[Reg"+std::to_string(i)+"]";
-			}
+		RegCESet(std::string name,std::array<std::string,regs_num> reg_names):Circuit(std::move(name)){
 			[&]<size_t ...I>(std::index_sequence<I...>){
+				((regs[I].name=reg_names[I]),...);
 				add_comps(demux,regs[I]...);
 
 				en.wire(demux.G);
@@ -299,6 +297,14 @@ namespace Circuit{
 				(output[I].wire(regs[I].output),...);
 			}(std::make_index_sequence<regs_num>{});
 		}
+		explicit RegCESet(const std::string& name=""):RegCESet(
+			name,
+			[name]<size_t ...I>(std::index_sequence<I...>){
+				return std::array{
+					(name+"[Reg"+std::to_string(I)+"]")...
+				};
+			}(std::make_index_sequence<regs_num>{})
+		){}
 	};
 	template<size_t ASize=19,size_t DSize=32,size_t OPSize=8>
 	struct CUBase:Circuit{
