@@ -221,13 +221,12 @@ E	E4	E4	E4	E4	E4	E1
 				return false;
 			}
 			auto new_state=save();
-			if(log_state||log_change){ std::cout<<name<<"{"<<print(before)<<"}"; }
 			if(before!=new_state){
 				last_state=new_state;
-				if(log_change){ std::cout<<"{"<<print(new_state)<<"}"<<std::endl; }
+				if(log_change){ std::cout<<name<<"{"<<print(before)<<"}=>{"<<print(new_state)<<"}"<<std::endl; }
 				return true;
 			}
-			if(log_state){std::cout<<std::endl;}
+			if(log_state){std::cout<<name<<"{"<<print(before)<<"}"<<std::endl;}
 			return false;
 		}
 
