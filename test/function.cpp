@@ -10,7 +10,8 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 	auto [a,b]=fn.args;
 	auto [c,d]=fn.vars<UInt8, UInt8>();
 	Label main,aa,bb,cc,dd;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		fn.impl({
 			aa,
@@ -70,7 +71,8 @@ TEST_CASE("function nest call","[asm][function]"){
 	auto [b]=bar.args;
 	auto [d]=bar.vars<UInt8>();
 	Label main,aa,bb,cc,dd;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		foo.impl({
 			c.set(a+2_u8),
@@ -112,7 +114,8 @@ TEST_CASE("function recursion","[asm][function]"){
 	Fn<UInt8,UInt8> fib{"fib(i)"};
 
 	Label main;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		fib.impl([&](auto& _,auto i){
 			return code_t{
@@ -144,7 +147,8 @@ TEST_CASE("function sum","[asm][function]"){
 	Fn<UInt8,UInt8> sum{"sum(n)"};
 
 	Label main;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		sum.impl([&](auto& _,UInt8 n){
 			UInt8 s{_};
@@ -164,7 +168,8 @@ TEST_CASE("function sum","[asm][function]"){
 	REQUIRE(_STACK_TOP==21);
 }
 TEST_CASE("inplace function","[asm][function]"){
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
@@ -180,7 +185,8 @@ TEST_CASE("inplace function","[asm][function]"){
 	REQUIRE(_REG(A)==0xbf);
 }
 TEST_CASE("inplace function 2","[asm][function]"){
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
@@ -202,7 +208,8 @@ TEST_CASE("function with custom type","[asm][function]"){
 	auto [x,y,z]=vec.extract();
 	
 	Label main;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		fn.impl({
 			x+=1_u8,
@@ -228,7 +235,8 @@ TEST_CASE("function with union","[asm][function]"){
 	auto [t_u8,t_u16,t_arr]=t.extract();
 	
 	Label main;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		fn.impl({
 			RegVars::C=t_u8,
@@ -253,7 +261,8 @@ TEST_CASE("function with array","[asm][function]"){
 	auto [arr]=fn.args;
 	
 	Label main;
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		jmp(main),
 		fn.impl({
 			arr[0]+=1_u8,
@@ -319,7 +328,8 @@ TEST_CASE("function pointer","[asm][function]"){
 			_._return((UInt16)i),
 		};
 	}};
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		main(),
 		pop(Reg::B),
 		pop(Reg::A),
@@ -339,7 +349,8 @@ TEST_CASE("library function","[asm][function]"){
 	using namespace Library;
 	Label main;
 	stdlib.clear();
-	CPU cpu=run({
+	CPU cpu;
+	load_run(cpu,{
 		3_u8*5_u8+6_u8*7_u8,
 		halt(),
 		stdlib,
