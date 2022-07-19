@@ -182,6 +182,7 @@ namespace Circuit{
 		}
 		void load(const std::vector<data_t>& new_data,addr_t start=0){
 			std::copy_n(new_data.begin(), std::min(new_data.size(),data_size-start), &data[start]);
+			run();
 		}
 		auto begin() { return &data[0]; }
 		auto end()   { return ++(&data[data_size]); }
@@ -326,6 +327,15 @@ namespace Circuit{
 		static constexpr bool is_ram(addr_t index) { return (index>>COff)>CVal;}
 		static constexpr bool is_dev(addr_t index) { return (index>>COff)==CVal;}
 		static constexpr bool is_rom(addr_t index) { return (index>>COff)<CVal;}
+		void load(const std::vector<data_t>& new_data,addr_t start=0){
+			size_t end=start+new_data.size();
+			if(is_rom(start)&&is_rom(end)){
+				rom.load(new_data,start);
+			}
+			if(is_ram(start)&&is_ram(end)){
+				ram.load(new_data,start);
+			}
+		}
 		std::optional<data_t> get_data(addr_t index) const{
 			if(is_ram(index)){
 				return ram.data[index];

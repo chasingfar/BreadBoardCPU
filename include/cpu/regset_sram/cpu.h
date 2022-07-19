@@ -143,7 +143,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 			clr.set(1);
 		}
 		void load(const std::vector<op_t>& data,addr_t start=0){
-			mem.rom.load(data,start);
+			mem.load(data,start);
 		}
 		void load_op(const std::vector<op_t>& op){
 			load(op, get_ptr(Reg16::PC));
