@@ -165,7 +165,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 		void tick_op(){
 			do{
 				tick();
-			}while(MARG::getIndex(cu.tbl.A.value())!=0);
+			}while(MCTRL::state::index::get(cu.tbl.D.value())!=0);
 		}
 		addr_t get_ptr(Reg16 reg16) const{
 			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
