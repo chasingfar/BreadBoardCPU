@@ -96,6 +96,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 		using Reg16 = Regs::Reg16;
 		using addr_t = uint16_t;
 		using op_t = uint8_t;
+		size_t tick_count=0;
 
 		Clock clk,clk_;
 		Port<1> clr;
@@ -153,6 +154,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
 		}
 		void tick(){
+			++tick_count;
 			clk.clock();
 			run();
 			clk.clock();
@@ -174,6 +176,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
+				os<<"TICK:"<<tick_count<<std::endl;
 
 				for(size_t i=0;i<4;++i){
 					os<<"RS["<<RegSet(i).str()<<"]="<<regset.output[i].value()<<" ";
