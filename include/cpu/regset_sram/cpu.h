@@ -149,8 +149,8 @@ namespace Circuit::CPU_RegSet_SRAM{
 		}
 		void load_op(const std::vector<op_t>& op){
 			load(op, get_ptr(Reg16::PC));
-			regset.regs[RegSet::I.v()].output=op[0];
-			cu.sreg.output=MARG::opcode::set(cu.sreg.output.value(),op[0]);
+			regset.regs[RegSet::I.v()].output=regset.regs[RegSet::I.v()].data=op[0];
+			cu.sreg.output=cu.sreg.data=MARG::opcode::set(cu.sreg.input.value(),op[0]);
 		}
 		bool is_halt(){
 			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
