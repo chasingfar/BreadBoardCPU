@@ -153,7 +153,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 			cu.sreg.output=cu.sreg.data=MARG::opcode::set(cu.sreg.input.value(),op[0]);
 		}
 		bool is_halt(){
-			return MARG::opcode::get(cu.tbl.A.value())==OpCode::Ops::Halt::id::id;
+			return regset.regs[RegSet::I.v()].output.value()==OpCode::Ops::Halt::id::id;
 		}
 		void tick(){
 			++tick_count;
