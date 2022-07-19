@@ -135,12 +135,14 @@ namespace Circuit::CPU_RegSet_SRAM{
 
 			auto tbl=BBCPU::OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
+			init();
 		}
 		void init(){
 			clk.set(0);
 			clr.set(0);
 			run();
 			clr.set(1);
+			run();
 		}
 		void load(const std::vector<op_t>& data,addr_t start=0){
 			mem.load(data,start);
