@@ -38,7 +38,7 @@ namespace BBCPU::ASM {
 	using Void = Type<0>;
 
 	namespace Val{
-		inline static const Void _void{code_t{}};
+		inline static const Void void_{code_t{}};
 	}
 
 	template<typename To,typename From>
@@ -166,8 +166,8 @@ namespace BBCPU::ASM {
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
 	namespace Val{
-		inline static const Bool _true{imm(1)};
-		inline static const Bool _false{imm(0)};
+		inline static const Bool true_{imm(1)};
+		inline static const Bool false_{imm(0)};
 	}
 
 	template<typename T>

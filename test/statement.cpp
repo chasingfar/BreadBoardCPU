@@ -15,11 +15,11 @@ TEST_CASE("block","[asm][statement]"){
 		imm(Reg::A,15),
 		halt(),
 	}},{a,b});
-	REQUIRE(_REG(A)==5);
+	REQUIRE(REG_(A) == 5);
 	run(cpu,{a,b});
-	REQUIRE(_REG(A)==10);
+	REQUIRE(REG_(A) == 10);
 	run(cpu,{a,b});
-	REQUIRE(_REG(A)==15);
+	REQUIRE(REG_(A) == 15);
 }
 
 TEST_CASE("if","[asm][statement]"){
@@ -33,7 +33,7 @@ TEST_CASE("if","[asm][statement]"){
 			},
 			halt(),
 		});
-		REQUIRE(_REG(A)==5);
+		REQUIRE(REG_(A) == 5);
 	}
 	SECTION("if false"){
 		cpu.init();
@@ -44,7 +44,7 @@ TEST_CASE("if","[asm][statement]"){
 			},
 			halt(),
 		});
-		REQUIRE(_REG(A)==6);
+		REQUIRE(REG_(A) == 6);
 	}
 }
 TEST_CASE("while","[asm][statement]"){
@@ -65,7 +65,7 @@ TEST_CASE("while","[asm][statement]"){
 		}}},
 		halt(),
 	});
-	REQUIRE(_REG(A)==6);
+	REQUIRE(REG_(A) == 6);
 	REQUIRE(cpu.is_halt()==true);
 }
 
@@ -75,11 +75,11 @@ TEST_CASE("static variable","[asm][statement]"){
 	auto [b,c]=vars.preset_vars<UInt8,UInt8>({12_op},{34_op});
 
 	CPU cpu;
-	_LOAD_TO(MEM::ram_min,vars);
+	LOAD_TO_(MEM::ram_min, vars);
 
-	REQUIRE(_STATIC(vars,a)==0);
-	REQUIRE(_STATIC(vars,b)==12);
-	REQUIRE(_STATIC(vars,c)==34);
+	REQUIRE(STATIC_(vars, a) == 0);
+	REQUIRE(STATIC_(vars, b) == 12);
+	REQUIRE(STATIC_(vars, c) == 34);
 
 	load_run(cpu,{
 		a.set(56_u8),
@@ -88,9 +88,9 @@ TEST_CASE("static variable","[asm][statement]"){
 		halt(),
 	});
 
-	REQUIRE(_STATIC(vars,a)==56);
-	REQUIRE(_STATIC(vars,b)==78);
-	REQUIRE(_STATIC(vars,c)==90);
+	REQUIRE(STATIC_(vars, a) == 56);
+	REQUIRE(STATIC_(vars, b) == 78);
+	REQUIRE(STATIC_(vars, c) == 90);
 }
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	struct Vec:Struct<UInt8,UInt8,UInt8>{};
@@ -99,11 +99,11 @@ TEST_CASE("static variable with custom type","[asm][statement]"){
 	auto [x,y,z]=vec.extract();
 	
 	CPU cpu;
-	_LOAD_TO(MEM::ram_min,vars);
+	LOAD_TO_(MEM::ram_min, vars);
 
-	REQUIRE(_STATIC(vars,x)==3);
-	REQUIRE(_STATIC(vars,y)==7);
-	REQUIRE(_STATIC(vars,z)==11);
+	REQUIRE(STATIC_(vars, x) == 3);
+	REQUIRE(STATIC_(vars, y) == 7);
+	REQUIRE(STATIC_(vars, z) == 11);
 
 	load_run(cpu,{
 		x.set(x+1_u8),
@@ -112,9 +112,9 @@ TEST_CASE("static variable with custom type","[asm][statement]"){
 		halt(),
 	});
 	
-	REQUIRE(_STATIC(vars,x)==4);
-	REQUIRE(_STATIC(vars,y)==9);
-	REQUIRE(_STATIC(vars,z)==14);
+	REQUIRE(STATIC_(vars, x) == 4);
+	REQUIRE(STATIC_(vars, y) == 9);
+	REQUIRE(STATIC_(vars, z) == 14);
 }
 
 TEST_CASE("big variable","[asm][statement]"){
@@ -125,8 +125,8 @@ TEST_CASE("big variable","[asm][statement]"){
 		pop(Reg::A),
 		halt(),
 	});
-	REQUIRE(_REG(B)==0x45);
-	REQUIRE(_REG(A)==0xbf);
+	REQUIRE(REG_(B) == 0x45);
+	REQUIRE(REG_(A) == 0xbf);
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
@@ -144,119 +144,119 @@ TEST_CASE("if cmp","[asm][statement]"){
 		SECTION("if !0") {
 			cpu.init();
 			load_run(cpu,_if(!0_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if !123") {
 			cpu.init();
 			load_run(cpu,_if(!123_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if !255") {
 			cpu.init();
 			load_run(cpu,_if(!255_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if !=") {
 		SECTION("if 3!=5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 != 5_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3!=3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 != 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5!=3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 != 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 	}
 	SECTION("if ==") {
 		SECTION("if 3==5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 == 5_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3==3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 == 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5==3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 == 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if >=") {
 		SECTION("if 3>=5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 >= 5_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3>=3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 >= 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5>=3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 >= 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 	}
 	SECTION("if <") {
 		SECTION("if 3<5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 < 5_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3<3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 < 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5<3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 < 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if <=") {
 		SECTION("if 3<=5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 <= 5_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3<=3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 <= 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5<=3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 <= 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if >") {
 		SECTION("if 3>5") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 > 5_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3>3") {
 			cpu.init();
 			load_run(cpu,_if(3_u8 > 3_u8));
-			REQUIRE(_REG(A) == F);
+			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5>3") {
 			cpu.init();
 			load_run(cpu,_if(5_u8 > 3_u8));
-			REQUIRE(_REG(A) == T);
+			REQUIRE(REG_(A) == T);
 		}
 	}
 }

@@ -31,26 +31,26 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 		halt(),
 	}, {aa});
 
-	REQUIRE(_LOCAL(a)==8);
-	REQUIRE(_LOCAL(b)==3);
+	REQUIRE(LOCAL_(a) == 8);
+	REQUIRE(LOCAL_(b) == 3);
 
 	run(cpu,{bb});
-	REQUIRE(_REG(A)==8);
-	REQUIRE(_REG(B)==3);
+	REQUIRE(REG_(A) == 8);
+	REQUIRE(REG_(B) == 3);
 
 	run(cpu,{cc});
-	REQUIRE(_REG(C)==11);
-	REQUIRE(_REG(D)==5);
+	REQUIRE(REG_(C) == 11);
+	REQUIRE(REG_(D) == 5);
 
 	run(cpu,{dd});
-	REQUIRE(_LOCAL(c)==11);
-	REQUIRE(_LOCAL(d)==5);
+	REQUIRE(LOCAL_(c) == 11);
+	REQUIRE(LOCAL_(d) == 5);
 
 	run(cpu);
-	REQUIRE(_REG(A)==8);
-	REQUIRE(_REG(B)==3);
-	REQUIRE(_REG(C)==11);
-	REQUIRE(_REG(D)==5);
+	REQUIRE(REG_(A) == 8);
+	REQUIRE(REG_(B) == 3);
+	REQUIRE(REG_(C) == 11);
+	REQUIRE(REG_(D) == 5);
 }
 TEST_CASE("function nest call","[asm][function]"){
 	/*
@@ -77,27 +77,27 @@ TEST_CASE("function nest call","[asm][function]"){
 		foo.impl({
 			c.set(a+2_u8),
 			aa,
-			foo._return(bar(c)+c)
+			foo.return_(bar(c) + c)
 		}),
 		bar.impl({
 			d.set(b+6_u8),
 			bb,
-			bar._return(d),
+			bar.return_(d),
 		}),
 		main,
 		foo(8_u8),
 		halt(),
 	}, {aa});
 
-	REQUIRE(_LOCAL(a)==8);
-	REQUIRE(_LOCAL(c)==10);
+	REQUIRE(LOCAL_(a) == 8);
+	REQUIRE(LOCAL_(c) == 10);
 
 	run(cpu,{bb});
-	REQUIRE(_LOCAL(b)==10);
-	REQUIRE(_LOCAL(d)==16);
+	REQUIRE(LOCAL_(b) == 10);
+	REQUIRE(LOCAL_(d) == 16);
 
 	run(cpu);
-	REQUIRE(_STACK_TOP==26);
+	REQUIRE(STACK_TOP_ == 26);
 }
 
 TEST_CASE("function recursion","[asm][function]"){
@@ -120,9 +120,9 @@ TEST_CASE("function recursion","[asm][function]"){
 		fib.impl([&](auto& _,auto i){
 			return code_t{
 				IF{i<2_u8, {
-					_._return(i),
+					_.return_(i),
 				}, {
-					_._return(fib(i - 1_u8) + fib(i - 2_u8)),
+					_.return_(fib(i - 1_u8) + fib(i - 2_u8)),
 				}},
 			};
 		}),
@@ -130,7 +130,7 @@ TEST_CASE("function recursion","[asm][function]"){
 		fib(6_u8),
 		halt(),
 	});
-	REQUIRE(_STACK_TOP==8);
+	REQUIRE(STACK_TOP_ == 8);
 }
 TEST_CASE("function sum","[asm][function]"){
 	/*
@@ -158,14 +158,14 @@ TEST_CASE("function sum","[asm][function]"){
 					s+=n,
 					n-=1_u8,
 				}}},
-				sum._return(s),
+				sum.return_(s),
 			};
 		}),
 		main,
 		sum(6_u8),
 		halt(),
 	});
-	REQUIRE(_STACK_TOP==21);
+	REQUIRE(STACK_TOP_ == 21);
 }
 TEST_CASE("inplace function","[asm][function]"){
 	CPU cpu;
@@ -175,14 +175,14 @@ TEST_CASE("inplace function","[asm][function]"){
 		InplaceFn<UInt16(UInt8,UInt8,UInt8,UInt8)>{
 			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
 			return {
-				_._return(UInt16::make(add(a,c),adc(b,d))),
+				_.return_(UInt16::make(add(a, c), adc(b, d))),
 			};
 		}},
 		pop(Reg::B),
 		pop(Reg::A),
 	});
-	REQUIRE(_REG(B)==0x45);
-	REQUIRE(_REG(A)==0xbf);
+	REQUIRE(REG_(B) == 0x45);
+	REQUIRE(REG_(A) == 0xbf);
 }
 TEST_CASE("inplace function 2","[asm][function]"){
 	CPU cpu;
@@ -198,8 +198,8 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 	});
-	REQUIRE(_REG(B)==0x45);
-	REQUIRE(_REG(A)==0xbf);
+	REQUIRE(REG_(B) == 0x45);
+	REQUIRE(REG_(A) == 0xbf);
 }
 TEST_CASE("function with custom type","[asm][function]"){
 	using Vec=Struct<UInt8,UInt8,UInt8>;
@@ -215,7 +215,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 			x+=1_u8,
 			y+=2_u8,
 			vec.get<2>()+=3_u8,
-			fn._return(vec),
+			fn.return_(vec),
 		}),
 		main,
 		fn(Vec::make(3_u8,7_u8,11_u8)),
@@ -224,9 +224,9 @@ TEST_CASE("function with custom type","[asm][function]"){
 		pop(Reg::C),
 		halt(),
 	});
-	REQUIRE(_REG(C)==4);
-	REQUIRE(_REG(B)==9);
-	REQUIRE(_REG(A)==14);
+	REQUIRE(REG_(C) == 4);
+	REQUIRE(REG_(B) == 9);
+	REQUIRE(REG_(A) == 14);
 }
 TEST_CASE("function with union","[asm][function]"){
 	using T=Union<UInt8, UInt16, Array<UInt8, 2>>;
@@ -242,7 +242,7 @@ TEST_CASE("function with union","[asm][function]"){
 			RegVars::C=t_u8,
 			RegVars::D=t_arr[0],
 			RegVars::E=t_arr[1],
-			fn._return(t_u16),
+			fn.return_(t_u16),
 		}),
 		main,
 		fn(T::make(0x1234_u16)),
@@ -250,11 +250,11 @@ TEST_CASE("function with union","[asm][function]"){
 		pop(Reg::B),
 		halt(),
 	});
-	REQUIRE(_REG(A)==0x12);
-	REQUIRE(_REG(B)==0x34);
-	REQUIRE(_REG(C)==0x34);
-	REQUIRE(_REG(D)==0x34);
-	REQUIRE(_REG(E)==0x12);
+	REQUIRE(REG_(A) == 0x12);
+	REQUIRE(REG_(B) == 0x34);
+	REQUIRE(REG_(C) == 0x34);
+	REQUIRE(REG_(D) == 0x34);
+	REQUIRE(REG_(E) == 0x12);
 }
 TEST_CASE("function with array","[asm][function]"){
 	Fn<Array<UInt8,3>(Array<UInt8,3>)> fn{"fn(vec)"};
@@ -268,7 +268,7 @@ TEST_CASE("function with array","[asm][function]"){
 			arr[0]+=1_u8,
 			arr[1]+=2_u8,
 			arr[2]+=3_u8,
-			fn._return(arr),
+			fn.return_(arr),
 		}),
 		main,
 		fn(Array<UInt8,3>::make(3_u8,7_u8,11_u8)),
@@ -277,9 +277,9 @@ TEST_CASE("function with array","[asm][function]"){
 		pop(Reg::C),
 		halt(),
 	});
-	REQUIRE(_REG(C)==4);
-	REQUIRE(_REG(B)==9);
-	REQUIRE(_REG(A)==14);
+	REQUIRE(REG_(C) == 4);
+	REQUIRE(REG_(B) == 9);
+	REQUIRE(REG_(A) == 14);
 }
 TEST_CASE("function pointer","[asm][function]"){
 	/*
@@ -309,13 +309,13 @@ TEST_CASE("function pointer","[asm][function]"){
 		return {
 			_.ret=((Ptr<Void>)next_ptr),
 			next_ptr+=size,
-			_._return(),
+			_.return_(),
 		};
 	}};
 	Fn<Void(Ptr<Int8>)> fn{[](auto& _,auto i)->code_t{
 		return {
 			(*i)+=1_i8,
-			_._return(Val::_void),
+			_.return_(Val::void_),
 		};
 	}};
 	Fn<UInt16()> main{[&](auto& _)->code_t{
@@ -325,12 +325,12 @@ TEST_CASE("function pointer","[asm][function]"){
 			(*i)=3_i8,
 			aa,
 			fn(i),
-			_._return((UInt16)i),
+			_.return_((UInt16) i),
 		};
 	}};
 
 	CPU cpu;
-	_LOAD_TO(MEM::ram_min,(code_t{global,heap}));
+	LOAD_TO_(MEM::ram_min, (code_t{global, heap}));
 
 	load_run(cpu,{
 		main(),
@@ -344,7 +344,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 3);
 	run(cpu);
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 4);
-	REQUIRE(_REG16(BA) == *heap);
+	REQUIRE(REG16_(BA) == *heap);
 }
 TEST_CASE("library function","[asm][function]"){
 	using namespace Library;
@@ -358,5 +358,5 @@ TEST_CASE("library function","[asm][function]"){
 	});
 
 	REQUIRE(stdlib.fns.size()==1);
-	REQUIRE(_STACK_TOP==3*5+6*7);
+	REQUIRE(STACK_TOP_ == 3 * 5 + 6 * 7);
 }

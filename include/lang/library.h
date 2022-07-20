@@ -53,7 +53,7 @@ namespace BBCPU::ASM::Library{
 						ls <<= 1,
 						rs >>= 1,
 					}}},
-					_._return(),
+					_.return_(),
 				};
 			}
 		};

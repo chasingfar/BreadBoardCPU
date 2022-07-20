@@ -40,12 +40,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
-	template<typename FnType>
-	struct FnBase;
-	template<typename FnType>
-	struct Fn;
-	template<typename FnType>
-	struct InplaceFn;
+	template<typename FnType> struct FnBase;
 	template<typename Ret,typename ...Args>
 	struct FnBase<Ret(Args...)>:Block,Allocator{
 		static constexpr offset_t ret_size=Ret::size;
@@ -67,6 +62,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return LocalVar::make(size,pos);
 		}
 	};
+
+	template<typename FnType> struct Fn;
 	template<typename Ret,typename ...Args>
 	struct Fn<Ret(Args...)>:FnBase<Ret(Args...)>{
 		using This = Fn<Ret(Args...)>;
@@ -95,8 +92,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			code_t body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		inline code_t _return(Ret value){return {this->ret.set(value),lev()};}
-		inline code_t _return(){return {lev()};}
+		inline code_t return_(Ret value){return {this->ret.set(value), lev()};}
+		inline code_t return_(){return {lev()};}
 
 		explicit Fn(const code_t& code){impl(code);}
 		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
@@ -128,13 +125,14 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
+	template<typename FnType> struct InplaceFn;
 	template<typename Ret,typename ...Args>
 	struct InplaceFn<Ret(Args...)>:FnBase<Ret(Args...)>{
 		using This = InplaceFn<Ret(Args...)>;
 		using Base = FnBase<Ret(Args...)>;
 		static constexpr offset_t ret_start=Base::arg_size+2;
 		static constexpr offset_t arg_start=Base::arg_size+2;
-		Label _end;
+		Label end_;
 
 		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
 		This& impl(F&& fn){
@@ -143,14 +141,14 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 					saveBP(),
 					adj(-this->local_size),
 					code,
-					_end,
+					end_,
 					loadBP(),
 					adj(Base::arg_size-Base::ret_size),
 			};
 			return *this;
 		}
-		inline code_t _return(Ret value){return {this->ret.set(value),jmp(_end)};}
-		inline code_t _return(){return {jmp(_end)};}
+		inline code_t return_(Ret value){return {this->ret.set(value), jmp(end_)};}
+		inline code_t return_(){return {jmp(end_)};}
 
 		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
 		explicit InplaceFn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
