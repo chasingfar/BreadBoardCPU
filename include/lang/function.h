@@ -40,8 +40,14 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 |    ....       |  low address
 
 */
+	template<typename FnType>
+	struct FnBase;
+	template<typename FnType>
+	struct Fn;
+	template<typename FnType>
+	struct InplaceFn;
 	template<typename Ret,typename ...Args>
-	struct FnBase:Block,Allocator{
+	struct FnBase<Ret(Args...)>:Block,Allocator{
 		static constexpr offset_t ret_size=Ret::size;
 		static constexpr offset_t arg_size=(0+...+Args::size);
 		offset_t local_size;
@@ -62,9 +68,9 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		}
 	};
 	template<typename Ret,typename ...Args>
-	struct Fn:FnBase<Ret,Args...>{
-		using This = Fn<Ret,Args...>;
-		using Base = FnBase<Ret,Args...>;
+	struct Fn<Ret(Args...)>:FnBase<Ret(Args...)>{
+		using This = Fn<Ret(Args...)>;
+		using Base = FnBase<Ret(Args...)>;
 		static constexpr offset_t ret_start=Base::ret_size+Base::arg_size+4;
 		static constexpr offset_t arg_start=Base::arg_size+4;
 		explicit Fn(const std::string& name=""):Base{name,ret_start,arg_start}{}
@@ -79,7 +85,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 				<<adj(Base::arg_size);
 			return Ret{expr};
 		}
-		Fn<Ret,Args...>& impl(const code_t& code){
+		This& impl(const code_t& code){
 			this->body=code_t{ent(this->local_size),code};
 			return *this;
 		}
@@ -123,15 +129,15 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 
 */
 	template<typename Ret,typename ...Args>
-	struct InplaceFn:FnBase<Ret,Args...>{
-		using This = InplaceFn<Ret,Args...>;
-		using Base = FnBase<Ret,Args...>;
+	struct InplaceFn<Ret(Args...)>:FnBase<Ret(Args...)>{
+		using This = InplaceFn<Ret(Args...)>;
+		using Base = FnBase<Ret(Args...)>;
 		static constexpr offset_t ret_start=Base::arg_size+2;
 		static constexpr offset_t arg_start=Base::arg_size+2;
 		Label _end;
 
 		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
-		InplaceFn<Ret,Args...>& impl(F&& fn){
+		This& impl(F&& fn){
 			code_t code=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			this->body=code_t{
 					saveBP(),

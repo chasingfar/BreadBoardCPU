@@ -6,7 +6,7 @@
 using namespace Function;
 
 TEST_CASE("function dynamic args and vars","[asm][function]"){
-	Fn<Void,UInt8,UInt8> fn{"fn(a,b)"};
+	Fn<Void(UInt8,UInt8)> fn{"fn(a,b)"};
 	auto [a,b]=fn.args;
 	auto [c,d]=fn.vars<UInt8, UInt8>();
 	Label main,aa,bb,cc,dd;
@@ -64,8 +64,8 @@ TEST_CASE("function nest call","[asm][function]"){
 	}
 	foo(8)
 	*/
-	Fn<UInt8,UInt8> foo{"foo(a)"};
-	Fn<UInt8,UInt8> bar{"bar(b)"};
+	Fn<UInt8(UInt8)> foo{"foo(a)"};
+	Fn<UInt8(UInt8)> bar{"bar(b)"};
 	auto [a]=foo.args;
 	auto [c]=foo.vars<UInt8>();
 	auto [b]=bar.args;
@@ -111,7 +111,7 @@ TEST_CASE("function recursion","[asm][function]"){
 	}
 	fib(6)
 	*/
-	Fn<UInt8,UInt8> fib{"fib(i)"};
+	Fn<UInt8(UInt8)> fib{"fib(i)"};
 
 	Label main;
 	CPU cpu;
@@ -144,7 +144,7 @@ TEST_CASE("function sum","[asm][function]"){
 	}
 	sum(6)
 	*/
-	Fn<UInt8,UInt8> sum{"sum(n)"};
+	Fn<UInt8(UInt8)> sum{"sum(n)"};
 
 	Label main;
 	CPU cpu;
@@ -172,7 +172,7 @@ TEST_CASE("inplace function","[asm][function]"){
 	load_run(cpu,{
 		0x12f3_u16,
 		0x32cc_u16,
-		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
+		InplaceFn<UInt16(UInt8,UInt8,UInt8,UInt8)>{
 			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
 			return {
 				_._return(UInt16::make(add(a,c),adc(b,d))),
@@ -189,7 +189,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 	load_run(cpu,{
 		0x12f3_u16,
 		0x32cc_u16,
-		InplaceFn<UInt16,UInt8,UInt8,UInt8,UInt8>{
+		InplaceFn<UInt16(UInt8,UInt8,UInt8,UInt8)>{
 			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
 			return {
 				_.ret=UInt16::make(add(a,c),adc(b,d)),
@@ -203,7 +203,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 }
 TEST_CASE("function with custom type","[asm][function]"){
 	using Vec=Struct<UInt8,UInt8,UInt8>;
-	Fn<Vec,Vec> fn{"fn(vec)"};
+	Fn<Vec(Vec)> fn{"fn(vec)"};
 	auto [vec]=fn.args;
 	auto [x,y,z]=vec.extract();
 	
@@ -230,7 +230,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 }
 TEST_CASE("function with union","[asm][function]"){
 	using T=Union<UInt8, UInt16, Array<UInt8, 2>>;
-	Fn<UInt16,T> fn{"fn(t)"};
+	Fn<UInt16(T)> fn{"fn(t)"};
 	auto [t]=fn.args;
 	auto [t_u8,t_u16,t_arr]=t.extract();
 	
@@ -257,7 +257,7 @@ TEST_CASE("function with union","[asm][function]"){
 	REQUIRE(_REG(E)==0x12);
 }
 TEST_CASE("function with array","[asm][function]"){
-	Fn<Array<UInt8,3>,Array<UInt8,3>> fn{"fn(vec)"};
+	Fn<Array<UInt8,3>(Array<UInt8,3>)> fn{"fn(vec)"};
 	auto [arr]=fn.args;
 	
 	Label main;
@@ -304,7 +304,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	StaticVars global;
 	Label heap,aa;
 
-	Fn<Ptr<Void>,UInt16> malloc{[&](auto& _,auto size)->code_t{
+	Fn<Ptr<Void>(UInt16)> malloc{[&](auto& _,auto size)->code_t{
 		UInt16 next_ptr{global.preset({heap.get_lazy(0),heap.get_lazy(1)})};
 		return {
 			_.ret=((Ptr<Void>)next_ptr),
@@ -312,13 +312,13 @@ TEST_CASE("function pointer","[asm][function]"){
 			_._return(),
 		};
 	}};
-	Fn<Void,Ptr<Int8>> fn{[](auto& _,auto i)->code_t{
+	Fn<Void(Ptr<Int8>)> fn{[](auto& _,auto i)->code_t{
 		return {
 			(*i)+=1_i8,
 			_._return(Val::_void),
 		};
 	}};
-	Fn<UInt16> main{[&](auto& _)->code_t{
+	Fn<UInt16()> main{[&](auto& _)->code_t{
 		Ptr<Int8> i{_};
 		return {
 			i=((Ptr<Int8>)malloc(1_u16)),

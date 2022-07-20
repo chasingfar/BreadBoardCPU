@@ -12,7 +12,7 @@ namespace BBCPU::ASM {
 		code_t tmp{lhs};
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::InplaceFn<Int<Size,Signed>,Int<I-I+1,Signed>...>{
+				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...)>{
 					[](auto& _,Int<I-I+1,Signed>...ls)->code_t{
 						return {
 							ls.set(_calc<1,Signed,I==0?fn:fnc,fnc>(ls))...
@@ -32,7 +32,7 @@ namespace BBCPU::ASM {
 		tmp << rhs;
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::InplaceFn<Int<Size,Signed>,Int<I-I+1,Signed>...,Int<I-I+1,Signed>...>{
+				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...,Int<I-I+1,Signed>...)>{
 					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->code_t{
 						return {
 							ls.set(_calc<1,Signed,I==0?fn:fnc,fnc>(ls,rs))...
