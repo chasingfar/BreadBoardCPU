@@ -77,11 +77,12 @@ namespace BBCPU::ASM {
 	}
 
 	struct ASM {
+		addr_t start=0;
 		data_t data;
 		static struct end_t {} END;
 
 		size_t pc() const {
-			return data.size();
+			return data.size()+start;
 		}
 
 		ops_t resolve() {
@@ -123,8 +124,8 @@ namespace BBCPU::ASM {
 			return os;
 		}
 
-		static ops_t parse(const code_t& codes){
-			return ASM{}<<codes<<END;
+		static ops_t parse(const code_t& codes,addr_t start=0){
+			return ASM{start}<<codes<<END;
 		}
 	};
 

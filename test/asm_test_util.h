@@ -13,6 +13,7 @@
 using namespace BBCPU::ASM;
 using BBCPU::CPU;
 using ALU74181::Carry;
+using MEM=decltype(CPU{}.mem);
 
 #define _REG(name) cpu.reg.data[CPU::Reg::name.v()]
 #define _REG16(name) cpu.get_ptr(CPU::Reg16::name)
@@ -22,6 +23,11 @@ using ALU74181::Carry;
 #define _STATIC(label,var) cpu.mem.get_data(*(label).start.addr+std::dynamic_pointer_cast<StaticVar>((var).value)->offset).value_or(0)
 #define _RUN_OP(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
 #define _SET_FLAG(flag,value_) cpu.cu.tbl.D=BBCPU::MCTRL::state::flag::set(cpu.cu.tbl.D.value(),value_);
+#define _LOAD_TO(start_,code) cpu.load(ASM{ start_ }<<(code)<<ASM::END , start_);
+
+inline op_t operator "" _op(unsigned long long value) {
+    return static_cast<op_t>(value);
+}
 
 inline CPU& run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=1024){
 	for (size_t i = 0; i < max_iter; ++i) {

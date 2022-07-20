@@ -298,6 +298,16 @@ namespace Circuit{
 	struct Memory:Circuit{
 		constexpr static addr_t addr_min=0;
 		constexpr static addr_t addr_max=(1<<ASize)-1;
+
+		constexpr static addr_t ram_max=addr_max;
+		constexpr static addr_t ram_min=(CVal+1)<<COff;
+
+		constexpr static addr_t dev_max=ram_min-1;
+		constexpr static addr_t dev_min=CVal<<COff;
+
+		constexpr static addr_t rom_max=dev_min-1;
+		constexpr static addr_t rom_min=0;
+
 		Port<ASize> addr;
 		Port<DSize> data;
 		Port<1> oe,we;

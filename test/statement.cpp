@@ -71,23 +71,23 @@ TEST_CASE("while","[asm][statement]"){
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
-	UInt8 a{vars.preset({0_u8})};
-	auto [b,c]=vars.preset_vars<UInt8,UInt8>({12_u8},{34_u8});
-	Label main;
+	UInt8 a{vars.preset({0_op})};
+	auto [b,c]=vars.preset_vars<UInt8,UInt8>({12_op},{34_op});
+
 	CPU cpu;
+	_LOAD_TO(MEM::ram_min,vars);
+
+	REQUIRE(_STATIC(vars,a)==0);
+	REQUIRE(_STATIC(vars,b)==12);
+	REQUIRE(_STATIC(vars,c)==34);
+
 	load_run(cpu,{
-		jmp(main),
-		vars,
-		main,
 		a.set(56_u8),
 		b.set(78_u8),
 		c.set(90_u8),
 		halt(),
-	},{main});
-	REQUIRE(_STATIC(vars,a)==0);
-	REQUIRE(_STATIC(vars,b)==12);
-	REQUIRE(_STATIC(vars,c)==34);
-	run(cpu);
+	});
+
 	REQUIRE(_STATIC(vars,a)==56);
 	REQUIRE(_STATIC(vars,b)==78);
 	REQUIRE(_STATIC(vars,c)==90);
@@ -95,24 +95,23 @@ TEST_CASE("static variable","[asm][statement]"){
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	struct Vec:Struct<UInt8,UInt8,UInt8>{};
 	StaticVars vars;
-	Vec vec{vars.preset({3_u8,7_u8,11_u8})};
+	Vec vec{vars.preset({3_op,7_op,11_op})};
 	auto [x,y,z]=vec.extract();
 	
-	Label main;
 	CPU cpu;
+	_LOAD_TO(MEM::ram_min,vars);
+
+	REQUIRE(_STATIC(vars,x)==3);
+	REQUIRE(_STATIC(vars,y)==7);
+	REQUIRE(_STATIC(vars,z)==11);
+
 	load_run(cpu,{
-		jmp(main),
-		vars,
-		main,
 		x.set(x+1_u8),
 		y.set(y+2_u8),
 		z.set(z+3_u8),
 		halt(),
-	},{main});
-	REQUIRE(_STATIC(vars,x)==3);
-	REQUIRE(_STATIC(vars,y)==7);
-	REQUIRE(_STATIC(vars,z)==11);
-	run(cpu);
+	});
+	
 	REQUIRE(_STATIC(vars,x)==4);
 	REQUIRE(_STATIC(vars,y)==9);
 	REQUIRE(_STATIC(vars,z)==14);

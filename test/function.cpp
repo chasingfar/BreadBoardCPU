@@ -328,7 +328,10 @@ TEST_CASE("function pointer","[asm][function]"){
 			_._return((UInt16)i),
 		};
 	}};
+
 	CPU cpu;
+	_LOAD_TO(MEM::ram_min,(code_t{global,heap}));
+
 	load_run(cpu,{
 		main(),
 		pop(Reg::B),
@@ -337,8 +340,6 @@ TEST_CASE("function pointer","[asm][function]"){
 		malloc,
 		fn,
 		main,
-		global,
-		heap
 	},{aa});
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 3);
 	run(cpu);
