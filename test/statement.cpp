@@ -55,7 +55,7 @@ TEST_CASE("while","[asm][statement]"){
 		b-=1;
 	}
 	*/
-	UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
+	u8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
 	CPU cpu;
 	load_run(cpu,{
 		imm(Reg::A,0),imm(Reg::B,3),
@@ -71,8 +71,8 @@ TEST_CASE("while","[asm][statement]"){
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
-	UInt8 a{vars.preset({0_op})};
-	auto [b,c]=vars.preset_vars<UInt8,UInt8>({12_op},{34_op});
+	u8 a{vars.preset({0_op})};
+	auto [b,c]=vars.preset_vars<u8,u8>({12_op},{34_op});
 
 	CPU cpu;
 	LOAD_TO_(MEM::ram_min, vars);
@@ -93,7 +93,7 @@ TEST_CASE("static variable","[asm][statement]"){
 	REQUIRE(STATIC_(vars, c) == 90);
 }
 TEST_CASE("static variable with custom type","[asm][statement]"){
-	struct Vec:Struct<UInt8,UInt8,UInt8>{};
+	struct Vec:Struct<u8,u8,u8>{};
 	StaticVars vars;
 	Vec vec{vars.preset({3_op,7_op,11_op})};
 	auto [x,y,z]=vec.extract();
@@ -130,7 +130,7 @@ TEST_CASE("big variable","[asm][statement]"){
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
-	auto _if=[=](Bool cond)->code_t{
+	auto _if=[=](bool_ cond)->code_t{
 		return {
 			IF{cond,
 				{imm(Reg::A,T)},

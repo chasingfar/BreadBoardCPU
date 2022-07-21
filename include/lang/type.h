@@ -35,10 +35,10 @@ namespace BBCPU::ASM {
 			return Type<0>{code_t{*this,adj(size)}};
 		}
 	};
-	using Void = Type<0>;
+	using void_ = Type<0>;
 
 	namespace Val{
-		inline static const Void void_{code_t{}};
+		inline static const void_ none{code_t{}};
 	}
 
 	template<typename To,typename From>
@@ -157,28 +157,30 @@ namespace BBCPU::ASM {
 			return Int<1,false>{tmp};
 		}
 	};
-	using UInt8 =Int<1,false>;
-	using  Int8 =Int<1,true>;
-	using UInt16=Int<2,false>;
-	using  Int16=Int<2,true>;
-	using Bool=UInt8;
+	using u8 =Int<1,false>;
+	using i8 =Int<1,true>;
+	using u16=Int<2,false>;
+	using i16=Int<2,true>;
+	using usize=u16;
+	using isize=i16;
+	using bool_=u8;
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
 	namespace Val{
-		inline static const Bool true_{imm(1)};
-		inline static const Bool false_{imm(0)};
+		inline static const bool_ true_{imm(1)};
+		inline static const bool_ false_{imm(0)};
 	}
 
 	template<typename T>
-	struct Ptr:AsInt<addr_t>{
-		using This = Ptr<T>;
+	struct ptr: AsInt<addr_t>{
+		using This = ptr<T>;
 		using Base = AsInt<addr_t>;
 		DEF_TYPE_COMMON
 
-		explicit Ptr(const UInt16& v):Base(v.value){}
+		explicit ptr(const usize& v): Base(v.value){}
 		template<typename U>
-		explicit Ptr(const Ptr<U>& v):Base(v.value){}
+		explicit ptr(const ptr<U>& v):Base(v.value){}
 
 		using type=T;
 		auto operator*(){
@@ -186,7 +188,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	template<typename T>struct UnPtr        {};
-	template<typename T>struct UnPtr<Ptr<T>>{using type = T;};
+	template<typename T>struct UnPtr<ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
 
 	template<typename T>
@@ -216,14 +218,14 @@ namespace BBCPU::ASM {
 	inline auto operator""_u16(unsigned long long val){return IntLiteral<uint16_t>{val};}
 
 	namespace RegVars{
-		inline static const UInt8 A{RegVar::make(Reg::A)};
-		inline static const UInt8 B{RegVar::make(Reg::B)};
-		inline static const UInt8 C{RegVar::make(Reg::C)};
-		inline static const UInt8 D{RegVar::make(Reg::D)};
-		inline static const UInt8 E{RegVar::make(Reg::E)};
-		inline static const UInt8 F{RegVar::make(Reg::F)};
-		inline static const UInt8 L{RegVar::make(Reg::L)};
-		inline static const UInt8 H{RegVar::make(Reg::H)};
+		inline static const u8 A{RegVar::make(Reg::A)};
+		inline static const u8 B{RegVar::make(Reg::B)};
+		inline static const u8 C{RegVar::make(Reg::C)};
+		inline static const u8 D{RegVar::make(Reg::D)};
+		inline static const u8 E{RegVar::make(Reg::E)};
+		inline static const u8 F{RegVar::make(Reg::F)};
+		inline static const u8 L{RegVar::make(Reg::L)};
+		inline static const u8 H{RegVar::make(Reg::H)};
 	}
 }
 #endif //BBCPU_TYPE_H

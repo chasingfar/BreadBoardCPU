@@ -26,7 +26,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct IF{
-		Bool cond;
+		bool_ cond;
 		Block if_true;
 		Block if_false{};
 		operator code_t(){
@@ -40,7 +40,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct IFC{
-		Void cond;
+		void_ cond;
 		Block if_no_carry;
 		Block if_carry{};
 		operator code_t(){
@@ -54,7 +54,7 @@ namespace BBCPU::ASM {
 		}
 	};
 	struct While{
-		Bool cond;
+		bool_ cond;
 		Block body{};
 		operator code_t(){
 			Label start,end;

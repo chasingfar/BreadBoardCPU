@@ -34,15 +34,15 @@ namespace BBCPU::ASM::Library{
 	inline Int<Size,Signed> mul(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
 		static Function::Fn<Int<Size,Signed>(Int<Size,Signed>,Int<Size,Signed>)> fn{
 			[](auto& _,const Int<Size,Signed>& ls,const Int<Size,Signed>& rs)->code_t{
-				UInt8 rs1{std::dynamic_pointer_cast<MemVar>(rs.value)->shift(0,1)};
+				u8 rs1{std::dynamic_pointer_cast<MemVar>(rs.value)->shift(0,1)};
 				auto ret_value=std::dynamic_pointer_cast<MemVar>(_.ret.value);
 				return {
 					([&]<size_t ...I>(std::index_sequence<I...>){
 						if constexpr(Signed){
-							Int8 ret[Size]{{ret_value->shift(I, 1)}...};
+							i8 ret[Size]{{ret_value->shift(I, 1)}...};
 							return (code_t{}<<...<<ret[I].set(0_i8));
 						}else{
-							UInt8 ret[Size]{{ret_value->shift(I, 1)}...};
+							u8 ret[Size]{{ret_value->shift(I, 1)}...};
 							return (code_t{}<<...<<ret[I].set(0_u8));
 						}
 					})(std::make_index_sequence<Size>{}),

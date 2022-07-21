@@ -67,7 +67,7 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Int<Size,Signed>& lhs){
-		return Bool{code_t{
+		return bool_{code_t{
 			IF{lhs,
 				{Val::false_},
 				{Val::true_},
@@ -76,7 +76,7 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return ((Bool)lhs-rhs);
+		return ((bool_)lhs - rhs);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator==(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
@@ -85,8 +85,8 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator>=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return Bool{code_t{
-			IFC{(Void)(lhs - rhs),
+		return bool_{code_t{
+			IFC{(void_)(lhs - rhs),
 				{Val::false_},
 				{Val::true_},
 			}
@@ -94,8 +94,8 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return Bool{code_t{
-			IFC{(Void)(lhs - rhs),
+		return bool_{code_t{
+			IFC{(void_)(lhs - rhs),
 				{Val::true_},
 				{Val::false_},
 			}
