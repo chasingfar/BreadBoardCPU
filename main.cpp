@@ -43,22 +43,18 @@ struct A{
 	}
 };*/
 int main() {
-	BBCPU::ASM::ops_t program;
+	BBCPU::CPU cpu{"[CPU]"};
 	{
 		using namespace BBCPU::ASM;
-		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
-		program=ASM::parse({
-			imm(Reg::A,0),imm(Reg::B,3),
-			While{b,{{
-				a.set(add(a,b)),
-				b.set(sub(b,1_u8)),
+		cpu.load(ASM::parse({
+			Reg_A=0_u8,Reg_B=3_u8,
+			While{Reg_B,{{
+				Reg_A+=Reg_B,
+				Reg_B-=1_u8,
 			}}},
 			halt(),
-		});
+		}));
 	}
-	BBCPU::CPU cpu{"[CPU]"};
-	cpu.mem.rom.load(program);
-	cpu.init();
 	std::cout<<std::endl;
 	for(int i=0;i<300;i++){
 		cpu.tick_op();
@@ -68,8 +64,8 @@ int main() {
 		if(cpu.is_halt()){
 			break;
 		}
-		//std::cout<<cpu.alu<<std::endl;
 	}
+
 	/*Counter<8> cnt;
 	for(int i=0;i<10;i++){
 		cnt.update();

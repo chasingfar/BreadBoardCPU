@@ -217,15 +217,13 @@ namespace BBCPU::ASM {
 	inline auto operator""_i16(unsigned long long val){return IntLiteral< int16_t>{val};}
 	inline auto operator""_u16(unsigned long long val){return IntLiteral<uint16_t>{val};}
 
-	namespace RegVars{
-		inline static const u8 A{RegVar::make(Reg::A)};
-		inline static const u8 B{RegVar::make(Reg::B)};
-		inline static const u8 C{RegVar::make(Reg::C)};
-		inline static const u8 D{RegVar::make(Reg::D)};
-		inline static const u8 E{RegVar::make(Reg::E)};
-		inline static const u8 F{RegVar::make(Reg::F)};
-		inline static const u8 L{RegVar::make(Reg::L)};
-		inline static const u8 H{RegVar::make(Reg::H)};
-	}
+	inline static const u8 Reg_A{RegVar::make(Reg::A)};
+	inline static const u8 Reg_B{RegVar::make(Reg::B)};
+	inline static const u8 Reg_C{RegVar::make(Reg::C)};
+	inline static const u8 Reg_D{RegVar::make(Reg::D)};
+	inline static const u8 Reg_E{RegVar::make(Reg::E)};
+	inline static const u8 Reg_F{RegVar::make(Reg::F)};
+	inline static const u8 Reg_L{RegVar::make(Reg::L)};
+	inline static const u8 Reg_H{RegVar::make(Reg::H)};
 }
 #endif //BBCPU_TYPE_H
