@@ -27,10 +27,11 @@ TEST_CASE("if","[asm][statement]"){
 	SECTION("if true"){
 		cpu.init();
 		load_run(cpu,{
-			IF{1_u8,
-				{imm(Reg::A,5)},
-				{imm(Reg::A,6)}
-			},
+			if_(1_u8).then({
+				imm(Reg::A,5),
+			}).else_({
+				imm(Reg::A,6),
+			}),
 			halt(),
 		});
 		REQUIRE(REG_(A) == 5);
@@ -38,10 +39,11 @@ TEST_CASE("if","[asm][statement]"){
 	SECTION("if false"){
 		cpu.init();
 		load_run(cpu,{
-			IF{0_u8,
-				{imm(Reg::A,5)},
-				{imm(Reg::A,6)}
-			},
+			if_(0_u8).then({
+				imm(Reg::A,5),
+			}).else_({
+				imm(Reg::A,6)
+			}),
 			halt(),
 		});
 		REQUIRE(REG_(A) == 6);
@@ -59,10 +61,10 @@ TEST_CASE("while","[asm][statement]"){
 	CPU cpu;
 	load_run(cpu,{
 		imm(Reg::A,0),imm(Reg::B,3),
-		While{b,{{
+		while_(b).do_({
 			a.set(add(a,b)),
 			b.set(sub(b,1_u8)),
-		}}},
+		}),
 		halt(),
 	});
 	REQUIRE(REG_(A) == 6);
@@ -130,12 +132,13 @@ TEST_CASE("big variable","[asm][statement]"){
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
-	auto _if=[=](bool_ cond)->code_t{
+	auto test_if=[=](bool_ cond)->code_t{
 		return {
-			IF{cond,
-				{imm(Reg::A,T)},
-	        	{imm(Reg::A,F)}
-			},
+			if_(cond).then({
+				imm(Reg::A,T),
+			}).else_({
+				imm(Reg::A,F),
+			}),
 			halt(),
 		};
 	};
@@ -143,119 +146,119 @@ TEST_CASE("if cmp","[asm][statement]"){
 	SECTION("if !") {
 		SECTION("if !0") {
 			cpu.init();
-			load_run(cpu,_if(!0_u8));
+			load_run(cpu,test_if(!0_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if !123") {
 			cpu.init();
-			load_run(cpu,_if(!123_u8));
+			load_run(cpu,test_if(!123_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if !255") {
 			cpu.init();
-			load_run(cpu,_if(!255_u8));
+			load_run(cpu,test_if(!255_u8));
 			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if !=") {
 		SECTION("if 3!=5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 != 5_u8));
+			load_run(cpu,test_if(3_u8 != 5_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3!=3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 != 3_u8));
+			load_run(cpu,test_if(3_u8 != 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5!=3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 != 3_u8));
+			load_run(cpu,test_if(5_u8 != 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 	}
 	SECTION("if ==") {
 		SECTION("if 3==5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 == 5_u8));
+			load_run(cpu,test_if(3_u8 == 5_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3==3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 == 3_u8));
+			load_run(cpu,test_if(3_u8 == 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5==3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 == 3_u8));
+			load_run(cpu,test_if(5_u8 == 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if >=") {
 		SECTION("if 3>=5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 >= 5_u8));
+			load_run(cpu,test_if(3_u8 >= 5_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3>=3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 >= 3_u8));
+			load_run(cpu,test_if(3_u8 >= 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5>=3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 >= 3_u8));
+			load_run(cpu,test_if(5_u8 >= 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 	}
 	SECTION("if <") {
 		SECTION("if 3<5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 < 5_u8));
+			load_run(cpu,test_if(3_u8 < 5_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3<3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 < 3_u8));
+			load_run(cpu,test_if(3_u8 < 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5<3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 < 3_u8));
+			load_run(cpu,test_if(5_u8 < 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if <=") {
 		SECTION("if 3<=5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 <= 5_u8));
+			load_run(cpu,test_if(3_u8 <= 5_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 3<=3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 <= 3_u8));
+			load_run(cpu,test_if(3_u8 <= 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 		SECTION("if 5<=3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 <= 3_u8));
+			load_run(cpu,test_if(5_u8 <= 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 	}
 	SECTION("if >") {
 		SECTION("if 3>5") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 > 5_u8));
+			load_run(cpu,test_if(3_u8 > 5_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 3>3") {
 			cpu.init();
-			load_run(cpu,_if(3_u8 > 3_u8));
+			load_run(cpu,test_if(3_u8 > 3_u8));
 			REQUIRE(REG_(A) == F);
 		}
 		SECTION("if 5>3") {
 			cpu.init();
-			load_run(cpu,_if(5_u8 > 3_u8));
+			load_run(cpu,test_if(5_u8 > 3_u8));
 			REQUIRE(REG_(A) == T);
 		}
 	}

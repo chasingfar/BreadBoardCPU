@@ -25,10 +25,19 @@ namespace BBCPU::ASM {
 			return {start,body,end};
 		}
 	};
-	struct IF{
+	struct if_{
 		bool_ cond;
-		Block if_true;
+		Block if_true{};
 		Block if_false{};
+		if_(const bool_& cond):cond(cond){}
+		if_& then(const code_t& t_code){
+			if_true=t_code;
+			return *this;
+		}
+		if_& else_(const code_t& f_code){
+			if_false=f_code;
+			return *this;
+		}
 		operator code_t(){
 			return {
 				cond,
@@ -39,10 +48,19 @@ namespace BBCPU::ASM {
 			};
 		}
 	};
-	struct IFC{
+	struct ifc{
 		void_ cond;
-		Block if_no_carry;
+		Block if_no_carry{};
 		Block if_carry{};
+		ifc(const void_& cond):cond(cond){}
+		ifc& then(const code_t& no_carry){
+			if_no_carry=no_carry;
+			return *this;
+		}
+		ifc& else_(const code_t& carry){
+			if_carry=carry;
+			return *this;
+		}
 		operator code_t(){
 			return {
 				cond,
@@ -53,9 +71,14 @@ namespace BBCPU::ASM {
 			};
 		}
 	};
-	struct While{
+	struct while_{
 		bool_ cond;
 		Block body{};
+		while_(const bool_& cond):cond(cond){}
+		while_& do_(const code_t& code){
+			body=code;
+			return *this;
+		}
 		operator code_t(){
 			Label start,end;
 			return {

@@ -119,11 +119,11 @@ TEST_CASE("function recursion","[asm][function]"){
 		jmp(main),
 		fib.impl([&](auto& _,auto i){
 			return code_t{
-				IF{i<2_u8, {
+				if_(i<2_u8).then({
 					_.return_(i),
-				}, {
+				}).else_({
 					_.return_(fib(i - 1_u8) + fib(i - 2_u8)),
-				}},
+				}),
 			};
 		}),
 		main,
@@ -154,10 +154,10 @@ TEST_CASE("function sum","[asm][function]"){
 			u8 s{_};
 			return code_t{
 				s.set(0_u8),
-				While{n,{{
+				while_(n).do_({
 					s+=n,
 					n-=1_u8,
-				}}},
+				}),
 				sum.return_(s),
 			};
 		}),

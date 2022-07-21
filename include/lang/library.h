@@ -46,13 +46,13 @@ namespace BBCPU::ASM::Library{
 							return (code_t{}<<...<<ret[I].set(0_u8));
 						}
 					})(std::make_index_sequence<Size>{}),
-					While{rs, {{
-						IF{{rs1 & 1_u8},{
+					while_(rs).do_({
+						if_(rs1 & 1_u8).then({
 							_.ret += ls,
-						}},
+						}),
 						ls <<= 1,
 						rs >>= 1,
-					}}},
+					}),
 					_.return_(),
 				};
 			}
