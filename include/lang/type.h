@@ -211,6 +211,9 @@ namespace BBCPU::ASM {
 		auto operator-(){
 			return IntLiteral<T>{-literal};
 		}
+		operator AsInt<T>(){
+			return AsInt<T>{this->value};
+		}
 	};
 	inline auto operator""_i8 (unsigned long long val){return IntLiteral<  int8_t>{val};}
 	inline auto operator""_u8 (unsigned long long val){return IntLiteral< uint8_t>{val};}
