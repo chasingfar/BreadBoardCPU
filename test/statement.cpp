@@ -94,8 +94,12 @@ TEST_CASE("static variable","[asm][statement]"){
 	REQUIRE(STATIC_(vars, b) == 78);
 	REQUIRE(STATIC_(vars, c) == 90);
 }
-struct Vec:Struct<u8,u8,u8>{DEF_TYPE(Vec,(Vec),(Struct<u8,u8,u8>))};
 TEST_CASE("static variable with custom type","[asm][statement]"){
+	struct Vec:Struct<u8,u8,u8>{
+		using This = Vec;
+		using Base = Struct<u8,u8,u8>;
+		DEF_TYPE0
+	};
 	StaticVars vars;
 	Vec vec{vars.preset({3_op,7_op,11_op})};
 	auto [x,y,z]=vec.extract();

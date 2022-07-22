@@ -8,14 +8,19 @@
 #include "var.h"
 #include <cstddef>
 #include <memory>
+
+#define DEF_TYPE0 \
+	using Base::Base; \
+	code_t operator =(const This& rhs) const {return this->set(rhs);}
 #define DEF_TYPE(NAME,THIS,BASE) \
 	using This = Util::macro_param_t<void THIS>; \
 	using Base = Util::macro_param_t<void BASE>; \
+	DEF_TYPE0 \
 	template<typename ...ARGs> requires std::is_constructible_v<Base,ARGs...> \
 	explicit NAME(ARGs&&... args):Base{args...}{} \
-	NAME(const Base& base):Base{base}{}\
-	using Base::Base;\
-	code_t operator =(const This& rhs) const {return this->set(rhs);}
+	NAME(const Base& base):Base{base}{}
+#define DEF_TYPE2(NAME,...) DEF_TYPE(NAME,(NAME),(__VA_ARGS__))
+
 namespace BBCPU::ASM {
 	template<addr_t Size>
 	struct Type {
@@ -159,11 +164,11 @@ namespace BBCPU::ASM {
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
-	struct bool_:AsInt< uint8_t>{ DEF_TYPE(bool_,(bool_),(AsInt< uint8_t>)) };
-	struct   u8 :AsInt< uint8_t>{ DEF_TYPE(  u8 ,(  u8 ),(AsInt< uint8_t>)) };
-	struct   i8 :AsInt<  int8_t>{ DEF_TYPE(  i8 ,(  i8 ),(AsInt<  int8_t>)) };
-	struct   u16:AsInt<uint16_t>{ DEF_TYPE(  u16,(  u16),(AsInt<uint16_t>)) };
-	struct   i16:AsInt< int16_t>{ DEF_TYPE(  i16,(  i16),(AsInt< int16_t>)) };
+	struct bool_:AsInt< uint8_t>{ DEF_TYPE2(bool_,AsInt< uint8_t>) };
+	struct   u8 :AsInt< uint8_t>{ DEF_TYPE2(  u8 ,AsInt< uint8_t>) };
+	struct   i8 :AsInt<  int8_t>{ DEF_TYPE2(  i8 ,AsInt<  int8_t>) };
+	struct   u16:AsInt<uint16_t>{ DEF_TYPE2(  u16,AsInt<uint16_t>) };
+	struct   i16:AsInt< int16_t>{ DEF_TYPE2(  i16,AsInt< int16_t>) };
 	using usize=u16;
 	using isize=i16;
 
