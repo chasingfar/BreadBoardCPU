@@ -12,7 +12,8 @@
 	using This = Util::macro_param_t<void THIS>; \
 	using Base = Util::macro_param_t<void BASE>; \
 	template<typename ...ARGs> requires std::is_constructible_v<Base,ARGs...> \
-	NAME(ARGs&&... args):Base{args...}{} \
+	explicit NAME(ARGs&&... args):Base{args...}{} \
+	NAME(const Base& base):Base{base}{}\
 	using Base::Base;\
 	code_t operator =(const This& rhs) const {return this->set(rhs);}
 namespace BBCPU::ASM {
@@ -22,9 +23,9 @@ namespace BBCPU::ASM {
 		std::shared_ptr<Value> value{};
 		Type():value(nullptr){}
 		template<typename T> requires std::is_base_of_v<Value,T>
-		Type(std::shared_ptr<T> value):value(value){}
-		Type(Allocator& allocator):value(allocator.alloc(size)){}
-		Type(const code_t& expr):value(std::make_shared<Expr>(expr)){}
+		explicit Type(std::shared_ptr<T> value):value(value){}
+		explicit Type(Allocator& allocator):value(allocator.alloc(size)){}
+		explicit Type(const code_t& expr):value(std::make_shared<Expr>(expr)){}
 		
 		operator code_t() const{
 			return value->load();
@@ -122,7 +123,9 @@ namespace BBCPU::ASM {
 	};
 
 	template<typename T,size_t N,typename ...Ts>
-	struct Array:Array<T,N-1,T,Ts...>{};
+	struct Array:Array<T,N-1,T,Ts...>{
+		using Array<T,N-1,T,Ts...>::Array;
+	};
 	template<typename T,typename ...Ts>
 	struct Array<T,0,Ts...>:Struct<Ts...>{
 		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>))
@@ -188,6 +191,8 @@ namespace BBCPU::ASM {
 
 	template<typename T>
 	struct IntLiteral:AsInt<T>{
+		using This = IntLiteral<T>;
+		using Base = AsInt<T>;
 		T literal;
 		explicit IntLiteral(long long val):literal(val){
 			code_t tmp{};

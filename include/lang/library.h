@@ -39,10 +39,10 @@ namespace BBCPU::ASM::Library{
 				return {
 					([&]<size_t ...I>(std::index_sequence<I...>){
 						if constexpr(Signed){
-							i8 ret[Size]{{ret_value->shift(I, 1)}...};
+							i8 ret[Size]{i8{ret_value->shift(I, 1)}...};
 							return (code_t{}<<...<<ret[I].set(0_i8));
 						}else{
-							u8 ret[Size]{{ret_value->shift(I, 1)}...};
+							u8 ret[Size]{u8{ret_value->shift(I, 1)}...};
 							return (code_t{}<<...<<ret[I].set(0_u8));
 						}
 					})(std::make_index_sequence<Size>{}),
