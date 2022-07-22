@@ -8,7 +8,11 @@
 #include "var.h"
 #include <cstddef>
 #include <memory>
-#define DEF_TYPE_COMMON \
+#define DEF_TYPE(NAME,THIS,BASE) \
+	using This = Util::macro_param_t<void THIS>; \
+	using Base = Util::macro_param_t<void BASE>; \
+	template<typename ...ARGs> requires std::is_constructible_v<Base,ARGs...> \
+	NAME(ARGs&&... args):Base{args...}{} \
 	using Base::Base;\
 	code_t operator =(const This& rhs) const {return this->set(rhs);}
 namespace BBCPU::ASM {
@@ -52,9 +56,7 @@ namespace BBCPU::ASM {
 
 	template<typename T,typename ...Ts>
 	struct Struct:Type<(T::size+...+Ts::size)>{
-		using This = Struct<T,Ts...>;
-		using Base = Type<(T::size+...+Ts::size)>;
-		DEF_TYPE_COMMON
+		DEF_TYPE(Struct,(Struct<T,Ts...>),(Type<(T::size+...+Ts::size)>))
 
 		static constexpr size_t count=1+sizeof...(Ts);
 		template<addr_t Index,addr_t Offset=0>
@@ -85,9 +87,7 @@ namespace BBCPU::ASM {
 	};
 	template<typename ...Ts>
 	struct Union:Type<std::max({Ts::size...})>{
-		using This = Union<Ts...>;
-		using Base = Type<std::max({Ts::size...})>;
-		DEF_TYPE_COMMON
+		DEF_TYPE(Union,(Union<Ts...>),(Type<std::max({Ts::size...})>))
 
 		template<typename T> requires std::disjunction_v<std::is_same<T, Ts>...>
 		explicit Union(const T& v):Base(v.value){}
@@ -125,9 +125,7 @@ namespace BBCPU::ASM {
 	struct Array:Array<T,N-1,T,Ts...>{};
 	template<typename T,typename ...Ts>
 	struct Array<T,0,Ts...>:Struct<Ts...>{
-		using This = Array<T,sizeof...(Ts)>;
-		using Base = Struct<Ts...>;
-		DEF_TYPE_COMMON
+		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>))
 
 		inline static auto make(Ts ...vals){
 			return This{code_t{vals...}};
@@ -141,9 +139,7 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed=false>
 	struct Int:Type<Size>{
-		using This = Int<Size,Signed>;
-		using Base = Type<Size>;
-		DEF_TYPE_COMMON
+		DEF_TYPE(Int,(Int<Size,Signed>),(Type<Size>))
 
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
@@ -157,15 +153,16 @@ namespace BBCPU::ASM {
 			return Int<1,false>{tmp};
 		}
 	};
-	using u8 =Int<1,false>;
-	using i8 =Int<1,true>;
-	using u16=Int<2,false>;
-	using i16=Int<2,true>;
-	using usize=u16;
-	using isize=i16;
-	using bool_=u8;
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
+
+	struct bool_:AsInt< uint8_t>{ DEF_TYPE(bool_,(bool_),(AsInt< uint8_t>)) };
+	struct   u8 :AsInt< uint8_t>{ DEF_TYPE(  u8 ,(  u8 ),(AsInt< uint8_t>)) };
+	struct   i8 :AsInt<  int8_t>{ DEF_TYPE(  i8 ,(  i8 ),(AsInt<  int8_t>)) };
+	struct   u16:AsInt<uint16_t>{ DEF_TYPE(  u16,(  u16),(AsInt<uint16_t>)) };
+	struct   i16:AsInt< int16_t>{ DEF_TYPE(  i16,(  i16),(AsInt< int16_t>)) };
+	using usize=u16;
+	using isize=i16;
 
 	namespace Val{
 		inline static const bool_ true_{imm(1)};
@@ -174,9 +171,7 @@ namespace BBCPU::ASM {
 
 	template<typename T>
 	struct ptr: AsInt<addr_t>{
-		using This = ptr<T>;
-		using Base = AsInt<addr_t>;
-		DEF_TYPE_COMMON
+		DEF_TYPE(ptr,(ptr<T>),(AsInt<addr_t>))
 
 		explicit ptr(const usize& v): Base(v.value){}
 		template<typename U>

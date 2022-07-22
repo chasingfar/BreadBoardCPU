@@ -16,6 +16,15 @@ namespace Util{
 	// explicit deduction guide (not needed as of C++20)
 	template<class... Ts> lambda_compose(Ts...) -> lambda_compose<Ts...>;
 
+	/* macro_param_t<void (T)> = T
+	 * Usage:
+	 * #define MACRO(TYPE) struct A{ macro_param_t<void TYPE> val;};
+	 * MACRO((std::map<int,int>))
+	 * */
+	template<typename F>struct macro_param{};
+	template<typename T>struct macro_param<void(T)>{using type=T;};
+	template<typename F>using macro_param_t=typename macro_param<F>::type;
+
 	template <typename T>
 	struct flat_vector:public std::vector<T>{
 		flat_vector(std::initializer_list<std::variant<T,flat_vector<T>>> vec){
