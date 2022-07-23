@@ -9,11 +9,11 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline Int<Size,Signed> calc_(const Int<Size,Signed>& lhs) {
-		code_t tmp{lhs};
+		code_t tmp{lhs.to_code()};
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
 				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...)>{
-					[](auto& _,Int<I-I+1,Signed>...ls)->code_t{
+					[](auto& _,Int<I-I+1,Signed>...ls)->Block{
 						return {
 							ls.set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls))...
 						};
@@ -28,17 +28,17 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline Int<Size,Signed> calc_(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs) {
-		code_t tmp{lhs};
-		tmp << rhs;
+		code_t tmp{lhs.to_code()};
+		tmp << rhs.to_code();
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
 				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...,Int<I-I+1,Signed>...)>{
-					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->code_t{
+					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->Block{
 						return {
 							ls.set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls,rs))...
 						};
 					}
-				};
+				}.to_code();
 			}(std::make_index_sequence<Size>{});
 		} else if constexpr (Size == 1) {
 			tmp << fn();
@@ -67,13 +67,7 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Int<Size,Signed>& lhs){
-		return bool_{code_t{
-			if_(lhs).then(
-				Val::false_
-			).else_(
-				Val::true_
-			),
-		}};
+		return if_<bool_>(lhs).then(Val::false_).else_(Val::true_).end();
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
@@ -86,23 +80,11 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator>=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return bool_{code_t{
-			ifc((void_)(lhs - rhs)).then(
-				Val::false_
-			).else_(
-				Val::true_
-			),
-		}};
+		return ifc<bool_>((void_)(lhs - rhs)).then(Val::false_).else_(Val::true_).end();
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return bool_{code_t{
-			ifc((void_)(lhs - rhs)).then(
-				Val::true_
-			).else_(
-				Val::false_
-			),
-		}};
+		return ifc<bool_>((void_)(lhs - rhs)).then(Val::true_).else_(Val::false_).end();
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
@@ -123,7 +105,7 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<<(const Int<Size,Signed>& lhs,size_t n){
-		code_t tmp{lhs};
+		code_t tmp{lhs.to_code()};
 		for (size_t i = 0; i < n; ++i) {
 			tmp<<shl();
 		}
@@ -131,7 +113,7 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator>>(const Int<Size,Signed>& lhs,size_t n){
-		code_t tmp{lhs};
+		code_t tmp{lhs.to_code()};
 		for (size_t i = 0; i < n; ++i) {
 			tmp<<shr();
 		}

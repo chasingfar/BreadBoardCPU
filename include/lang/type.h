@@ -11,7 +11,7 @@
 
 #define DEF_TYPE0 \
 	using Base::Base; \
-	code_t operator =(const This& rhs) const {return this->set(rhs);}
+	auto operator =(const This& rhs) const {return this->set(rhs);}
 #define DEF_TYPE(NAME,THIS,BASE) \
 	using This = Util::macro_param_t<void THIS>; \
 	using Base = Util::macro_param_t<void BASE>; \
@@ -31,18 +31,25 @@ namespace BBCPU::ASM {
 		explicit Type(std::shared_ptr<T> value):value(value){}
 		explicit Type(Allocator& allocator):value(allocator.alloc(size)){}
 		explicit Type(const code_t& expr):value(std::make_shared<Expr>(expr)){}
-		
-		operator code_t() const{
-			return value->load();
+
+		Type<0> set(const Type<Size>& rhs) const{
+			return Type<0>{code_t{rhs.value->load(), std::dynamic_pointer_cast<Var>(value)->save()}};
 		}
-		code_t set(const Type<Size>& rhs) const{
-			return {rhs.value->load(),std::dynamic_pointer_cast<Var>(value)->save()};
-		}
-		code_t operator =(const Type<Size>& rhs) const{
+		auto operator =(const Type<Size>& rhs) const{ // NOLINT(bugprone-unhandled-self-assignment)
 			return set(rhs);
 		}
+		code_t to_code() const{
+			return value->load();
+		}
+		code_t to_stmt() const{
+			if constexpr(Size==0){
+				return to_code();
+			}
+			return {to_code(),adj(size)};
+
+		}
 		explicit operator Type<0>(){
-			return Type<0>{code_t{*this,adj(size)}};
+			return Type<0>{to_stmt()};
 		}
 	};
 	using void_ = Type<0>;
@@ -74,7 +81,7 @@ namespace BBCPU::ASM {
 		};
 		
 		inline static auto make(T val,Ts ...vals){
-			return Struct<T,Ts...>{code_t{val,vals...}};
+			return Struct<T,Ts...>{code_t{val.to_code(),vals.to_code()...}};
 		}
 
 		auto extract(){
@@ -106,7 +113,7 @@ namespace BBCPU::ASM {
 		};
 		template<typename V>
 		inline static auto make(V val){
-			code_t tmp{val};
+			code_t tmp{val.to_code()};
 			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
 				tmp<<imm(0);
 			}
@@ -136,7 +143,7 @@ namespace BBCPU::ASM {
 		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>))
 
 		inline static auto make(Ts ...vals){
-			return This{code_t{vals...}};
+			return This{code_t{vals.to_code()...}};
 		}
 		auto operator[](size_t i){
 			return T{
@@ -151,7 +158,7 @@ namespace BBCPU::ASM {
 
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
-			return This{code_t{vals...}};
+			return This{code_t{vals.to_code()...}};
 		}
 		operator Int<1,false>() const{
 			code_t tmp{*this};

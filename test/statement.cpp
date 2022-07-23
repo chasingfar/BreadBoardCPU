@@ -4,17 +4,17 @@
 #include "asm_test_util.h"
 
 
-TEST_CASE("block","[asm][statement]"){
+TEST_CASE("program","[asm][statement]"){
 	Label a,b;
 	CPU cpu;
-	load_run(cpu,Block{{
+	load_run(cpu,{
 		imm(Reg::A,5),
 		a,
 		imm(Reg::A,10),
 		b,
 		imm(Reg::A,15),
 		halt(),
-	}},{a,b});
+	},{a,b});
 	REQUIRE(REG_(A) == 5);
 	run(cpu,{a,b});
 	REQUIRE(REG_(A) == 10);
@@ -28,10 +28,10 @@ TEST_CASE("if","[asm][statement]"){
 		cpu.init();
 		load_run(cpu,{
 			if_(1_u8).then({
-				imm(Reg::A,5),
+				void_{imm(Reg::A,5)},
 			}).else_({
-				imm(Reg::A,6),
-			}),
+				void_{imm(Reg::A,6)},
+			}).end(),
 			halt(),
 		});
 		REQUIRE(REG_(A) == 5);
@@ -40,10 +40,10 @@ TEST_CASE("if","[asm][statement]"){
 		cpu.init();
 		load_run(cpu,{
 			if_(0_u8).then({
-				imm(Reg::A,5),
+				void_{imm(Reg::A, 5)},
 			}).else_({
-				imm(Reg::A,6)
-			}),
+				void_{imm(Reg::A,6)},
+			}).end(),
 			halt(),
 		});
 		REQUIRE(REG_(A) == 6);
@@ -62,9 +62,9 @@ TEST_CASE("while","[asm][statement]"){
 	load_run(cpu,{
 		imm(Reg::A,0),imm(Reg::B,3),
 		while_(b).do_({
-			a.set(add(a,b)),
-			b.set(sub(b,1_u8)),
-		}),
+			a.set(add(a, b)),
+			b.set(sub(b, 1_u8))
+		}).end(),
 		halt(),
 	});
 	REQUIRE(REG_(A) == 6);
@@ -77,7 +77,7 @@ TEST_CASE("static variable","[asm][statement]"){
 	auto [b,c]=vars.preset_vars<u8,u8>({12_op},{34_op});
 
 	CPU cpu;
-	LOAD_TO_(MEM::ram_min, vars);
+	LOAD_TO_(MEM::ram_min, vars.to_code());
 
 	REQUIRE(STATIC_(vars, a) == 0);
 	REQUIRE(STATIC_(vars, b) == 12);
@@ -105,7 +105,7 @@ TEST_CASE("static variable with custom type","[asm][statement]"){
 	auto [x,y,z]=vec.extract();
 	
 	CPU cpu;
-	LOAD_TO_(MEM::ram_min, vars);
+	LOAD_TO_(MEM::ram_min, vars.to_code());
 
 	REQUIRE(STATIC_(vars, x) == 3);
 	REQUIRE(STATIC_(vars, y) == 7);
@@ -136,13 +136,13 @@ TEST_CASE("big variable","[asm][statement]"){
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
-	auto test_if=[=](bool_ cond)->code_t{
+	auto test_if=[=](bool_ cond)->Program{
 		return {
 			if_(cond).then({
-				imm(Reg::A,T),
+				void_{imm(Reg::A,T)},
 			}).else_({
-				imm(Reg::A,F),
-			}),
+				void_{imm(Reg::A,F)},
+			}).end(),
 			halt(),
 		};
 	};

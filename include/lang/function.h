@@ -57,7 +57,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			FnBase(ret_start,arg_start)
 			{ start.name=name;}
 		std::shared_ptr<MemVar> alloc(addr_t size) override {
-			addr_t pos=-local_size;
+			offset_t pos=-local_size;
 			local_size+=size;
 			return LocalVar::make(size,pos);
 		}
@@ -76,27 +76,27 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			code_t expr{};
 			expr<<adj(-Base::ret_size);
 			if constexpr (sizeof...(Args)>0){
-				(expr<<...<<_args);
+				(expr<<...<<_args.to_code());
 			}
 			expr<<Ops::call(this->start)
 				<<adj(Base::arg_size);
 			return Ret{expr};
 		}
-		This& impl(const code_t& code){
-			this->body=code_t{ent(this->local_size),code};
+		This& impl(const Block& stmt){
+			this->body=code_t{ent(this->local_size),stmt.to_code()};
 			return *this;
 		}
 
-		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
 		Block impl(F&& fn){
-			code_t body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
+			auto body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		inline code_t return_(Ret value){return {this->ret.set(value), lev()};}
-		inline code_t return_(){return {lev()};}
+		inline void_ return_(Ret value){return void_{code_t{this->ret.set(value).to_code(), lev()}};}
+		inline void_ return_(){return void_{lev()};}
 
 		explicit Fn(const code_t& code){impl(code);}
-		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
 		explicit Fn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
 	};
 
@@ -134,23 +134,23 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		static constexpr offset_t arg_start=Base::arg_size+2;
 		Label end_;
 
-		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
 		This& impl(F&& fn){
-			code_t code=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
+			auto stmt=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			this->body=code_t{
 					saveBP(),
 					adj(-this->local_size),
-					code,
+					stmt.to_code(),
 					end_,
 					loadBP(),
 					adj(Base::arg_size-Base::ret_size),
 			};
 			return *this;
 		}
-		inline code_t return_(Ret value){return {this->ret.set(value), jmp(end_)};}
-		inline code_t return_(){return {jmp(end_)};}
+		inline void_ return_(Ret value){return void_{code_t{this->ret.set(value).to_code(), jmp(end_)}};}
+		inline void_ return_(){return void_{jmp(end_)};}
 
-		template<typename F>requires std::is_invocable_r_v<code_t , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
 		explicit InplaceFn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
 	};
 }

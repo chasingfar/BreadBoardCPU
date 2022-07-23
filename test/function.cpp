@@ -24,7 +24,7 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 			c.set(Reg_C),
 			d.set(Reg_D),
 			dd,
-			lev(),
+			void_{lev()},
 		}),
 		main,
 		fn(8_u8,3_u8),
@@ -117,13 +117,13 @@ TEST_CASE("function recursion","[asm][function]"){
 	CPU cpu;
 	load_run(cpu,{
 		jmp(main),
-		fib.impl([&](auto& _,auto i){
-			return code_t{
-				if_(i<2_u8).then({
+		fib.impl([&](auto& _,auto i)->Block{
+			return {
+				if_(i < 2_u8).then({
 					_.return_(i),
 				}).else_({
 					_.return_(fib(i - 1_u8) + fib(i - 2_u8)),
-				}),
+				}).end(),
 			};
 		}),
 		main,
@@ -150,14 +150,14 @@ TEST_CASE("function sum","[asm][function]"){
 	CPU cpu;
 	load_run(cpu,{
 		jmp(main),
-		sum.impl([&](auto& _,u8 n){
+		sum.impl([&](auto& _,u8 n)->Block{
 			u8 s{_};
-			return code_t{
+			return {
 				s.set(0_u8),
 				while_(n).do_({
 					s+=n,
 					n-=1_u8,
-				}),
+				}).end(),
 				sum.return_(s),
 			};
 		}),
@@ -173,7 +173,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
-			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
+			[](auto& _,auto a,auto b,auto c,auto d)->Block{
 			return {
 				_.return_(u16::make(add(a, c), adc(b, d))),
 			};
@@ -190,7 +190,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
-			[](auto& _,auto a,auto b,auto c,auto d)->code_t{
+			[](auto& _,auto a,auto b,auto c,auto d)->Block{
 			return {
 				_.ret=u16::make(add(a,c),adc(b,d)),
 			};
@@ -304,7 +304,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	StaticVars global;
 	Label heap,aa;
 
-	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->code_t{
+	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->Block{
 		usize next_ptr{global.preset({heap.get_lazy(0),heap.get_lazy(1)})};
 		return {
 			_.ret=((ptr<void_>)next_ptr),
@@ -312,13 +312,13 @@ TEST_CASE("function pointer","[asm][function]"){
 			_.return_(),
 		};
 	}};
-	Fn<void_(ptr<i8>)> fn{[](auto& _, auto i)->code_t{
+	Fn<void_(ptr<i8>)> fn{[](auto& _, auto i)->Block{
 		return {
 			(*i)+=1_i8,
 			_.return_(Val::none),
 		};
 	}};
-	Fn<usize()> main{[&](auto& _)->code_t{
+	Fn<usize()> main{[&](auto& _)->Block{
 		ptr<i8> i{_};
 		return {
 			i=((ptr<i8>)malloc(1_u16)),
@@ -330,7 +330,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	}};
 
 	CPU cpu;
-	LOAD_TO_(MEM::ram_min, (code_t{global, heap}));
+	LOAD_TO_(MEM::ram_min, (code_t{global.to_code(), heap}));
 
 	load_run(cpu,{
 		main(),

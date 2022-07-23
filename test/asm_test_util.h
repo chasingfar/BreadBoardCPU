@@ -44,7 +44,7 @@ inline CPU& run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=1
 	std::cout<<"run over max_iter="<<max_iter<<std::endl;
 	return cpu;
 }
-inline CPU& load_run(CPU& cpu,const code_t& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
+inline CPU& load_run(CPU& cpu,const Program& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
 	cpu.load(ASM::parse(program));
 	return run(cpu,pause_at,max_iter);
 }
