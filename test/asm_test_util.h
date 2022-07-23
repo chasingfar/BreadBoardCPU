@@ -11,6 +11,7 @@
 #include "lang/lang.h"
 
 using namespace BBCPU::ASM;
+using namespace BBCPU::Lang;
 using BBCPU::CPU;
 using ALU74181::Carry;
 using MEM=decltype(CPU{}.mem);
@@ -21,9 +22,9 @@ using MEM=decltype(CPU{}.mem);
 #define STACK_INSERT_ cpu.read_ptr(CPU::Reg16::SP)
 #define LOCAL_(var) cpu.read_ptr(CPU::ASM_BP,std::dynamic_pointer_cast<LocalVar>((var).value)->offset)
 #define STATIC_(label,var) cpu.mem.get_data(*(label).start.addr+std::dynamic_pointer_cast<StaticVar>((var).value)->offset).value_or(0)
-#define RUN_OP_(code) cpu.load_op(ASM{}<<(code)<<ASM::END);cpu.tick_op();
+#define RUN_OP_(code) cpu.load_op(Code{(code)}.assemble());cpu.tick_op();
 #define SET_FLAG_(flag,value_) cpu.cu.tbl.D=BBCPU::MCTRL::state::flag::set(cpu.cu.tbl.D.value(),value_);
-#define LOAD_TO_(start,code) cpu.load(ASM{start}<<(code)<<ASM::END,start);
+#define LOAD_TO_(start,code) cpu.load(Code{(code)}.assemble(start),start);
 
 inline op_t operator "" _op(unsigned long long value) {
     return static_cast<op_t>(value);
@@ -44,8 +45,8 @@ inline CPU& run(CPU& cpu,const std::vector<Label>& pause_at={},size_t max_iter=1
 	std::cout<<"run over max_iter="<<max_iter<<std::endl;
 	return cpu;
 }
-inline CPU& load_run(CPU& cpu,const Program& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
-	cpu.load(ASM::parse(program));
+inline CPU& load_run(CPU& cpu,const Code& program,const std::vector<Label>& pause_at={},size_t max_iter=1024){
+	cpu.load(program.assemble());
 	return run(cpu,pause_at,max_iter);
 }
 #endif //BBCPU_ASM_TEST_UTIL_H

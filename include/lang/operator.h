@@ -5,15 +5,15 @@
 #ifndef BBCPU_OPERATOR_H
 #define BBCPU_OPERATOR_H
 #include "function.h"
-namespace BBCPU::ASM {
+namespace BBCPU::Lang {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline Int<Size,Signed> calc_(const Int<Size,Signed>& lhs) {
-		code_t tmp{lhs.to_code()};
+		Code tmp{lhs};
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
 				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...)>{
-					[](auto& _,Int<I-I+1,Signed>...ls)->Block{
+					[](auto& _,Int<I-I+1,Signed>...ls)->Stmt{
 						return {
 							ls.set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls))...
 						};
@@ -28,12 +28,12 @@ namespace BBCPU::ASM {
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
 	inline Int<Size,Signed> calc_(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs) {
-		code_t tmp{lhs.to_code()};
+		Code tmp{lhs};
 		tmp << rhs.to_code();
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
 				return Function::InplaceFn<Int<Size,Signed>(Int<I-I+1,Signed>...,Int<I-I+1,Signed>...)>{
-					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->Block{
+					[](auto& _,Int<I-I+1,Signed>...ls,Int<I-I+1,Signed>...rs)->Stmt{
 						return {
 							ls.set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls,rs))...
 						};
@@ -105,17 +105,17 @@ namespace BBCPU::ASM {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<<(const Int<Size,Signed>& lhs,size_t n){
-		code_t tmp{lhs.to_code()};
+		Code tmp{lhs};
 		for (size_t i = 0; i < n; ++i) {
-			tmp<<shl();
+			tmp<<Ops::shl();
 		}
 		return Int<Size,Signed>{tmp};
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator>>(const Int<Size,Signed>& lhs,size_t n){
-		code_t tmp{lhs.to_code()};
+		Code tmp{lhs};
 		for (size_t i = 0; i < n; ++i) {
-			tmp<<shr();
+			tmp<<Ops::shr();
 		}
 		return Int<Size,Signed>{tmp};
 	}

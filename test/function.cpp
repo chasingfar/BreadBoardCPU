@@ -117,7 +117,7 @@ TEST_CASE("function recursion","[asm][function]"){
 	CPU cpu;
 	load_run(cpu,{
 		jmp(main),
-		fib.impl([&](auto& _,auto i)->Block{
+		fib.impl([&](auto& _,auto i)->Stmt{
 			return {
 				if_(i < 2_u8).then({
 					_.return_(i),
@@ -150,7 +150,7 @@ TEST_CASE("function sum","[asm][function]"){
 	CPU cpu;
 	load_run(cpu,{
 		jmp(main),
-		sum.impl([&](auto& _,u8 n)->Block{
+		sum.impl([&](auto& _,u8 n)->Stmt{
 			u8 s{_};
 			return {
 				s.set(0_u8),
@@ -173,7 +173,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
-			[](auto& _,auto a,auto b,auto c,auto d)->Block{
+			[](auto& _,auto a,auto b,auto c,auto d)->Stmt{
 			return {
 				_.return_(u16::make(add(a, c), adc(b, d))),
 			};
@@ -190,7 +190,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
-			[](auto& _,auto a,auto b,auto c,auto d)->Block{
+			[](auto& _,auto a,auto b,auto c,auto d)->Stmt{
 			return {
 				_.ret=u16::make(add(a,c),adc(b,d)),
 			};
@@ -304,7 +304,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	StaticVars global;
 	Label heap,aa;
 
-	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->Block{
+	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->Stmt{
 		usize next_ptr{global.preset({heap.get_lazy(0),heap.get_lazy(1)})};
 		return {
 			_.ret=((ptr<void_>)next_ptr),
@@ -312,13 +312,13 @@ TEST_CASE("function pointer","[asm][function]"){
 			_.return_(),
 		};
 	}};
-	Fn<void_(ptr<i8>)> fn{[](auto& _, auto i)->Block{
+	Fn<void_(ptr<i8>)> fn{[](auto& _, auto i)->Stmt{
 		return {
 			(*i)+=1_i8,
 			_.return_(Val::none),
 		};
 	}};
-	Fn<usize()> main{[&](auto& _)->Block{
+	Fn<usize()> main{[&](auto& _)->Stmt{
 		ptr<i8> i{_};
 		return {
 			i=((ptr<i8>)malloc(1_u16)),
@@ -330,7 +330,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	}};
 
 	CPU cpu;
-	LOAD_TO_(MEM::ram_min, (code_t{global.to_code(), heap}));
+	LOAD_TO_(MEM::ram_min, (Code{global, heap}));
 
 	load_run(cpu,{
 		main(),

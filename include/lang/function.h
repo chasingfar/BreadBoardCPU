@@ -7,7 +7,7 @@
 
 #include <utility>
 #include "statement.h"
-namespace BBCPU::ASM::Function{
+namespace BBCPU::Lang::Function{
 /*
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 
@@ -73,30 +73,30 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		explicit Fn(const std::string& name=""):Base{name,ret_start,arg_start}{}
 
 		Ret operator()(const Args&... _args) const{
-			code_t expr{};
+			Code expr{};
 			expr<<adj(-Base::ret_size);
 			if constexpr (sizeof...(Args)>0){
-				(expr<<...<<_args.to_code());
+				(expr<<...<<_args);
 			}
 			expr<<Ops::call(this->start)
 				<<adj(Base::arg_size);
 			return Ret{expr};
 		}
-		This& impl(const Block& stmt){
-			this->body=code_t{ent(this->local_size),stmt.to_code()};
+		This& impl(const Stmt& stmt){
+			this->body<<void_{Code{ent(this->local_size), stmt}};
 			return *this;
 		}
 
-		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		Block impl(F&& fn){
 			auto body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		inline void_ return_(Ret value){return void_{code_t{this->ret.set(value).to_code(), lev()}};}
+		inline void_ return_(Ret value){return void_{Code{this->ret.set(value), lev()}};}
 		inline void_ return_(){return void_{lev()};}
 
-		explicit Fn(const code_t& code){impl(code);}
-		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
+		explicit Fn(const Stmt& stmt){impl(stmt);}
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		explicit Fn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
 	};
 
@@ -134,23 +134,23 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		static constexpr offset_t arg_start=Base::arg_size+2;
 		Label end_;
 
-		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		This& impl(F&& fn){
 			auto stmt=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
-			this->body=code_t{
-					saveBP(),
-					adj(-this->local_size),
-					stmt.to_code(),
-					end_,
-					loadBP(),
-					adj(Base::arg_size-Base::ret_size),
-			};
+			this->body<<void_{Code{
+				saveBP(),
+				adj(-this->local_size),
+				stmt,
+				end_,
+				loadBP(),
+				adj(Base::arg_size-Base::ret_size),
+			}};
 			return *this;
 		}
-		inline void_ return_(Ret value){return void_{code_t{this->ret.set(value).to_code(), jmp(end_)}};}
+		inline void_ return_(Ret value){return void_{Code{this->ret.set(value), jmp(end_)}};}
 		inline void_ return_(){return void_{jmp(end_)};}
 
-		template<typename F>requires std::is_invocable_r_v<Block , F, This&, Args...>
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		explicit InplaceFn(F&& fn):Base{ret_start,arg_start}{impl(fn);}
 	};
 }

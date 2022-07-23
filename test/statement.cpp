@@ -136,7 +136,7 @@ TEST_CASE("big variable","[asm][statement]"){
 }
 TEST_CASE("if cmp","[asm][statement]"){
 	op_t T=7,F=6;
-	auto test_if=[=](bool_ cond)->Program{
+	auto test_if=[=](bool_ cond)->Code{
 		return {
 			if_(cond).then({
 				void_{imm(Reg::A,T)},

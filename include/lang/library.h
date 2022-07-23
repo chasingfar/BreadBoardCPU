@@ -6,21 +6,21 @@
 #define BBCPU_LIBRARY_H
 #include <unordered_map>
 #include "operator.h"
-namespace BBCPU::ASM::Library{
+namespace BBCPU::Lang::Library{
 	struct Lib{
-		std::unordered_map<void*,code_t> fns{};
+		std::unordered_map<void*,Code> fns{};
 		void clear(){
 			fns.clear();
 		}
 		size_t size() const{
 			return fns.size();
 		}
-		void add(void* fn,code_t impl){
+		void add(void* fn,Code impl){
 			fns.try_emplace(fn,impl);
 		}
-		code_t to_code() const{
+		Code to_code() const{
 			Label end;
-			code_t code{};
+			Code code{};
 			for (const auto&[fn, impl] : fns) {
 				code << impl;
 			}
@@ -33,11 +33,11 @@ namespace BBCPU::ASM::Library{
 	template<addr_t Size,bool Signed>
 	inline Int<Size,Signed> mul(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
 		static Function::Fn<Int<Size,Signed>(Int<Size,Signed>,Int<Size,Signed>)> fn{
-			[](auto& _,const Int<Size,Signed>& ls,const Int<Size,Signed>& rs)->Block{
+			[](auto& _,const Int<Size,Signed>& ls,const Int<Size,Signed>& rs)->Stmt{
 				u8 rs1{std::dynamic_pointer_cast<MemVar>(rs.value)->shift(0,1)};
 				auto ret_value=std::dynamic_pointer_cast<MemVar>(_.ret.value);
 				return {
-					([&]<size_t ...I>(std::index_sequence<I...>)->Block{
+					([&]<size_t ...I>(std::index_sequence<I...>)->Stmt{
 						if constexpr(Signed){
 							i8 ret[Size]{i8{ret_value->shift(I, 1)}...};
 							return {ret[I].set(0_i8)...};

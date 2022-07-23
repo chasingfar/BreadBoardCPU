@@ -70,24 +70,48 @@ namespace BBCPU::ASM {
 			return addr.get();
 		}
 	};
-	using code_t = Util::flat_vector<std::variant<op_t, lazy_t, Label>>;
-	
-	inline static size_t data_size(code_t code){
-		return std::count_if(code.begin(), code.end(), [](auto c){return std::get_if<Label>(&c)==nullptr;});
-	}
-
-	struct ASM {
-		addr_t start=0;
-		data_t data;
-		static struct end_t {} END;
-
-		size_t pc() const {
-			return data.size()+start;
+	template<typename T>
+	concept CanToCode=requires (T x){x.to_code();};
+	struct Code{
+		using type=std::variant<op_t, lazy_t, Label, Code>;
+		std::vector<type> codes;
+		Code(std::initializer_list<type> codes):codes{codes}{}
+		Code(const CanToCode auto& code):codes{code.to_code()}{}
+		Code& operator <<(const type& code){
+			codes.push_back(code);
+			return *this;
 		}
-
-		ops_t resolve() {
+		addr_t size() const{
+			addr_t sum=0;
+			for (const auto &code:codes) {
+				sum+=std::visit(Util::lambda_compose{
+					[](    const lazy_t &fn)->addr_t { return 1; },
+					[](             op_t op)->addr_t { return 1; },
+					[](  const Label& label)->addr_t { return 0; },
+					[](const Code& sub_code)->addr_t { return sub_code.size();},
+				}, code);
+			}
+			return sum;
+		}
+		data_t resolve(addr_t start=0) const{
+			data_t data{};
+			data.reserve(size());
+			for (const auto &code:codes) {
+				std::visit(Util::lambda_compose{
+					[&](const lazy_t &fn)   { data.emplace_back(fn); },
+					[&](op_t op)            { data.emplace_back(op); },
+					[&](const Label& label) { label.set(start+data.size()); },
+					[&](const Code& sub_code) {
+						data_t sub_data=sub_code.resolve(start+data.size());
+						data.insert(data.end(),sub_data.begin(),sub_data.end());
+					},
+				}, code);
+			}
+			return data;
+		}
+		static ops_t assemble(data_t data){
 			ops_t ops;
-			ops.reserve(pc());
+			ops.reserve(data.size());
 			for (auto &code:data) {
 				ops.emplace_back(std::visit(Util::lambda_compose{
 					[&](const lazy_t &fn) { return fn(ops.size()); },
@@ -96,38 +120,18 @@ namespace BBCPU::ASM {
 			}
 			return ops;
 		}
-
-		ASM &operator<<(const code_t& codes) {
-			for (auto &code:codes) {
-				std::visit(Util::lambda_compose{
-					[&](const lazy_t &fn) { data.emplace_back(fn); },
-					[&](op_t op) {  data.emplace_back(op); },
-					[&](const Label& label) { label.set(pc()); },
-				}, code);
-			}
-			return *this;
-		}
-
-		ASM &operator>>(const Label& label) {
-			label.set(pc());
-			return *this;
-		}
-
-		ops_t operator<<(end_t) {
-			return resolve();
-		}
-
-		friend std::ostream &operator<<(std::ostream &os, ASM asm_) {
-			for (auto code:asm_.resolve()) {
-				os << std::bitset<8>(code) << std::endl;
-			}
-			return os;
-		}
-
-		static ops_t parse(const code_t& codes,addr_t start=0){
-			return ASM{start}<<codes<<END;
+		ops_t assemble(addr_t start=0) const{
+			return assemble(resolve(start));
 		}
 	};
+	struct CodeBlock{
+		Label start;
+		Code body{};
+		Label end;
 
+		Code to_code() const{
+			return {start,body,end};
+		}
+	};
 }
 #endif //BBCPU_BASIC_H

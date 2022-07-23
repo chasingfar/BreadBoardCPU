@@ -21,7 +21,7 @@
 	NAME(const Base& base):Base{base}{}
 #define DEF_TYPE2(NAME,...) DEF_TYPE(NAME,(NAME),(__VA_ARGS__))
 
-namespace BBCPU::ASM {
+namespace BBCPU::Lang {
 	template<addr_t Size>
 	struct Type {
 		static constexpr addr_t size = Size;
@@ -30,18 +30,18 @@ namespace BBCPU::ASM {
 		template<typename T> requires std::is_base_of_v<Value,T>
 		explicit Type(std::shared_ptr<T> value):value(value){}
 		explicit Type(Allocator& allocator):value(allocator.alloc(size)){}
-		explicit Type(const code_t& expr):value(std::make_shared<Expr>(expr)){}
+		explicit Type(const Code& expr):value(std::make_shared<Expr>(expr)){}
 
 		Type<0> set(const Type<Size>& rhs) const{
-			return Type<0>{code_t{rhs.value->load(), std::dynamic_pointer_cast<Var>(value)->save()}};
+			return Type<0>{Code{rhs.value->load(), std::dynamic_pointer_cast<Var>(value)->save()}};
 		}
-		auto operator =(const Type<Size>& rhs) const{ // NOLINT(bugprone-unhandled-self-assignment)
+		auto operator =(const Type<Size>& rhs) const{ // NOLINT(bugprone-unhandled-self-assignment,misc-unconventional-assign-operator)
 			return set(rhs);
 		}
-		code_t to_code() const{
+		Code to_code() const{
 			return value->load();
 		}
-		code_t to_stmt() const{
+		Code to_stmt() const{
 			if constexpr(Size==0){
 				return to_code();
 			}
@@ -55,7 +55,7 @@ namespace BBCPU::ASM {
 	using void_ = Type<0>;
 
 	namespace Val{
-		inline static const void_ none{code_t{}};
+		inline static const void_ none{Code{}};
 	}
 
 	template<typename To,typename From>
@@ -81,7 +81,7 @@ namespace BBCPU::ASM {
 		};
 		
 		inline static auto make(T val,Ts ...vals){
-			return Struct<T,Ts...>{code_t{val.to_code(),vals.to_code()...}};
+			return Struct<T,Ts...>{Code{val,vals...}};
 		}
 
 		auto extract(){
@@ -113,7 +113,7 @@ namespace BBCPU::ASM {
 		};
 		template<typename V>
 		inline static auto make(V val){
-			code_t tmp{val.to_code()};
+			Code tmp{val};
 			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
 				tmp<<imm(0);
 			}
@@ -143,7 +143,7 @@ namespace BBCPU::ASM {
 		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>))
 
 		inline static auto make(Ts ...vals){
-			return This{code_t{vals.to_code()...}};
+			return This{Code{vals...}};
 		}
 		auto operator[](size_t i){
 			return T{
@@ -158,10 +158,10 @@ namespace BBCPU::ASM {
 
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
-			return This{code_t{vals.to_code()...}};
+			return This{Code{vals...}};
 		}
 		operator Int<1,false>() const{
-			code_t tmp{*this};
+			Code tmp{*this};
 			for (addr_t i = 1; i < Size; ++i) {
 				tmp << OR();
 			}
@@ -207,14 +207,14 @@ namespace BBCPU::ASM {
 		using Base = AsInt<T>;
 		T literal;
 		explicit IntLiteral(long long val):literal(val){
-			code_t tmp{};
+			Code tmp{};
 			for (size_t i=0;i<sizeof(T);++i){
 				tmp<<imm((val>>i*8)&0xFF);
 			}
 			this->value=std::make_shared<Expr>(tmp);
 		}
 		explicit IntLiteral(unsigned long long val):literal(val){
-			code_t tmp{};
+			Code tmp{};
 			for (size_t i=0;i<sizeof(T);++i){
 				tmp<<imm((val>>i*8)&0xFF);
 			}
