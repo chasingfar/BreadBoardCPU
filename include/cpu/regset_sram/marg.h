@@ -2,12 +2,12 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BBCPU_CPU_MARG_H
-#define BBCPU_CPU_MARG_H
+#ifndef BBCPU_CPU_REGSET_SRAM_MARG_H
+#define BBCPU_CPU_REGSET_SRAM_MARG_H
 
 #include "regs.h"
 #include "../alu.h"
-namespace BBCPU {
+namespace BBCPU::RegSet_SRAM {
 	BITFILEDBASE(9) struct STATE : Base {
 		using index  = BitField<Size-3,Base,FollowMode::innerLow>;
 		using TCF     = BitField<1,index>;
@@ -37,4 +37,4 @@ namespace BBCPU {
 		}
 	};
 }
-#endif //BBCPU_CPU_MARG_H
+#endif //BBCPU_CPU_REGSET_SRAM_MARG_H

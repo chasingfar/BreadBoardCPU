@@ -2,11 +2,11 @@
 // Created by chasingfar on 2020/11/12.
 //
 
-#ifndef BBCPU_CPU_OPCODE_H
-#define BBCPU_CPU_OPCODE_H
+#ifndef BBCPU_CPU_REGSET_SRAM_OPCODE_H
+#define BBCPU_CPU_REGSET_SRAM_OPCODE_H
 
 #include "mcode.h"
-namespace BBCPU::OpCode {
+namespace BBCPU::RegSet_SRAM::OpCode {
 	template <size_t Size,typename Ref,auto Id>
 	using OPID=BitId<Id,BitField<Size,Ref,FollowMode::innerHigh> >;
 	template <size_t Size,typename As,typename Ref,typename Base=BitField<Size,Ref,FollowMode::outerLow>>
@@ -554,4 +554,4 @@ namespace BBCPU::OpCode {
 	}
 
 };
-#endif //BBCPU_CPU_OPCODE_H
+#endif //BBCPU_CPU_REGSET_SRAM_OPCODE_H

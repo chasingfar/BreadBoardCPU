@@ -2,10 +2,10 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BBCPU_CPU_MCTRL_H
-#define BBCPU_CPU_MCTRL_H
+#ifndef BBCPU_CPU_REGSET_SRAM_MCTRL_H
+#define BBCPU_CPU_REGSET_SRAM_MCTRL_H
 #include "marg.h"
-namespace BBCPU {
+namespace BBCPU::RegSet_SRAM {
 
 	BITFILEDBASE(2) struct IODIR : Base {
 		using is_write = BitField<1, Base, FollowMode::innerLow>;
@@ -194,4 +194,4 @@ namespace BBCPU {
 		return MCTRL::state::TCF::set(mctrl, MARG::carry::get(marg));
 	}
 }
-#endif //BBCPU_CPU_MCTRL_H
+#endif //BBCPU_CPU_REGSET_SRAM_MCTRL_H

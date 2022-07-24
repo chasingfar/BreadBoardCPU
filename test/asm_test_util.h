@@ -12,7 +12,7 @@
 
 using namespace BBCPU::ASM;
 using namespace BBCPU::Lang;
-using BBCPU::CPU;
+using BBCPU::RegSet_SRAM::Hardware::CPU;
 using ALU74181::Carry;
 using MEM=decltype(CPU{}.mem);
 
@@ -23,7 +23,7 @@ using MEM=decltype(CPU{}.mem);
 #define LOCAL_(var) cpu.read_ptr(CPU::ASM_BP,std::dynamic_pointer_cast<LocalVar>((var).value)->offset)
 #define STATIC_(label,var) cpu.mem.get_data(*(label).start.addr+std::dynamic_pointer_cast<StaticVar>((var).value)->offset).value_or(0)
 #define RUN_OP_(code) cpu.load_op(Code{(code)}.assemble());cpu.tick_op();
-#define SET_FLAG_(flag,value_) cpu.cu.tbl.D=BBCPU::MCTRL::state::flag::set(cpu.cu.tbl.D.value(),value_);
+#define SET_FLAG_(flag,value_) cpu.cu.tbl.D=MCTRL::state::flag::set(cpu.cu.tbl.D.value(),value_);
 #define LOAD_TO_(start,code) cpu.load(Code{(code)}.assemble(start),start);
 
 inline op_t operator "" _op(unsigned long long value) {

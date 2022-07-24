@@ -15,15 +15,17 @@
 
 
 namespace BBCPU::ASM {
-	using namespace OpCode::Ops;
+	using namespace RegSet_SRAM::OpCode::Ops;
+	using RegSet_SRAM::MARG;
+	using RegSet_SRAM::MCTRL;
+	using Reg=RegSet_SRAM::Regs::UReg;
+	using Reg16=RegSet_SRAM::Regs::UReg16;
 	using op_t = uint8_t;
 	using addr_t = uint16_t;
 	using offset_t = int16_t;
 	using lazy_t = std::function<op_t(addr_t)>;
 	using ops_t = std::vector<op_t>;
 	using data_t = std::vector<std::variant<op_t, lazy_t>>;
-	using Reg=Regs::UReg;
-	using Reg16=Regs::UReg16;
 
 	inline std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
 		size_t i = 0;

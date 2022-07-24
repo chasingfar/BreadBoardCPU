@@ -10,8 +10,9 @@
 #include "include/cpu/regfile8x16/opcode.h"
 #include "include/asm/asm.h"
 #include "include/lang/lang.h"*/
-#include "include/cpu/regset_sram/cpu.h"
-#include "include/lang/lang.h"
+//#include "include/cpu/regset_sram/cpu.h"
+//#include "include/lang/lang.h"
+#include "include/sim/sim.h"
 /*struct B:std::enable_shared_from_this<B>{
 	int i;
 	B(){
@@ -43,7 +44,7 @@ struct A{
 	}
 };*/
 int main() {
-	BBCPU::CPU cpu{"[CPU]"};
+	/*BBCPU::CPU cpu{"[CPU]"};
 	{
 		using namespace BBCPU::Lang;
 		auto program=Code{
@@ -66,14 +67,14 @@ int main() {
 		if(cpu.is_halt()){
 			break;
 		}
-	}
-
-	/*Counter<8> cnt;
+	}*/
+	using namespace BBCPU::Sim;
+	Counter<8> cnt;
 	for(int i=0;i<10;i++){
 		cnt.update();
 		std::cout<<cnt<<std::endl;
 		cnt.clk.clock();
-	}*/
+	}
 	/*
 	Circuit::CPU cpu(program);
 	try {

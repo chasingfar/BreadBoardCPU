@@ -2,13 +2,12 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BBCPU_CPU_CPU_H
-#define BBCPU_CPU_CPU_H
+#ifndef BBCPU_CPU_REGSET_SRAM_CPU_H
+#define BBCPU_CPU_REGSET_SRAM_CPU_H
 #include "opcode.h"
-#include "../components.h"
-namespace Circuit::CPU_RegSet_SRAM{
-	using namespace BBCPU;
-
+#include "sim/sim.h"
+namespace BBCPU::RegSet_SRAM::Hardware{
+	using namespace Sim;
 	template<size_t SelSize=2,size_t Size=8>
 	struct RegCESet:Circuit{
 		static constexpr size_t regs_num=1<<SelSize;
@@ -104,7 +103,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 		Nand<1> nand{"[ClkNot]"};
 		Memory<sizeof(addr_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,1,addr_t,op_t> mem{"[Memory]"};
 		CU cu{"[CU]"};
-		ALU<8> alu{"[ALU]"};
+		Sim::ALU<8> alu{"[ALU]"};
 		IOControl ioctl{"[IOctl]"};
 		RegCESet<MCTRL::io::Rs::size,sizeof(op_t)*8> regset{"[RegSet]"};
 		RAM<MCTRL::io::Bs::size,sizeof(op_t)*8> reg{"[RegFile]"};
@@ -133,7 +132,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 			ioctl.reg_oe.wire(reg.oe);
 			ioctl.reg_we.wire(reg.we);
 
-			auto tbl=BBCPU::OpCode::genOpTable();
+			auto tbl=OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
 			init();
 		}
@@ -186,7 +185,7 @@ namespace Circuit::CPU_RegSet_SRAM{
 				os<<std::endl;
 
 				for(size_t i=0;i<16;++i){
-					os<<"Reg["<<BBCPU::Reg(i).str()<<"]="<<reg.data[i];
+					os<<"Reg["<<Reg(i).str()<<"]="<<reg.data[i];
 					if(i%8==7){
 						os<<std::endl;
 					}else{
@@ -204,9 +203,8 @@ namespace Circuit::CPU_RegSet_SRAM{
 		}
 	};
 }
-namespace BBCPU{
-	using CPU=Circuit::CPU_RegSet_SRAM::CPU;
-	/*struct CPU{
+/*namespace BBCPU{
+	struct CPU{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
 		using op_t = uint8_t;
@@ -331,6 +329,6 @@ namespace BBCPU{
 				std::cout<<std::endl;
 			}
 		}
-	};*/
-}
-#endif //BBCPU_CPU_H
+	};
+}*/
+#endif //BBCPU_CPU_REGSET_SRAM_CPU_H
