@@ -45,15 +45,17 @@ struct A{
 int main() {
 	BBCPU::CPU cpu{"[CPU]"};
 	{
-		using namespace BBCPU::ASM;
-		cpu.load(ASM::parse({
+		using namespace BBCPU::Lang;
+		auto program=Code{
 			Reg_A=0_u8,Reg_B=3_u8,
-			While{Reg_B,{{
+			while_(Reg_B).do_({
 				Reg_A+=Reg_B,
 				Reg_B-=1_u8,
-			}}},
+			}).end(),
 			halt(),
-		}));
+		}.assemble();
+		std::cout<<program<<std::endl;
+		cpu.load(program);
 	}
 	std::cout<<std::endl;
 	for(int i=0;i<300;i++){

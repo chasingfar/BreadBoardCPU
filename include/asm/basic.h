@@ -26,19 +26,15 @@ namespace BBCPU::ASM {
 	using Reg16=Regs::UReg16;
 
 	inline std::ostream &operator<<(std::ostream &os, const ops_t& ops) {
-		std::string name;
-		size_t size = 0, i = 0;
-		for (auto op:ops) {
-			os << i << " : " << std::bitset<8>(op) << " ; ";
-			if (size == 0) {
-				std::tie(name, size) = all::parse(op);
-				os << name;
-			} else {
-				os << (int) *reinterpret_cast<int8_t *>(&op);
+		size_t i = 0;
+		for(auto it=ops.begin();it!=ops.end();){
+			auto before=it;
+			auto name = all::parse_iter(it,ops.end());
+			os << i << " : ";
+			for(;before!=it;++before,++i){
+				os<<std::bitset<8>(*before)<<" ";
 			}
-			os << std::endl;
-			--size;
-			++i;
+			os<<"; "<<name<<std::endl;
 		}
 		return os;
 	}
