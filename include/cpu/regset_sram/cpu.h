@@ -75,13 +75,22 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 			demux.G.set(0);
 		}
 	};
-	struct CU:CUBase<MARG::size,MCTRL::size,MARG::opcode::size>{
+	struct CU:CUBase<MARG::size,MCTRL::size,MARG::state::size,MARG::state::low,MCTRL::state::low>{
+
+		Port<MARG::carry::size> Ci;
+		Port<MARG::opcode::size> op;
+
 		Port<MCTRL::alu::size> CMS;
 		Port<MCTRL::io::Bs::size> bs;
 		Port<MCTRL::io::Rs::size> rs;
 		Port<MCTRL::io::dir::size> dir;
 		Enable rs_en;
-		explicit CU(std::string name=""):CUBase<MARG::size,MCTRL::size,MARG::opcode::size>(std::move(name)){
+
+		explicit CU(std::string name=""):CUBase(std::move(name)){
+
+			Ci.wire(sreg.input.sub<MARG::carry::size>(MARG::carry::low));
+			op.wire(sreg.input.sub<MARG::opcode::size>(MARG::opcode::low));
+
 			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
 			bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
 			rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
@@ -94,26 +103,30 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
 		using addr_t = uint16_t;
-		using op_t = uint8_t;
+		using word_t = uint8_t;
+		static constexpr size_t addr_size=sizeof(addr_t)*8;
+		static constexpr size_t word_size=sizeof(word_t)*8;
 		size_t tick_count=0;
 
 		Clock clk,clk_;
 		Port<1> clr;
 
 		Nand<1> nand{"[ClkNot]"};
-		Memory<sizeof(addr_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,sizeof(op_t)*8,1,addr_t,op_t> mem{"[Memory]"};
+		Memory<addr_size, word_size, word_size, word_size,1,addr_t,word_t> mem{"[Memory]"};
+		RegCLR<MARG::carry::size> creg{"[cReg]"};
 		CU cu{"[CU]"};
-		Sim::ALU<8> alu{"[ALU]"};
+		Sim::ALU<word_size> alu{"[ALU]"};
 		IOControl ioctl{"[IOctl]"};
-		RegCESet<MCTRL::io::Rs::size,sizeof(op_t)*8> regset{"[RegSet]"};
-		RAM<MCTRL::io::Bs::size,sizeof(op_t)*8> reg{"[RegFile]"};
+		RegCESet<MCTRL::io::Rs::size, word_size> regset{"[RegSet]"};
+		RAM<MCTRL::io::Bs::size, word_size> reg{"[RegFile]"};
 		explicit CPU(std::string name=""):Circuit(std::move(name)){
-			add_comps(nand,mem,cu,alu,ioctl,regset,reg);
+			add_comps(nand,mem,creg,cu,alu,ioctl,regset,reg);
 
-			clk.wire(nand.A,nand.B,cu.clk,regset.clk);
-			clk_.wire(nand.Y,cu.clk_,reg.ce);
-			clr.wire(cu.clr);
-			alu.Co.wire(cu.Ci);
+			clk.wire(nand.A,nand.B,creg.clk,regset.clk);
+			clk_.wire(nand.Y,cu.clk,reg.ce);
+			clr.wire(cu.clr,creg.clr);
+			alu.Co.wire(creg.input);
+			creg.output.wire(cu.Ci);
 			regset.output[RegSet::I.v()].wire(cu.op);
 			regset.output[RegSet::A.v()].wire(alu.A);
 			regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0));
@@ -143,10 +156,10 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 			clr.set(1);
 			run();
 		}
-		void load(const std::vector<op_t>& data,addr_t start=0){
+		void load(const std::vector<word_t>& data, addr_t start=0){
 			mem.load(data,start);
 		}
-		void load_op(const std::vector<op_t>& op){
+		void load_op(const std::vector<word_t>& op){
 			load(op, get_ptr(Reg16::PC));
 			regset.regs[RegSet::I.v()].output=regset.regs[RegSet::I.v()].data=op[0];
 			cu.sreg.output=cu.sreg.data=MARG::opcode::set(cu.sreg.input.value(),op[0]);
@@ -169,7 +182,7 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 		addr_t get_ptr(Reg16 reg16) const{
 			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
 		}
-		op_t read_ptr(Reg16 reg16,int16_t offset=0) const{
+		word_t read_ptr(Reg16 reg16, int16_t offset=0) const{
 			return mem.get_data(get_ptr(reg16)+offset).value_or(0);
 		}
 		Util::Printer print() const override{

@@ -11,27 +11,21 @@
 
 namespace BBCPU::Sim{
 
-	template<size_t ASize,size_t DSize,size_t OPSize>
+	template<size_t ASize,size_t DSize,size_t STSize,size_t STInOff,size_t STOutOff>
 	struct CUBase:Circuit{
-		static constexpr size_t CSize=1;
-		static constexpr size_t STSize=ASize-OPSize-CSize;
-		Port<OPSize> op;
-		Clock clk,clk_;
-		Port<1> clr,Ci;
+		Clock clk;
+		Port<1> clr;
 
-		RegCLR<CSize> creg{name+"[cReg]"};
 		RegCLR<ASize> sreg{name+"[sReg]"};
 		ROM<ASize,DSize> tbl{name+"[TBL]"};
 		explicit CUBase(std::string name=""):Circuit(std::move(name)){
-			add_comps(creg,sreg,tbl);
+			add_comps(sreg,tbl);
 
-			clk.wire(creg.clk);
-			clk_.wire(sreg.clk);
-			clr.wire(creg.clr,sreg.clr);
-			Ci.wire(creg.input);
-			op.wire(sreg.input.template sub<OPSize>(CSize+STSize));
-			creg.output.wire(sreg.input.template sub<CSize>(0));
-			(tbl.D.template sub<STSize>(0)).wire(sreg.input.template sub<STSize>(CSize));
+			clk.wire(sreg.clk);
+			clr.wire(sreg.clr);
+
+			sreg.input.set(0,Level::PullDown);
+			(tbl.D.template sub<STSize>(STOutOff)).wire(sreg.input.template sub<STSize>(STInOff));
 			sreg.output.wire(tbl.A);
 
 			tbl.ce.set(0);
