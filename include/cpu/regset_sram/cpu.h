@@ -127,8 +127,8 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 		explicit CPU(std::string name=""):Circuit(std::move(name)){
 			add_comps(nand,mem,creg,cu,alu,ioctl,regset,reg);
 
-			clk.wire(nand.A,nand.B,creg.clk,regset.clk);
-			clk_.wire(nand.Y,cu.clk,reg.ce);
+			clk.wire(nand.A,nand.B,creg.clk,regset.clk,reg.ce);
+			clk_.wire(nand.Y,cu.clk);
 			clr.wire(cu.clr,creg.clr);
 			alu.Co.wire(creg.input);
 			creg.output.wire(cu.Ci);
@@ -155,7 +155,7 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 			init();
 		}
 		void init(){
-			clk.set(0);
+			clk.set(1);
 			clr.set(0);
 			run();
 			clr.set(1);

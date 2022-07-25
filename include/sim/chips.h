@@ -15,16 +15,16 @@ namespace BBCPU::Sim{
 	template<size_t Size>
 	struct Reg:Chip{
 		Clock clk;
-		Port<Size> input,output;
+		Port<Size> input,output{0};
 		val_t data{};
 		explicit Reg(std::string name=""):Chip(std::move(name)){
 			add_ports(clk,input,output);
 		}
 		void run() override {
 			if(clk.value() == 0){
-				output=data;
-			}else{
 				data=input.value();
+			}else{
+				output=data;
 			}
 		}
 		void reset() {
@@ -81,7 +81,7 @@ namespace BBCPU::Sim{
 	// IC 7400
 	template<size_t Size>
 	struct Nand:Chip{
-		Port<Size> A,B,Y;
+		Port<Size> A,B,Y{0};
 		explicit Nand(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,Y);
 		}
@@ -96,7 +96,7 @@ namespace BBCPU::Sim{
 	};
 	template<size_t Size>
 	struct Adder:Chip{
-		Port<Size> A,B,O;
+		Port<Size> A,B,O{0};
 		explicit Adder(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,O);
 		}
@@ -112,9 +112,9 @@ namespace BBCPU::Sim{
 	// IC 74181
 	template<size_t Size=8>
 	struct ALU:Chip{
-		Port<Size> A,B,O;
+		Port<Size> A,B,O{0};
 		Port<6> CMS;
-		Port<1> Co;
+		Port<1> Co{0};
 		explicit ALU(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,O,CMS,Co);
 		}
@@ -231,7 +231,7 @@ namespace BBCPU::Sim{
 		static constexpr size_t output_size=1<<SelSize;
 		Port<SelSize> S;
 		Enable G;
-		Port<output_size> Y;
+		Port<output_size> Y{Level::High};
 
 		explicit Demux(std::string name=""):Chip(std::move(name)){
 			add_ports(S,G,Y);
@@ -252,7 +252,7 @@ namespace BBCPU::Sim{
 	template<size_t Size=8>
 	struct Cmp:Chip{
 		Port<Size> P,Q;
-		Port<1> PgtQ,PeqQ;
+		Port<1> PgtQ{1},PeqQ{1};
 
 		explicit Cmp(std::string name=""):Chip(std::move(name)){
 			add_ports(P,Q,PgtQ,PeqQ);
