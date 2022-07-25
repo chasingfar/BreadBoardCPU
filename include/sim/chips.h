@@ -18,7 +18,8 @@ namespace BBCPU::Sim{
 		Port<Size> input,output{0};
 		val_t data{};
 		explicit Reg(std::string name=""):Chip(std::move(name)){
-			add_ports(clk,input,output);
+			ports.add_in(clk,input);
+			ports.add_out(output);
 		}
 		void run() override {
 			if(clk.value() == 0){
@@ -43,7 +44,7 @@ namespace BBCPU::Sim{
 		using Base=Reg<Size>;
 		Enable ce;
 		explicit RegCE(std::string name=""): Base(std::move(name)){
-			Base::add_ports(ce);
+			Base::ports.add_in(ce);
 		}
 		void run() override {
 			Base::run();
@@ -63,7 +64,7 @@ namespace BBCPU::Sim{
 		using Base=Reg<Size>;
 		Enable clr;
 		explicit RegCLR(std::string name=""):Base(std::move(name)){
-			Base::add_ports(clr);
+			Base::ports.add_in(clr);
 		}
 		void run() override {
 			if(clr.is_enable()){
@@ -83,7 +84,8 @@ namespace BBCPU::Sim{
 	struct Nand:Chip{
 		Port<Size> A,B,Y{0};
 		explicit Nand(std::string name=""):Chip(std::move(name)){
-			add_ports(A,B,Y);
+			ports.add_in(A,B);
+			ports.add_out(Y);
 		}
 		void run() override{
 			Y=~(A.value()&B.value());
@@ -98,7 +100,8 @@ namespace BBCPU::Sim{
 	struct Adder:Chip{
 		Port<Size> A,B,O{0};
 		explicit Adder(std::string name=""):Chip(std::move(name)){
-			add_ports(A,B,O);
+			ports.add_in(A,B);
+			ports.add_out(O);
 		}
 		void run() override{
 			O=A.value()+B.value();
@@ -116,7 +119,8 @@ namespace BBCPU::Sim{
 		Port<6> CMS;
 		Port<1> Co{0};
 		explicit ALU(std::string name=""):Chip(std::move(name)){
-			add_ports(A,B,O,CMS,Co);
+			ports.add_in(A,B,CMS);
+			ports.add_out(O,Co);
 		}
 		void run() override {
 			auto Cn=CMS.sub<1>(5).value();
@@ -159,10 +163,15 @@ namespace BBCPU::Sim{
 		data_t data[data_size]{0};
 
 		explicit RAM(std::string name=""):Chip(std::move(name)){
-			add_ports(ce,oe,we,A,D);
+			ports.add_in(ce,oe,we,A);
+			ports.add_io(D);
 		}
 		virtual void do_write(){
-			data[A.value()]=D.value();
+			if(auto v=D.get();v){
+				data[A.value()]=*v;
+			}else{
+				if(log_warning){ std::cerr<<"[Error]"<<name<<" try write but read Floating"<<std::endl; }
+			}
 		}
 		virtual void do_read(){
 			D=data[A.value()];
@@ -195,7 +204,7 @@ namespace BBCPU::Sim{
 		using Base=RAM<ASize,DSize,addr_t,data_t>;
 		explicit ROM(std::string name=""):Base(std::move(name)){}
 		void do_write() override{
-			std::cout<<"[Warning]Try write to ROM"<<std::endl;
+			std::cerr<<"[Warning]"<<this->name<<"Try write to ROM"<<std::endl;
 		}
 	};
 	// Base on IC 74245
@@ -206,16 +215,21 @@ namespace BBCPU::Sim{
 		Port<Size> A,B;
 
 		explicit Bus(std::string name=""):Chip(std::move(name)){
-			add_ports(oe,dir,A,B);
+			ports.add_in(oe,dir);
+			ports.add_io(A,B);
 		}
 		void run() override {
 			A=Level::Floating;
 			B=Level::Floating;
 			if(oe.is_enable()){
 				if(dir.value()==1){
-					B=A.value();
+					if(auto v=A.get();v){
+						B=*v;
+					}
 				}else{
-					A=B.value();
+					if(auto v=B.get();v){
+						A=*v;
+					}
 				}
 			}
 		}
@@ -234,7 +248,8 @@ namespace BBCPU::Sim{
 		Port<output_size> Y{Level::High};
 
 		explicit Demux(std::string name=""):Chip(std::move(name)){
-			add_ports(S,G,Y);
+			ports.add_in(S,G);
+			ports.add_out(Y);
 		}
 		void run() override {
 			Y=-1;
@@ -255,7 +270,8 @@ namespace BBCPU::Sim{
 		Port<1> PgtQ{1},PeqQ{1};
 
 		explicit Cmp(std::string name=""):Chip(std::move(name)){
-			add_ports(P,Q,PgtQ,PeqQ);
+			ports.add_in(P,Q);
+			ports.add_out(PgtQ,PeqQ);
 		}
 		void run() override{
 			PgtQ=!(P.value()>Q.value());
