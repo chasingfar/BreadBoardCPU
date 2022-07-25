@@ -77,24 +77,29 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 	};
 	struct CU:CUBase<MARG::size,MCTRL::size,MARG::state::size,MARG::state::low,MCTRL::state::low>{
 
-		Port<MARG::carry::size> Ci;
-		Port<MARG::opcode::size> op;
+		Port<MARG::carry ::size> Ci ;
+		Port<MARG::INT   ::size> INT{Level::PullDown};
+		Port<MARG::opcode::size> op ;
 
-		Port<MCTRL::alu::size> CMS;
-		Port<MCTRL::io::Bs::size> bs;
-		Port<MCTRL::io::Rs::size> rs;
-		Port<MCTRL::io::dir::size> dir;
+		Port<MCTRL::INTA_  ::size> INTA_;
+		Port<MCTRL::alu    ::size> CMS  ;
+		Port<MCTRL::io::Bs ::size> bs   ;
+		Port<MCTRL::io::Rs ::size> rs   ;
+		Port<MCTRL::io::dir::size> dir  ;
 		Enable rs_en;
 
 		explicit CU(std::string name=""):CUBase(std::move(name)){
-
-			Ci.wire(sreg.input.sub<MARG::carry::size>(MARG::carry::low));
-			op.wire(sreg.input.sub<MARG::opcode::size>(MARG::opcode::low));
-
-			CMS.wire(tbl.D.sub<MCTRL::alu::size>    (MCTRL::alu::low));
-			bs.wire(tbl.D.sub<MCTRL::io::Bs::size> (MCTRL::io::Bs::low));
-			rs.wire(tbl.D.sub<MCTRL::io::Rs::size> (MCTRL::io::Rs::low));
-			dir.wire(tbl.D.sub<MCTRL::io::dir::size>(MCTRL::io::dir::low));
+#define CUWIRE(PORTA,PORTB,NAME) PORTA.wire(PORTB.sub<NAME::size>(NAME::low ))
+			CUWIRE(Ci ,sreg.input,MARG::carry );
+			CUWIRE(INT,sreg.input,MARG::INT   );
+			CUWIRE(op ,sreg.input,MARG::opcode);
+			
+			CUWIRE(INTA_,tbl.D,MCTRL::INTA_  );
+			CUWIRE(CMS  ,tbl.D,MCTRL::alu    );
+			CUWIRE(bs   ,tbl.D,MCTRL::io::Bs );
+			CUWIRE(rs   ,tbl.D,MCTRL::io::Rs );
+			CUWIRE(dir  ,tbl.D,MCTRL::io::dir);
+#undef CUWIRE
 			rs_en.wire(tbl.D.sub<1>(MCTRL::io::dir::low));
 		}
 	};

@@ -24,7 +24,6 @@ namespace BBCPU::Sim{
 			clk.wire(sreg.clk);
 			clr.wire(sreg.clr);
 
-			sreg.input.set(0,Level::PullDown);
 			(tbl.D.template sub<STSize>(STOutOff)).wire(sreg.input.template sub<STSize>(STInOff));
 			sreg.output.wire(tbl.A);
 
