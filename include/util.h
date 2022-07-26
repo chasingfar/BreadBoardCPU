@@ -194,5 +194,27 @@ namespace Util{
 			return os;
 		}
 	};
+	template<typename T,typename E>
+	struct Result{
+		std::variant<T,E> val;
+		Result(auto&& val):val(val){}
+		bool has_value() const{
+			return val.index()==0;
+		}
+		T value() const{
+			return std::get<T>(val);
+		}
+		E error() const{
+			return std::get<E>(val);
+		}
+		explicit operator bool() const{
+			return has_value();
+		}
+		T operator *() const{ return value();}
+		T* operator ->() const{ return std::get_if<T>(&val);}
+		T value_or(auto&& v) const{
+			return has_value()?value():v;
+		}
+	};
 }
 #endif //BBCPU_UTIL_H

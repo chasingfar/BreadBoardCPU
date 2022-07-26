@@ -28,14 +28,14 @@ namespace BBCPU::Sim{
 				val>>=1;
 			}
 		}
-		std::optional<val_t> get() const{
+		Util::Result<val_t,Level> get() const{
 			val_t val=0;
 			for(auto& p:pins){
 				if(auto v=read(p);v){
 					val|=*v;
 					val=(val >> 1u) | ((val&1u) << (pins.size() - 1u));
 				}else{
-					return {};
+					return v.error();
 				}
 			}
 			return val;
@@ -63,7 +63,7 @@ namespace BBCPU::Sim{
 				if(auto v=read(*it);v) {
 					os << *v;
 				}else{
-					os << "E";
+					os << (v.error()==Level::Floating?"F":"E");
 				}
 			}
 			return os;

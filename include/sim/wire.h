@@ -36,11 +36,11 @@ E	E4	E4	E4	E4	E4	E1
 		Level t=o;
 		return t+=n;
 	}
-	inline std::optional<uint8_t> read(const Level level){
+	inline Util::Result<uint8_t,Level> read(const Level level){
 		if(level==Level::Floating || level==Level::Error){
-			return {};
+			return level;
 		}
-		return static_cast<int8_t>(level)>0?1:0;
+		return static_cast<uint8_t>(static_cast<int8_t>(level) > 0 ? 1 : 0);
 	}
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
@@ -61,7 +61,7 @@ E	E4	E4	E4	E4	E4	E1
 			return *this;
 		}
 	};
-	inline std::optional<uint8_t> read(const Wire& wire){
+	inline Util::Result<uint8_t,Level> read(const Wire& wire){
 		return read(wire.get());
 	}
 }
