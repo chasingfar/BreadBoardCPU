@@ -89,7 +89,7 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 		Enable rs_en;
 
 		explicit CU(std::string name=""):CUBase(std::move(name)){
-#define CUWIRE(PORTA,PORTB,NAME) PORTA.wire(PORTB.sub<NAME::size>(NAME::low ))
+#define CUWIRE(PORTA,PORTB,NAME) (PORTA).wire((PORTB).sub<NAME::size>(NAME::low ))
 			CUWIRE(Ci ,sreg.input,MARG::carry );
 			CUWIRE(INT,sreg.input,MARG::INT   );
 			CUWIRE(op ,sreg.input,MARG::opcode);
