@@ -11,6 +11,7 @@ namespace BBCPU::Sim{
 
 		virtual bool update()=0;
 		virtual void run()=0;
+		virtual std::optional<std::string> is_floating() const=0;
 
 		virtual Util::Printer print() const{
 			return [](std::ostream& os){};
@@ -42,7 +43,8 @@ namespace BBCPU::Sim{
 			});
 			return state;
 		}
-		std::optional<state_t> check_update() const{
+		enum struct Reason{Floating,NoChange};
+		Util::Result<state_t,Reason> is_need_update() const{
 			bool has_change=false;
 			state_t state;
 			state.reserve(pins.size());
@@ -52,7 +54,7 @@ namespace BBCPU::Sim{
 				Level v=wire->get();
 				switch(mode){
 					case Mode::IN:
-						if(!read(v).has_value()){ return {}; }
+						if(!read(v).has_value()){ return Reason::Floating; }
 					case Mode::IO:
 						if(it==end||*it!=v){ has_change=true; }
 					case Mode::OUT:
@@ -60,7 +62,7 @@ namespace BBCPU::Sim{
 						if(it!=end){ ++it; }
                 }
 			}
-			if(!has_change){ return {}; }
+			if(!has_change){ return Reason::NoChange; }
 			return state;
 		}
 	};
@@ -73,24 +75,46 @@ namespace BBCPU::Sim{
 		static Util::Printer print_count(){ return [](std::ostream& os){os<<"run:"<<run_count<<",err:"<<err_count;};}
 
 		PinsState ports;
+		bool input_floating=false;
 
 		explicit Chip(std::string name=""):Component(std::move(name)){}
 
+		std::optional<std::string> is_floating() const override{
+			if(input_floating){
+				return name;
+			}
+			return {};
+		}
+
 		bool update() override{
-			auto before = ports.check_update();
-			if(!before){ return false; }
+			auto before = ports.is_need_update();
+			if(!before){
+				if(before.error()==PinsState::Reason::Floating){
+					input_floating=true;
+					return false;
+				}
+				input_floating=false;
+				return false;
+			}
 			try{
 				++run_count;
 				run();
+				input_floating=false;
 			}catch(const std::bad_optional_access& e){
 				++err_count;
+				input_floating=true;
 				if(log_warning){ std::cerr<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
 				return false;
 			}
 			auto new_state=ports.save();
 			if(*before!=new_state){
+				if(log_change){
+					std::cout<<name;
+					if(!ports.last_state.empty()){
+						std::cout<<"{"<<print(ports.last_state)<<"}=>";
+					}
+					std::cout<<"{"<<print(*before)<<"}=>{"<<print(new_state)<<"}"<<std::endl; }
 				ports.last_state=new_state;
-				if(log_change){ std::cout<<name<<"{"<<print(*before)<<"}=>{"<<print(new_state)<<"}"<<std::endl; }
 				return true;
 			}
 			if(log_state){std::cout<<name<<"{"<<print(*before)<<"}"<<std::endl;}
@@ -117,6 +141,19 @@ namespace BBCPU::Sim{
 		}
 		void run() override {
 			while(update()){}
+			if(auto name=is_floating();name){
+				if(Chip::log_warning){std::cerr<<"[Warning][Floating]"<<*name<<std::endl;}
+			}
+		}
+		std::optional<std::string> is_floating() const override{
+			using res_t=std::optional<std::string>;
+			return std::reduce(comps.begin(),comps.end(),res_t{},[](auto res,auto c){
+				return c->is_floating().and_then([&](auto name)->res_t{
+					return name+res.value_or("");
+				}).or_else([&](){
+					return res;
+				});
+			});
 		}
 
 		template<typename ...Ts>
