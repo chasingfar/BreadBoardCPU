@@ -11,16 +11,19 @@
 namespace BBCPU::Sim{
 
 	using val_t=unsigned long long;
+	enum struct Mode{IN,IO,OUT};
 
 	template<size_t Size,typename Pins=std::array<Wire,Size> >
 	struct Port{
+		Mode mode=Mode::IO;
 		Pins pins;
 		size_t offset=0;
 
 		Port()=default;
 		explicit Port(Pins&& pins,size_t offset=0):pins{pins},offset{offset}{}
-		explicit Port(val_t val){set(val);}
-		explicit Port(Level level){set(0,level);}
+		explicit Port(val_t val):mode(Mode::OUT){set(val);}
+		explicit Port(Level level):mode(Mode::OUT){set(0,level);}
+		explicit Port(Mode mode):mode(mode){}
 
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
@@ -107,12 +110,14 @@ namespace BBCPU::Sim{
 	};
 	struct Enable:Port<1>{
 		using Port<1>::Port;
+		Enable():Port(Mode::IN){}
 		bool is_enable(){
 			return value()==0;
 		}
 	};
 	struct Clock:Port<1>{
 		using Port<1>::Port;
+		Clock():Port(Mode::IN){}
 		void clock(){
 			set(~value());
 		}

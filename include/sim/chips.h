@@ -15,11 +15,10 @@ namespace BBCPU::Sim{
 	template<size_t Size>
 	struct Reg:Chip{
 		Clock clk;
-		Port<Size> input,output{0};
+		Port<Size> input{Mode::IN},output{0};
 		val_t data{};
 		explicit Reg(std::string name=""):Chip(std::move(name)){
-			ports.add_in(clk,input);
-			ports.add_out(output);
+			ports.add_ports(clk,input,output);
 		}
 		void run() override {
 			if(clk.value() == 0){
@@ -44,7 +43,7 @@ namespace BBCPU::Sim{
 		using Base=Reg<Size>;
 		Enable ce;
 		explicit RegCE(std::string name=""): Base(std::move(name)){
-			Base::ports.add_in(ce);
+			Base::ports.add_ports(ce);
 		}
 		void run() override {
 			Base::run();
@@ -64,7 +63,7 @@ namespace BBCPU::Sim{
 		using Base=Reg<Size>;
 		Enable clr;
 		explicit RegCLR(std::string name=""):Base(std::move(name)){
-			Base::ports.add_in(clr);
+			Base::ports.add_ports(clr);
 		}
 		void run() override {
 			if(clr.is_enable()){
@@ -82,10 +81,9 @@ namespace BBCPU::Sim{
 	// IC 7400
 	template<size_t Size>
 	struct Nand:Chip{
-		Port<Size> A,B,Y{0};
+		Port<Size> A{Mode::IN},B{Mode::IN},Y{0};
 		explicit Nand(std::string name=""):Chip(std::move(name)){
-			ports.add_in(A,B);
-			ports.add_out(Y);
+			ports.add_ports(A,B,Y);
 		}
 		void run() override{
 			Y=~(A.value()&B.value());
@@ -98,10 +96,9 @@ namespace BBCPU::Sim{
 	};
 	template<size_t Size>
 	struct Adder:Chip{
-		Port<Size> A,B,O{0};
+		Port<Size> A{Mode::IN},B{Mode::IN},O{0};
 		explicit Adder(std::string name=""):Chip(std::move(name)){
-			ports.add_in(A,B);
-			ports.add_out(O);
+			ports.add_ports(A,B,O);
 		}
 		void run() override{
 			O=A.value()+B.value();
@@ -115,12 +112,11 @@ namespace BBCPU::Sim{
 	// IC 74181
 	template<size_t Size=8>
 	struct ALU:Chip{
-		Port<Size> A,B,O{0};
-		Port<6> CMS;
+		Port<Size> A{Mode::IN},B{Mode::IN},O{0};
+		Port<6> CMS{Mode::IN};
 		Port<1> Co{0};
 		explicit ALU(std::string name=""):Chip(std::move(name)){
-			ports.add_in(A,B,CMS);
-			ports.add_out(O,Co);
+			ports.add_ports(A,B,CMS,O,Co);
 		}
 		void run() override {
 			auto Cn=CMS.sub<1>(5).value();
@@ -158,13 +154,12 @@ namespace BBCPU::Sim{
 	struct RAM:Chip{
 		static constexpr size_t data_size=1<<ASize;
 		Enable ce,oe,we;
-		Port<ASize> A;
+		Port<ASize> A{Mode::IN};
 		Port<DSize> D;
 		data_t data[data_size]{0};
 
 		explicit RAM(std::string name=""):Chip(std::move(name)){
-			ports.add_in(ce,oe,we,A);
-			ports.add_io(D);
+			ports.add_ports(ce,oe,we,A,D);
 		}
 		virtual void do_write(){
 			if(auto v=D.get();v){
@@ -211,12 +206,11 @@ namespace BBCPU::Sim{
 	template<size_t Size=8>
 	struct Bus:Chip{
 		Enable oe;
-		Port<1> dir;
+		Port<1> dir{Mode::IN};
 		Port<Size> A,B;
 
 		explicit Bus(std::string name=""):Chip(std::move(name)){
-			ports.add_in(oe,dir);
-			ports.add_io(A,B);
+			ports.add_ports(oe,dir,A,B);
 		}
 		void run() override {
 			A=Level::Floating;
@@ -243,13 +237,12 @@ namespace BBCPU::Sim{
 	template<size_t SelSize=2>
 	struct Demux:Chip{
 		static constexpr size_t output_size=1<<SelSize;
-		Port<SelSize> S;
+		Port<SelSize> S{Mode::IN};
 		Enable G;
 		Port<output_size> Y{Level::High};
 
 		explicit Demux(std::string name=""):Chip(std::move(name)){
-			ports.add_in(S,G);
-			ports.add_out(Y);
+			ports.add_ports(S,G,Y);
 		}
 		void run() override {
 			Y=-1;
@@ -266,12 +259,11 @@ namespace BBCPU::Sim{
 	// Base on IC 74682
 	template<size_t Size=8>
 	struct Cmp:Chip{
-		Port<Size> P,Q;
+		Port<Size> P{Mode::IN},Q{Mode::IN};
 		Port<1> PgtQ{1},PeqQ{1};
 
 		explicit Cmp(std::string name=""):Chip(std::move(name)){
-			ports.add_in(P,Q);
-			ports.add_out(PgtQ,PeqQ);
+			ports.add_ports(P,Q,PgtQ,PeqQ);
 		}
 		void run() override{
 			PgtQ=!(P.value()>Q.value());

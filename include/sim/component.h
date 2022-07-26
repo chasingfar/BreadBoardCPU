@@ -22,26 +22,19 @@ namespace BBCPU::Sim{
 	
 	struct PinsState{
 		using state_t=std::vector<Level>;
-		enum struct Mode{ IN,IO,OUT };
 		std::vector<std::pair<Mode,Wire*>> pins;
 		state_t last_state;
 		
 		template<size_t ...Sizes>
-		void add_ports(Mode mode,Port<Sizes>&... ports){
+		void add_ports(Port<Sizes>&... ports){
 			pins.reserve((pins.size()+...+Sizes));
 			([&](auto& port){
 				port.offset=pins.size();
 				for(auto& w:port.pins){
-					pins.emplace_back(mode,&w);
+					pins.emplace_back(port.mode,&w);
 				}
 			}(ports),...);
 		}
-		template<size_t ...Sizes>
-		void add_in(Port<Sizes>&... ports){ add_ports(Mode::IN,ports...); }
-		template<size_t ...Sizes>
-		void add_io(Port<Sizes>&... ports){ add_ports(Mode::IO,ports...); }
-		template<size_t ...Sizes>
-		void add_out(Port<Sizes>&... ports){ add_ports(Mode::OUT,ports...); }
 		state_t save() const{
 			state_t state{pins.size()};
 			std::transform(pins.begin(),pins.end(),state.begin(),[](auto pin){
