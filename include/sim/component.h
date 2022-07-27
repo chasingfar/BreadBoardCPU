@@ -2,6 +2,8 @@
 #define BBCPU_SIM_COMPONENT_H
 
 #include "port.h"
+#include <numeric>
+#include <unordered_set>
 
 namespace BBCPU::Sim{
 
@@ -9,7 +11,8 @@ namespace BBCPU::Sim{
 		std::string name{};
 		explicit Component(std::string name=""):name(std::move(name)){}
 
-		virtual bool update()=0;
+		using affected_t=std::unordered_set<Chip*>;
+		virtual affected_t update()=0;
 		virtual void run()=0;
 		virtual std::optional<std::string> is_floating() const=0;
 
@@ -20,18 +23,33 @@ namespace BBCPU::Sim{
 			return os<<comp.print();
 		}
 	};
-	
-	struct PinsState{
+	struct Chip:Component{
+		inline static bool log_warning=false;
+		inline static bool log_state=false;
+		inline static bool log_change=false;
+		inline static size_t run_count=0;
+		inline static size_t err_count=0;
+		static Util::Printer print_count(){ return [](std::ostream& os){os<<"run:"<<run_count<<",err:"<<err_count;};}
+
 		using state_t=std::vector<Level>;
 		std::vector<std::pair<Mode,Wire*>> pins;
-		state_t last_state;
-		
+		bool input_floating=false;
+
+		explicit Chip(std::string name=""):Component(std::move(name)){}
+
+		std::optional<std::string> is_floating() const override{
+			if(input_floating){
+				return name;
+			}
+			return {};
+		}
 		template<size_t ...Sizes>
 		void add_ports(Port<Sizes>&... ports){
 			pins.reserve((pins.size()+...+Sizes));
 			([&](auto& port){
 				port.offset=pins.size();
 				for(auto& w:port.pins){
+					w.chip=this;
 					pins.emplace_back(port.mode,&w);
 				}
 			}(ports),...);
@@ -43,82 +61,53 @@ namespace BBCPU::Sim{
 			});
 			return state;
 		}
-		enum struct Reason{Floating,NoChange};
-		Util::Result<state_t,Reason> is_need_update() const{
-			bool has_change=false;
+		state_t is_need_update() const{
 			state_t state;
 			state.reserve(pins.size());
-			auto it=last_state.begin();
-			auto end=last_state.end();
 			for(auto [mode,wire]:pins){
-				Level v=wire->get();
-				switch(mode){
-					case Mode::IN:
-						if(!read(v).has_value()){ return Reason::Floating; }
-					case Mode::IO:
-						if(it==end||*it!=v){ has_change=true; }
-					case Mode::OUT:
-						state.emplace_back(v);
-						if(it!=end){ ++it; }
-                }
+				auto v=wire->get();
+				if(mode==Mode::IN&&!read(v)){
+					return {};
+				}
+				state.push_back(v);
 			}
-			if(!has_change){ return Reason::NoChange; }
 			return state;
 		}
-	};
-	struct Chip:Component{
-		inline static bool log_warning=false;
-		inline static bool log_state=false;
-		inline static bool log_change=false;
-		inline static size_t run_count=0;
-		inline static size_t err_count=0;
-		static Util::Printer print_count(){ return [](std::ostream& os){os<<"run:"<<run_count<<",err:"<<err_count;};}
-
-		PinsState ports;
-		bool input_floating=false;
-
-		explicit Chip(std::string name=""):Component(std::move(name)){}
-
-		std::optional<std::string> is_floating() const override{
-			if(input_floating){
-				return name;
-			}
-			return {};
-		}
-
-		bool update() override{
-			auto before = ports.is_need_update();
-			if(!before){
-				if(before.error()==PinsState::Reason::Floating){
-					input_floating=true;
-					return false;
+		affected_t get_affected(const state_t& before){
+			affected_t affected;
+			auto it=before.begin();
+			for(auto [mode,p]:pins){
+				if(*it!=p->get()){
+					p->each([&](Wire* w){
+						if(w->chip!=this&&w->chip!=nullptr){
+							affected.emplace(w->chip);
+						}
+					});
 				}
-				input_floating=false;
-				return false;
+				++it;
+			}
+			return affected;
+		}
+		affected_t update() override{
+			auto before=is_need_update();
+			if(before.empty()){
+				input_floating=true;
+				if(log_state){ std::cout<<"{"<<print(before)<<"}"<<std::endl; }
+				return {};
 			}
 			try{
 				++run_count;
 				run();
 				input_floating=false;
-			}catch(const std::bad_optional_access& e){
+			}catch(const std::bad_variant_access& e){
 				++err_count;
 				input_floating=true;
+				if(log_state){ std::cout<<"{"<<print(before)<<"}"<<std::endl; }
 				if(log_warning){ std::cerr<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
-				return false;
+				return {};
 			}
-			auto new_state=ports.save();
-			if(*before!=new_state){
-				if(log_change){
-					std::cout<<name;
-					if(!ports.last_state.empty()){
-						std::cout<<"{"<<print(ports.last_state)<<"}=>";
-					}
-					std::cout<<"{"<<print(*before)<<"}=>{"<<print(new_state)<<"}"<<std::endl; }
-				ports.last_state=new_state;
-				return true;
-			}
-			if(log_state){std::cout<<name<<"{"<<print(*before)<<"}"<<std::endl;}
-			return false;
+			if(log_change){ std::cout<<"{"<<print(before)<<"}=>{"<<print()<<"}"<<std::endl; }
+			return get_affected(before);
 		}
 
 		virtual Util::Printer print(std::span<const Level> state) const{
@@ -126,7 +115,7 @@ namespace BBCPU::Sim{
 		}
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
-				os<<print(ports.save());
+				os<<print(save());
 			};
 		}
 	};
@@ -134,13 +123,24 @@ namespace BBCPU::Sim{
 		std::vector<Component*> comps;
 		explicit Circuit(std::string name=""):Component(std::move(name)){}
 
-		bool update() override{
-			return std::any_of(comps.begin(),comps.end(),[](auto c){
-				return c->update();
-			});
+		affected_t update() override{
+			return std::reduce(comps.begin(),comps.end(),
+				affected_t{},
+				[](affected_t res,Component* c){
+					res.merge(c->update());
+					return res;
+				});
 		}
 		void run() override {
-			while(update()){}
+			affected_t affected=update();
+			while(!affected.empty()){
+				affected=std::reduce(affected.begin(),affected.end(),
+				affected_t{},
+				[](affected_t res,Chip* c){
+					res.merge(c->update());
+					return res;
+				});
+			}
 			if(auto name=is_floating();name){
 				if(Chip::log_warning){std::cerr<<"[Warning][Floating]"<<*name<<std::endl;}
 			}

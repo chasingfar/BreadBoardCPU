@@ -5,6 +5,7 @@
 #include "../util.h"
 
 namespace BBCPU::Sim{
+	struct Chip;
 	enum struct Level:int8_t{
 		Low      = -2,
 		PullDown = -1,
@@ -44,6 +45,7 @@ E	E4	E4	E4	E4	E4	E1
 	}
 	struct Wire:Util::CircularList<Wire>{
 		Level level=Level::Floating;
+		Chip* chip=nullptr;
 		Level get() const{
 			Level tmp=level;
 			each([&tmp](const Wire* cur){
