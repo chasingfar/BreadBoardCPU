@@ -7,12 +7,12 @@
 
 #include "catch.hpp"
 #include "asm/asm.h"
-#include "cpu/regset_sram/cpu.h"
+#include "cpu/cpu.h"
 #include "lang/lang.h"
 
 using namespace BBCPU::ASM;
 using namespace BBCPU::Lang;
-using BBCPU::RegSet_SRAM::Hardware::CPU;
+using BBCPU::CPU_ISA::Hardware::CPU;
 using ALU74181::Carry;
 using MEM=decltype(CPU{}.mem);
 

@@ -5,8 +5,7 @@
 #ifndef BBCPU_BASIC_H
 #define BBCPU_BASIC_H
 
-//#include "../cpu/regfile8x16/cpu.h"
-#include "../cpu/regset_sram/opcode.h"
+#include "cpu/cpu.h"
 #include <memory>
 #include <functional>
 #include <utility>
@@ -15,11 +14,11 @@
 
 
 namespace BBCPU::ASM {
-	using namespace RegSet_SRAM::OpCode::Ops;
-	using RegSet_SRAM::MARG;
-	using RegSet_SRAM::MCTRL;
-	using Reg=RegSet_SRAM::Regs::UReg;
-	using Reg16=RegSet_SRAM::Regs::UReg16;
+	using namespace CPU_ISA::OpCode::Ops;
+	using CPU_ISA::MARG;
+	using CPU_ISA::MCTRL;
+	using Reg=CPU_ISA::Regs::UReg;
+	using Reg16=CPU_ISA::Regs::UReg16;
 	using op_t = uint8_t;
 	using addr_t = uint16_t;
 	using offset_t = int16_t;
