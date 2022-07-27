@@ -180,6 +180,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		}},
 		pop(Reg::B),
 		pop(Reg::A),
+		halt(),
 	});
 	REQUIRE(REG_(B) == 0x45);
 	REQUIRE(REG_(A) == 0xbf);
@@ -197,6 +198,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		}},
 		pop(Reg::B),
 		pop(Reg::A),
+		halt(),
 	});
 	REQUIRE(REG_(B) == 0x45);
 	REQUIRE(REG_(A) == 0xbf);
