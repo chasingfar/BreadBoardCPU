@@ -165,7 +165,7 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 			mem.load(data,start);
 		}
 		void load_op(const std::vector<word_t>& op){
-			load(op, get_ptr(Reg16::PC));
+			load(op, get_reg16(Reg16::PC));
 			regset.regs[RegSet::I.v()].output=regset.regs[RegSet::I.v()].data=op[0];
 			cu.sreg.output=cu.sreg.data=MARG::opcode::set(cu.sreg.input.value(),op[0]);
 		}
@@ -184,12 +184,40 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 				tick();
 			}while(MCTRL::state::index::get(cu.tbl.D.value())!=0);
 		}
-		addr_t get_ptr(Reg16 reg16) const{
-			return (static_cast<addr_t>(reg.data[reg16.H().v()])<<8u)|reg.data[reg16.L().v()];
+
+		word_t get_reg(Reg r) const{
+			return reg.data[r.v()];
 		}
+		void set_reg(Reg r,word_t v){
+			reg.data[r.v()]=v;
+		}
+		addr_t get_reg16(Reg16 reg16) const{
+			return (static_cast<addr_t>(get_reg(reg16.H()))<<8u)|get_reg(reg16.L());
+		}
+		void set_reg16(Reg16 reg16,addr_t v){
+			set_reg(reg16.H(),(v>>8u)&0xff);
+			set_reg(reg16.L(),      v&0xff);
+		}
+
 		word_t read_ptr(Reg16 reg16, int16_t offset=0) const{
-			return mem.get_data(get_ptr(reg16)+offset).value_or(0);
+			return mem.get_data(get_reg16(reg16)+offset).value_or(0);
 		}
+		word_t get_stack_top() const{
+			return read_ptr(Reg16::SP,1);
+		}
+		word_t get_stack_insert() const{
+			return read_ptr(Reg16::SP);
+		}
+		word_t get_mem_data(addr_t addr) const{
+			return mem.get_data(addr).value();
+		}
+
+		using Flags=MCTRL::state;
+		template<typename FLAG>
+		void set_flag(auto v){
+			cu.tbl.D=FLAG::set(cu.tbl.D.value(),v);
+		}
+
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
 				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
@@ -212,9 +240,9 @@ namespace BBCPU::RegSet_SRAM::Hardware{
 				}
 
 				mem.print_ptrs(os,{
-					{get_ptr(Reg16::PC),"PC"},
-					{get_ptr(Reg16::SP),"SP"},
-					{get_ptr(Reg16::HL),"HL"},
+					{get_reg16(Reg16::PC),"PC"},
+					{get_reg16(Reg16::SP),"SP"},
+					{get_reg16(Reg16::HL),"HL"},
 				},3);
 				os<<std::endl;
 			};

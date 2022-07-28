@@ -8,42 +8,41 @@ TEST_CASE("load and save","[asm][basic]"){
 	cpu.tick_op();
 
 	cpu.load(ops_t{12,34},0xABCD);
-	REG_(B)=0xAB;
-	REG_(A)=0xCD;
+	cpu.set_reg16(CPU::Reg16::BA,0xABCD);
 
-	RUN_OP_(load(Reg16::BA));
-	REQUIRE(STACK_TOP_ == 12);
-	RUN_OP_(load(Reg16::BA, 1));
-	REQUIRE(STACK_TOP_ == 34);
+	cpu.run_op(load(Reg16::BA));
+	REQUIRE(cpu.get_stack_top() == 12);
+	cpu.run_op(load(Reg16::BA, 1));
+	REQUIRE(cpu.get_stack_top() == 34);
 
-	RUN_OP_(save(Reg16::BA));
-	REQUIRE(cpu.mem.ram.data[0xABCD]==34);
-	RUN_OP_(save(Reg16::BA, 1));
-	REQUIRE(cpu.mem.ram.data[0xABCE]==12);
+	cpu.run_op(save(Reg16::BA));
+	REQUIRE(cpu.get_mem_data(0xABCD)==34);
+	cpu.run_op(save(Reg16::BA, 1));
+	REQUIRE(cpu.get_mem_data(0xABCE)==12);
 }
 
 TEST_CASE("push and pop","[asm][basic]"){
     CPU cpu;
     cpu.tick_op();
 
-	REG_(B)=123;
+	cpu.set_reg(CPU::Reg::B,123);
 
-	RUN_OP_(push(Reg::B));
-    REQUIRE(STACK_TOP_ == 123);
-	RUN_OP_(pop(Reg::A));
-    REQUIRE(REG_(A) == 123);
+	cpu.run_op(push(Reg::B));
+    REQUIRE(cpu.get_stack_top() == 123);
+	cpu.run_op(pop(Reg::A));
+    REQUIRE(cpu.get_reg(CPU::Reg::A) == 123);
 }
 
 TEST_CASE("immediate value","[asm][basic]"){
 	CPU cpu;
 	cpu.tick_op();
 
-	RUN_OP_(imm(123));
-	REQUIRE(STACK_TOP_ == 123);
-	RUN_OP_(imm(Label{0xABCD}));
-	REQUIRE(STACK_TOP_ == 0xCD);
+	cpu.run_op(imm(123));
+	REQUIRE(cpu.get_stack_top() == 123);
+	cpu.run_op(imm(Label{0xABCD}));
+	REQUIRE(cpu.get_stack_top() == 0xCD);
 	cpu.tick_op();
-	REQUIRE(STACK_TOP_ == 0xAB);
+	REQUIRE(cpu.get_stack_top() == 0xAB);
 }
 
 TEST_CASE("jump and branch","[asm][basic]"){
@@ -51,111 +50,111 @@ TEST_CASE("jump and branch","[asm][basic]"){
 	cpu.tick_op();
 
 	Label a{0xABCD};
-	RUN_OP_(jmp(a));
-	REQUIRE(REG16_(PC) == *a.addr);
+	cpu.run_op(jmp(a));
+	REQUIRE(cpu.get_reg16(CPU::Reg16::PC) == *a.addr);
 
 	Label b{0xBBCD},c{0xCBCD};
-	SET_FLAG_(CF, Carry::yes);
-	RUN_OP_(brc(b));
-	REQUIRE(REG16_(PC) == *b.addr);
-	SET_FLAG_(CF, Carry::no);
-	RUN_OP_(brc(c));
-	REQUIRE(REG16_(PC) == (*b.addr) + 3);
+	cpu.set_flag<CPU::Flags::CF>(Carry::yes);
+	cpu.run_op(brc(b));
+	REQUIRE(cpu.get_reg16(CPU::Reg16::PC) == *b.addr);
+	cpu.set_flag<CPU::Flags::CF>(Carry::no);
+	cpu.run_op(brc(c));
+	REQUIRE(cpu.get_reg16(CPU::Reg16::PC) == (*b.addr) + 3);
 
 	Label d{0x1234},e{0x2234};
-	RUN_OP_(imm(0));
-	RUN_OP_(brz(d));
-	REQUIRE(REG16_(PC) == *d.addr);
-	RUN_OP_(imm(1));
-	RUN_OP_(brz(e));
-	REQUIRE(REG16_(PC) == 2 + (*d.addr) + 3);
+	cpu.run_op(imm(0));
+	cpu.run_op(brz(d));
+	REQUIRE(cpu.get_reg16(CPU::Reg16::PC) == *d.addr);
+	cpu.run_op(imm(1));
+	cpu.run_op(brz(e));
+	REQUIRE(cpu.get_reg16(CPU::Reg16::PC) == 2 + (*d.addr) + 3);
 }
 TEST_CASE("calculation","[asm][basic]"){
 	CPU cpu;
 	cpu.tick_op();
 	SECTION("shift"){
-		RUN_OP_(imm(0b1011'0110));
+		cpu.run_op(imm(0b1011'0110));
 		SECTION("shift left"){
-			RUN_OP_(shl());
-			REQUIRE(STACK_TOP_ == 0b0110'1100);
+			cpu.run_op(shl());
+			REQUIRE(cpu.get_stack_top() == 0b0110'1100);
 		}
 		SECTION("rotate left with carry=no"){
-			SET_FLAG_(CF, Carry::no);
-			RUN_OP_(rcl());
-			REQUIRE(STACK_TOP_ == 0b0110'1100);
+			cpu.set_flag<CPU::Flags::CF>(Carry::no);
+			cpu.run_op(rcl());
+			REQUIRE(cpu.get_stack_top() == 0b0110'1100);
 		}
 		SECTION("rotate left with carry=yes"){
-			SET_FLAG_(CF, Carry::yes);
-			RUN_OP_(rcl());
-			REQUIRE(STACK_TOP_ == 0b0110'1101);
+			cpu.set_flag<CPU::Flags::CF>(Carry::yes);
+			cpu.run_op(rcl());
+			REQUIRE(cpu.get_stack_top() == 0b0110'1101);
 		}
 		SECTION("shift right"){
-			RUN_OP_(shr());
-			REQUIRE(STACK_TOP_ == 0b0101'1011);
+			cpu.run_op(shr());
+			REQUIRE(cpu.get_stack_top() == 0b0101'1011);
 		}
 		SECTION("rotate right with carry=no"){
-			SET_FLAG_(CF, Carry::no);
-			RUN_OP_(rcr());
-			REQUIRE(STACK_TOP_ == 0b0101'1011);
+			cpu.set_flag<CPU::Flags::CF>(Carry::no);
+			cpu.run_op(rcr());
+			REQUIRE(cpu.get_stack_top() == 0b0101'1011);
 		}
 		SECTION("rotate right with carry=yes"){
-			SET_FLAG_(CF, Carry::yes);
-			RUN_OP_(rcr());
-			REQUIRE(STACK_TOP_ == 0b1101'1011);
+			cpu.set_flag<CPU::Flags::CF>(Carry::yes);
+			cpu.run_op(rcr());
+			REQUIRE(cpu.get_stack_top() == 0b1101'1011);
 		}
 	}
 	SECTION("arithmetic"){
 		uint8_t a=123,b=100;
-		RUN_OP_(imm(a));
-		RUN_OP_(imm(b));
+		cpu.run_op(imm(a));
+		cpu.run_op(imm(b));
 		SECTION("addition"){
-			RUN_OP_(add());
-			REQUIRE(STACK_TOP_ == a + b);
+			cpu.run_op(add());
+			REQUIRE(cpu.get_stack_top() == a + b);
 		}
 		SECTION("subtraction"){
-			RUN_OP_(sub());
-			REQUIRE(STACK_TOP_ == a - b);
+			cpu.run_op(sub());
+			REQUIRE(cpu.get_stack_top() == a - b);
 		}
 		SECTION("addition with carry=no"){
-			SET_FLAG_(CF, Carry::no);
-			RUN_OP_(adc());
-			REQUIRE(STACK_TOP_ == a + b + 0);
+			cpu.set_flag<CPU::Flags::CF>(Carry::no);
+			cpu.run_op(adc());
+			REQUIRE(cpu.get_stack_top() == a + b + 0);
 		}
 		SECTION("addition with carry=yes"){
-			SET_FLAG_(CF, Carry::yes);
-			RUN_OP_(adc());
-			REQUIRE(STACK_TOP_ == a + b + 1);
+			cpu.set_flag<CPU::Flags::CF>(Carry::yes);
+			cpu.run_op(adc());
+			REQUIRE(cpu.get_stack_top() == a + b + 1);
 		}
 		SECTION("subtraction with carry=no"){
-			SET_FLAG_(CF, Carry::no);
-			RUN_OP_(suc());
-			REQUIRE(STACK_TOP_ == a - b - 1);
+			cpu.set_flag<CPU::Flags::CF>(Carry::no);
+			cpu.run_op(suc());
+			REQUIRE(cpu.get_stack_top() == a - b - 1);
 		}
 		SECTION("subtraction with carry=yes"){
-			SET_FLAG_(CF, Carry::yes);
-			RUN_OP_(suc());
-			REQUIRE(STACK_TOP_ == a - b - 0);
+			cpu.set_flag<CPU::Flags::CF>(Carry::yes);
+			cpu.run_op(suc());
+			REQUIRE(cpu.get_stack_top() == a - b - 0);
 		}
 	}
 	SECTION("logic"){
 		uint8_t a=0b1100'0101,b=0b1010'1100;
-		RUN_OP_(imm(a));
-		RUN_OP_(imm(b));
+		cpu.run_op(imm(a));
+		cpu.run_op(imm(b));
 		SECTION("not"){
-			RUN_OP_(NOT());
-			REQUIRE(STACK_TOP_ == (uint8_t)(~b));
+			cpu.run_op(NOT());
+			REQUIRE(cpu.get_stack_top() == (uint8_t)(~b));
 		}
 		SECTION("and"){
-			RUN_OP_(AND());
-			REQUIRE(STACK_TOP_ == (a & b));
+			cpu.run_op(AND());
+			REQUIRE(cpu.get_stack_top() == (a & b));
 		}
 		SECTION("or"){
-			RUN_OP_(OR());
-			REQUIRE(STACK_TOP_ == (a | b));
+			cpu.run_op(OR());
+			REQUIRE(cpu.get_stack_top() == (a | b));
 		}
 		SECTION("xor"){
-			RUN_OP_(XOR());
-			REQUIRE(STACK_TOP_ == (a ^ b));
+			cpu.run_op(XOR());
+			REQUIRE(cpu.get_stack_top() == (a ^ b));
 		}
 	}
 }

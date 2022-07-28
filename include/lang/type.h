@@ -32,8 +32,11 @@ namespace BBCPU::Lang {
 		explicit Type(Allocator& allocator):value(allocator.alloc(size)){}
 		explicit Type(const Code& expr):value(std::make_shared<Expr>(expr)){}
 
+		template<typename T>
+		auto as() const{return std::dynamic_pointer_cast<T>(value);}
+
 		Type<0> set(const Type<Size>& rhs) const{
-			return Type<0>{Code{rhs.value->load(), std::dynamic_pointer_cast<Var>(value)->save()}};
+			return Type<0>{Code{rhs.value->load(), as<Var>()->save()}};
 		}
 		auto operator =(const Type<Size>& rhs) const{ // NOLINT(bugprone-unhandled-self-assignment,misc-unconventional-assign-operator)
 			return set(rhs);
@@ -94,7 +97,7 @@ namespace BBCPU::Lang {
 		auto get(){
 			using type = typename SubType<I>::type;
 			return type{
-				std::dynamic_pointer_cast<MemVar>(this->value)->shift(SubType<I>::offset,type::size)
+				this->template as<MemVar>()->shift(SubType<I>::offset,type::size)
 			};
 		}
 	};
@@ -129,7 +132,7 @@ namespace BBCPU::Lang {
 		auto get(){
 			using type = typename SubType<I>::type;
 			return type{
-				std::dynamic_pointer_cast<MemVar>(this->value)->shift(0,type::size)
+				this->template as<MemVar>()->shift(0,type::size)
 			};
 		}
 	};
@@ -147,7 +150,7 @@ namespace BBCPU::Lang {
 		}
 		auto operator[](size_t i){
 			return T{
-				std::dynamic_pointer_cast<MemVar>(this->value)->shift(T::size*i,T::size)
+				this->template as<MemVar>()->shift(T::size*i,T::size)
 			};
 		}
 	};

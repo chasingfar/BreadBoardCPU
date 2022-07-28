@@ -6,7 +6,7 @@
 #define BBCPU_VAR_H
 #include <cstddef>
 #include <forward_list>
-#include "../asm/ops.h"
+#include "asm/asm.h"
 
 namespace BBCPU::Lang {
 	using namespace ASM;

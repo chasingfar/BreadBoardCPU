@@ -34,8 +34,8 @@ namespace BBCPU::Lang::Library{
 	inline Int<Size,Signed> mul(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
 		static Function::Fn<Int<Size,Signed>(Int<Size,Signed>,Int<Size,Signed>)> fn{
 			[](auto& _,const Int<Size,Signed>& ls,const Int<Size,Signed>& rs)->Stmt{
-				u8 rs1{std::dynamic_pointer_cast<MemVar>(rs.value)->shift(0,1)};
-				auto ret_value=std::dynamic_pointer_cast<MemVar>(_.ret.value);
+				u8 rs1{rs.template as<MemVar>()->shift(0,1)};
+				auto ret_value=_.ret.template as<MemVar>();
 				return {
 					([&]<size_t ...I>(std::index_sequence<I...>)->Stmt{
 						if constexpr(Signed){

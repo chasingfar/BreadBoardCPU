@@ -11,7 +11,7 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 	auto [c,d]=fn.vars<u8, u8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		fn.impl({
 			aa,
@@ -29,28 +29,28 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 		main,
 		fn(8_u8,3_u8),
 		halt(),
-	}, {aa});
+	}).run({aa});
 
-	REQUIRE(LOCAL_(a) == 8);
-	REQUIRE(LOCAL_(b) == 3);
+	REQUIRE(cpu.get_local(a) == 8);
+	REQUIRE(cpu.get_local(b) == 3);
 
-	run(cpu,{bb});
-	REQUIRE(REG_(A) == 8);
-	REQUIRE(REG_(B) == 3);
+	cpu.run({bb});
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 8);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
 
-	run(cpu,{cc});
-	REQUIRE(REG_(C) == 11);
-	REQUIRE(REG_(D) == 5);
+	cpu.run({cc});
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 11);
+	REQUIRE(cpu.get_reg(CPU::Reg::D) == 5);
 
-	run(cpu,{dd});
-	REQUIRE(LOCAL_(c) == 11);
-	REQUIRE(LOCAL_(d) == 5);
+	cpu.run({dd});
+	REQUIRE(cpu.get_local(c) == 11);
+	REQUIRE(cpu.get_local(d) == 5);
 
-	run(cpu);
-	REQUIRE(REG_(A) == 8);
-	REQUIRE(REG_(B) == 3);
-	REQUIRE(REG_(C) == 11);
-	REQUIRE(REG_(D) == 5);
+	cpu.run();
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 8);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 11);
+	REQUIRE(cpu.get_reg(CPU::Reg::D) == 5);
 }
 TEST_CASE("function nest call","[asm][function]"){
 	/*
@@ -72,7 +72,7 @@ TEST_CASE("function nest call","[asm][function]"){
 	auto [d]=bar.vars<u8>();
 	Label main,aa,bb,cc,dd;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		foo.impl({
 			c.set(a+2_u8),
@@ -87,17 +87,17 @@ TEST_CASE("function nest call","[asm][function]"){
 		main,
 		foo(8_u8),
 		halt(),
-	}, {aa});
+	}).run({aa});
 
-	REQUIRE(LOCAL_(a) == 8);
-	REQUIRE(LOCAL_(c) == 10);
+	REQUIRE(cpu.get_local(a) == 8);
+	REQUIRE(cpu.get_local(c) == 10);
 
-	run(cpu,{bb});
-	REQUIRE(LOCAL_(b) == 10);
-	REQUIRE(LOCAL_(d) == 16);
+	cpu.run({bb});
+	REQUIRE(cpu.get_local(b) == 10);
+	REQUIRE(cpu.get_local(d) == 16);
 
-	run(cpu);
-	REQUIRE(STACK_TOP_ == 26);
+	cpu.run();
+	REQUIRE(cpu.get_stack_top() == 26);
 }
 
 TEST_CASE("function recursion","[asm][function]"){
@@ -115,7 +115,7 @@ TEST_CASE("function recursion","[asm][function]"){
 
 	Label main;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		fib.impl([&](auto& _,auto i)->Stmt{
 			return {
@@ -129,8 +129,8 @@ TEST_CASE("function recursion","[asm][function]"){
 		main,
 		fib(6_u8),
 		halt(),
-	});
-	REQUIRE(STACK_TOP_ == 8);
+	}).run();
+	REQUIRE(cpu.get_stack_top() == 8);
 }
 TEST_CASE("function sum","[asm][function]"){
 	/*
@@ -148,7 +148,7 @@ TEST_CASE("function sum","[asm][function]"){
 
 	Label main;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		sum.impl([&](auto& _,u8 n)->Stmt{
 			u8 s{_};
@@ -164,12 +164,12 @@ TEST_CASE("function sum","[asm][function]"){
 		main,
 		sum(6_u8),
 		halt(),
-	});
-	REQUIRE(STACK_TOP_ == 21);
+	}).run();
+	REQUIRE(cpu.get_stack_top() == 21);
 }
 TEST_CASE("inplace function","[asm][function]"){
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
@@ -181,13 +181,13 @@ TEST_CASE("inplace function","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-	});
-	REQUIRE(REG_(B) == 0x45);
-	REQUIRE(REG_(A) == 0xbf);
+	}).run();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x45);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0xbf);
 }
 TEST_CASE("inplace function 2","[asm][function]"){
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		0x12f3_u16,
 		0x32cc_u16,
 		InplaceFn<u16(u8,u8,u8,u8)>{
@@ -199,9 +199,9 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-	});
-	REQUIRE(REG_(B) == 0x45);
-	REQUIRE(REG_(A) == 0xbf);
+	}).run();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x45);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0xbf);
 }
 TEST_CASE("function with custom type","[asm][function]"){
 	using Vec=Struct<u8,u8,u8>;
@@ -211,7 +211,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 	
 	Label main;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		fn.impl({
 			x+=1_u8,
@@ -225,10 +225,10 @@ TEST_CASE("function with custom type","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::C),
 		halt(),
-	});
-	REQUIRE(REG_(C) == 4);
-	REQUIRE(REG_(B) == 9);
-	REQUIRE(REG_(A) == 14);
+	}).run();
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
 }
 TEST_CASE("function with union","[asm][function]"){
 	using T=Union<u8, u16, Array<u8, 2>>;
@@ -238,7 +238,7 @@ TEST_CASE("function with union","[asm][function]"){
 	
 	Label main;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		fn.impl({
 			Reg_C=t_u8,
@@ -251,12 +251,12 @@ TEST_CASE("function with union","[asm][function]"){
 		pop(Reg::A),
 		pop(Reg::B),
 		halt(),
-	});
-	REQUIRE(REG_(A) == 0x12);
-	REQUIRE(REG_(B) == 0x34);
-	REQUIRE(REG_(C) == 0x34);
-	REQUIRE(REG_(D) == 0x34);
-	REQUIRE(REG_(E) == 0x12);
+	}).run();
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0x12);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x34);
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 0x34);
+	REQUIRE(cpu.get_reg(CPU::Reg::D) == 0x34);
+	REQUIRE(cpu.get_reg(CPU::Reg::E) == 0x12);
 }
 TEST_CASE("function with array","[asm][function]"){
 	Fn<Array<u8,3>(Array<u8,3>)> fn{"fn(vec)"};
@@ -264,7 +264,7 @@ TEST_CASE("function with array","[asm][function]"){
 	
 	Label main;
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		jmp(main),
 		fn.impl({
 			arr[0]+=1_u8,
@@ -278,10 +278,10 @@ TEST_CASE("function with array","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::C),
 		halt(),
-	});
-	REQUIRE(REG_(C) == 4);
-	REQUIRE(REG_(B) == 9);
-	REQUIRE(REG_(A) == 14);
+	}).run();
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
 }
 TEST_CASE("function pointer","[asm][function]"){
 	/*
@@ -332,9 +332,9 @@ TEST_CASE("function pointer","[asm][function]"){
 	}};
 
 	CPU cpu;
-	LOAD_TO_(MEM::ram_min, (Code{global, heap}));
+	cpu.load({global, heap},MEM::ram_min);
 
-	load_run(cpu,{
+	cpu.load({
 		main(),
 		pop(Reg::B),
 		pop(Reg::A),
@@ -342,23 +342,23 @@ TEST_CASE("function pointer","[asm][function]"){
 		malloc,
 		fn,
 		main,
-	},{aa});
+	}).run({aa});
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 3);
-	run(cpu);
+	cpu.run();
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 4);
-	REQUIRE(REG16_(BA) == *heap);
+	REQUIRE(cpu.get_reg16(CPU::Reg16::BA) == *heap);
 }
 TEST_CASE("library function","[asm][function]"){
 	using namespace Library;
 	Label main;
 	stdlib.clear();
 	CPU cpu;
-	load_run(cpu,{
+	cpu.load({
 		3_u8*5_u8+6_u8*7_u8,
 		halt(),
 		stdlib,
-	});
+	}).run();
 
 	REQUIRE(stdlib.fns.size()==1);
-	REQUIRE(STACK_TOP_ == 3 * 5 + 6 * 7);
+	REQUIRE(cpu.get_stack_top() == 3 * 5 + 6 * 7);
 }
