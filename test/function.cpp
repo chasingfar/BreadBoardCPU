@@ -29,24 +29,24 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 		main,
 		fn(8_u8,3_u8),
 		halt(),
-	}).run({aa});
+	}).run_to_halt({aa});
 
 	REQUIRE(cpu.get_local(a) == 8);
 	REQUIRE(cpu.get_local(b) == 3);
 
-	cpu.run({bb});
+	cpu.run_to_halt({bb});
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 8);
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
 
-	cpu.run({cc});
+	cpu.run_to_halt({cc});
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 11);
 	REQUIRE(cpu.get_reg(CPU::Reg::D) == 5);
 
-	cpu.run({dd});
+	cpu.run_to_halt({dd});
 	REQUIRE(cpu.get_local(c) == 11);
 	REQUIRE(cpu.get_local(d) == 5);
 
-	cpu.run();
+	cpu.run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 8);
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 11);
@@ -87,16 +87,16 @@ TEST_CASE("function nest call","[asm][function]"){
 		main,
 		foo(8_u8),
 		halt(),
-	}).run({aa});
+	}).run_to_halt({aa});
 
 	REQUIRE(cpu.get_local(a) == 8);
 	REQUIRE(cpu.get_local(c) == 10);
 
-	cpu.run({bb});
+	cpu.run_to_halt({bb});
 	REQUIRE(cpu.get_local(b) == 10);
 	REQUIRE(cpu.get_local(d) == 16);
 
-	cpu.run();
+	cpu.run_to_halt();
 	REQUIRE(cpu.get_stack_top() == 26);
 }
 
@@ -129,7 +129,7 @@ TEST_CASE("function recursion","[asm][function]"){
 		main,
 		fib(6_u8),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_stack_top() == 8);
 }
 TEST_CASE("function sum","[asm][function]"){
@@ -164,7 +164,7 @@ TEST_CASE("function sum","[asm][function]"){
 		main,
 		sum(6_u8),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_stack_top() == 21);
 }
 TEST_CASE("inplace function","[asm][function]"){
@@ -181,7 +181,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x45);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0xbf);
 }
@@ -199,7 +199,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::A),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x45);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0xbf);
 }
@@ -225,7 +225,7 @@ TEST_CASE("function with custom type","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::C),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
@@ -251,7 +251,7 @@ TEST_CASE("function with union","[asm][function]"){
 		pop(Reg::A),
 		pop(Reg::B),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0x12);
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x34);
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 0x34);
@@ -278,7 +278,7 @@ TEST_CASE("function with array","[asm][function]"){
 		pop(Reg::B),
 		pop(Reg::C),
 		halt(),
-	}).run();
+	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
@@ -342,9 +342,9 @@ TEST_CASE("function pointer","[asm][function]"){
 		malloc,
 		fn,
 		main,
-	}).run({aa});
+	}).run_to_halt({aa});
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 3);
-	cpu.run();
+	cpu.run_to_halt();
 	REQUIRE(cpu.mem.get_data(*heap).value_or(0) == 4);
 	REQUIRE(cpu.get_reg16(CPU::Reg16::BA) == *heap);
 }
@@ -357,7 +357,7 @@ TEST_CASE("library function","[asm][function]"){
 		3_u8*5_u8+6_u8*7_u8,
 		halt(),
 		stdlib,
-	}).run();
+	}).run_to_halt();
 
 	REQUIRE(stdlib.fns.size()==1);
 	REQUIRE(cpu.get_stack_top() == 3 * 5 + 6 * 7);

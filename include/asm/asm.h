@@ -19,7 +19,7 @@ namespace BBCPU::ASM::Hardware{
 			tick_op();
 			return *this;
 		}
-		CPU& run(const std::vector<Label>& pause_at={},size_t max_iter=1024){
+		CPU& run_to_halt(const std::vector<Label>& pause_at={},size_t max_iter=1024){
 			for (size_t i = 0; i < max_iter; ++i) {
 				tick_op();
 				if(is_halt()){
