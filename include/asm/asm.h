@@ -6,9 +6,9 @@
 #define BBCPU_ASM_ASM_H
 
 #include "ops.h"
-namespace BBCPU::ASM::Hardware{
-	struct CPU:CPU_ISA::Hardware::CPU{
-		using Base=CPU_ISA::Hardware::CPU;
+namespace BBCPU::ASM::Impl{
+	struct CPU:CPU_ISA::Impl::CPU{
+		using Base=CPU_ISA::Impl::CPU;
 		using Base::load;
 		CPU& load(Code code,addr_t start=0){
 			Base::load(code.assemble(start),start);

@@ -6,7 +6,7 @@
 #define BBCPU_CPU_REGSET_SRAM_CPU_H
 #include "opcode.h"
 #include "sim/sim.h"
-namespace BBCPU::RegSet_SRAM::Hardware{
+namespace BBCPU::RegSet_SRAM::Impl{
 	using namespace Sim;
 	template<size_t SelSize=2,size_t Size=8>
 	struct RegCESet:Circuit{

@@ -9,7 +9,7 @@
 #include "lang/lang.h"
 
 using namespace BBCPU::Lang;
-using BBCPU::Lang::Hardware::CPU;
+using BBCPU::Lang::Impl::CPU;
 using ALU74181::Carry;
 using MEM=decltype(CPU{}.mem);
 

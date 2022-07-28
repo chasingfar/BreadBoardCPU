@@ -7,9 +7,9 @@
 
 #include "library.h"
 
-namespace BBCPU::Lang::Hardware{
-	struct CPU:ASM::Hardware::CPU{
-		using Base=ASM::Hardware::CPU;
+namespace BBCPU::Lang::Impl{
+	struct CPU:ASM::Impl::CPU{
+		using Base=ASM::Impl::CPU;
 		word_t get_local(const auto& var) const{
 			return read_ptr(CPU::ASM_BP,var.template as<LocalVar>()->offset);
 		}
