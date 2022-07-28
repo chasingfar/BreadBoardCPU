@@ -74,6 +74,7 @@ namespace BBCPU::ASM {
 		std::vector<type> codes;
 		Code(std::initializer_list<type> codes):codes{codes}{}
 		Code(const CanToCode auto& code):codes{code.to_code()}{}
+		Code(int v):codes{static_cast<op_t>(v)}{}
 		Code& operator <<(const type& code){
 			codes.push_back(code);
 			return *this;

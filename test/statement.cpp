@@ -73,8 +73,8 @@ TEST_CASE("while","[asm][statement]"){
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
-	u8 a{vars.preset({0_op})};
-	auto [b,c]=vars.preset_vars<u8,u8>({12_op},{34_op});
+	u8 a{vars.preset({0})};
+	auto [b,c]=vars.preset_vars<u8,u8>({12},{34});
 
 	CPU cpu;
 	cpu.load(vars,MEM::ram_min);
@@ -101,7 +101,7 @@ TEST_CASE("static variable with custom type","[asm][statement]"){
 		DEF_TYPE0
 	};
 	StaticVars vars;
-	Vec vec{vars.preset({3_op,7_op,11_op})};
+	Vec vec{vars.preset({3,7,11})};
 	auto [x,y,z]=vec.extract();
 	
 	CPU cpu;
