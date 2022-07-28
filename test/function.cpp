@@ -230,6 +230,49 @@ TEST_CASE("function with custom type","[asm][function]"){
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
 }
+
+TEST_CASE("function with custom composite type","[asm][function]"){
+	struct Vec:Struct<u8,u8,u8>{
+		using This = Vec;
+		using Base = Struct<u8,u8,u8>;
+		DEF_TYPE0
+		#define members M(x) M(y) M(z)
+		#include "lang/define_members.h"
+	};
+	struct Ball:Struct<Vec,u8>{
+		using This = Ball;
+		using Base = Struct<Vec,u8>;
+		DEF_TYPE0
+		#define members M(pos) M(r)
+		#include "lang/define_members.h"
+	};
+	Fn<Ball(Ball)> fn{"fn(ball)"};
+	
+	Label main;
+	CPU cpu;
+	cpu.load({
+		jmp(main),
+		fn.impl([](auto& _,Ball ball)->Stmt{
+			return {
+				ball.pos().x()+=9_u8,
+				ball.pos().y()+=2_u8,
+				ball.r()+=5_u8,
+				_.return_(ball),
+			};
+		}),
+		main,
+		fn(Ball::make(Vec::make(3_u8,7_u8,11_u8),1_u8)),
+		pop(Reg::A),
+		pop(Reg::B),
+		pop(Reg::C),
+		pop(Reg::D),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::D) == 12);
+	REQUIRE(cpu.get_reg(CPU::Reg::C) == 9);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 11);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 6);
+}
 TEST_CASE("function with union","[asm][function]"){
 	using T=Union<u8, u16, Array<u8, 2>>;
 	Fn<u16(T)> fn{"fn(t)"};
