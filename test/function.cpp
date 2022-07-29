@@ -230,22 +230,19 @@ TEST_CASE("function with custom type","[asm][function]"){
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
 }
-
+struct Vec:Struct<u8,u8,u8>{
+	#define THIS Vec
+	#define BASE Struct<u8,u8,u8>
+	#define members M(x) M(y) M(z)
+	#include "lang/define_members.h"
+};
+struct Ball:Struct<Vec,u8>{
+	#define THIS Ball
+	#define BASE Struct<Vec,u8>
+	#define members M(pos) M(r)
+	#include "lang/define_members.h"
+};
 TEST_CASE("function with custom composite type","[asm][function]"){
-	struct Vec:Struct<u8,u8,u8>{
-		using This = Vec;
-		using Base = Struct<u8,u8,u8>;
-		DEF_TYPE0
-		#define members M(x) M(y) M(z)
-		#include "lang/define_members.h"
-	};
-	struct Ball:Struct<Vec,u8>{
-		using This = Ball;
-		using Base = Struct<Vec,u8>;
-		DEF_TYPE0
-		#define members M(pos) M(r)
-		#include "lang/define_members.h"
-	};
 	Fn<Ball(Ball)> fn{"fn(ball)"};
 	
 	Label main;
@@ -254,9 +251,9 @@ TEST_CASE("function with custom composite type","[asm][function]"){
 		jmp(main),
 		fn.impl([](auto& _,Ball ball)->Stmt{
 			return {
-				ball.pos().x()+=9_u8,
-				ball.pos().y()+=2_u8,
-				ball.r()+=5_u8,
+				ball.pos.x+=9_u8,
+				ball.pos.y+=2_u8,
+				ball.r+=5_u8,
 				_.return_(ball),
 			};
 		}),

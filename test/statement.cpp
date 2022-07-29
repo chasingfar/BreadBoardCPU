@@ -94,12 +94,13 @@ TEST_CASE("static variable","[asm][statement]"){
 	REQUIRE(cpu.get_static(vars, b) == 78);
 	REQUIRE(cpu.get_static(vars, c) == 90);
 }
+struct Vec:Struct<u8,u8,u8>{
+	#define THIS Vec
+	#define BASE Struct<u8,u8,u8>
+	#define members M(x) M(y) M(z)
+	#include "lang/define_members.h"
+};
 TEST_CASE("static variable with custom type","[asm][statement]"){
-	struct Vec:Struct<u8,u8,u8>{
-		using This = Vec;
-		using Base = Struct<u8,u8,u8>;
-		DEF_TYPE0
-	};
 	StaticVars vars;
 	Vec vec{vars.preset({3,7,11})};
 	auto [x,y,z]=vec.extract();

@@ -84,7 +84,7 @@ namespace BBCPU::Lang {
 		};
 		
 		inline static auto make(T val,Ts ...vals){
-			return Struct<T,Ts...>{Code{val,vals...}};
+			return This{Code{val,vals...}};
 		}
 
 		auto extract(){
@@ -94,11 +94,13 @@ namespace BBCPU::Lang {
 		}
 
 		template<size_t I>
-		auto get(){
+		auto get() const{
 			using type = typename SubType<I>::type;
-			return type{
-				this->template as<MemVar>()->shift(SubType<I>::offset,type::size)
-			};
+			if(auto var=this->template as<MemVar>();var){
+				return type{var->shift(SubType<I>::offset,type::size)};
+			}else{
+				return type{};
+			}
 		}
 	};
 	template<typename ...Ts>
@@ -120,7 +122,7 @@ namespace BBCPU::Lang {
 			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
 				tmp<<imm(0);
 			}
-			return Union<Ts...>{tmp};
+			return This{tmp};
 		}
 		auto extract(){
 			return [&]<size_t... I>(std::index_sequence<I...>){
@@ -129,11 +131,13 @@ namespace BBCPU::Lang {
 		}
 
 		template<size_t I>
-		auto get(){
+		auto get() const{
 			using type = typename SubType<I>::type;
-			return type{
-				this->template as<MemVar>()->shift(0,type::size)
-			};
+			if(auto var=this->template as<MemVar>();var){
+				return type{var->shift(0,type::size)};
+			}else{
+				return type{};
+			}
 		}
 	};
 
