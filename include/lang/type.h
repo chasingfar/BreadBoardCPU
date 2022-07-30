@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "bugprone-macro-parentheses"
 //
 // Created by chasingfar on 2021/8/21.
 //
@@ -11,7 +13,7 @@
 
 #define DEF_TYPE0 \
 	using Base::Base; \
-	auto operator =(const This& rhs) const {return this->set(rhs);}
+	auto operator =(const This& rhs) const {return this->set(rhs);}// NOLINT(bugprone-unhandled-self-assignment,misc-unconventional-assign-operator)
 #define DEF_TYPE(NAME,THIS,BASE) \
 	using This = Util::macro_param_t<void THIS>; \
 	using Base = Util::macro_param_t<void BASE>; \
@@ -72,7 +74,7 @@ namespace BBCPU::Lang {
 
 	template<typename T,typename ...Ts>
 	struct Struct:Type<(T::size+...+Ts::size)>{
-		DEF_TYPE(Struct,(Struct<T,Ts...>),(Type<(T::size+...+Ts::size)>))
+		DEF_TYPE(Struct,(Struct<T,Ts...>),(Type<(T::size+...+Ts::size)>)) // NOLINT(google-explicit-constructor)
 
 		static constexpr size_t count=1+sizeof...(Ts);
 		template<addr_t Index,addr_t Offset=0>
@@ -105,7 +107,7 @@ namespace BBCPU::Lang {
 	};
 	template<typename ...Ts>
 	struct Union:Type<std::max({Ts::size...})>{
-		DEF_TYPE(Union,(Union<Ts...>),(Type<std::max({Ts::size...})>))
+		DEF_TYPE(Union,(Union<Ts...>),(Type<std::max({Ts::size...})>)) // NOLINT(google-explicit-constructor)
 
 		template<typename T> requires std::disjunction_v<std::is_same<T, Ts>...>
 		explicit Union(const T& v):Base(v.value){}
@@ -147,7 +149,7 @@ namespace BBCPU::Lang {
 	};
 	template<typename T,typename ...Ts>
 	struct Array<T,0,Ts...>:Struct<Ts...>{
-		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>))
+		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>)) // NOLINT(google-explicit-constructor)
 
 		inline static auto make(Ts ...vals){
 			return This{Code{vals...}};
@@ -161,7 +163,7 @@ namespace BBCPU::Lang {
 
 	template<addr_t Size,bool Signed=false>
 	struct Int:Type<Size>{
-		DEF_TYPE(Int,(Int<Size,Signed>),(Type<Size>))
+		DEF_TYPE(Int,(Int<Size,Signed>),(Type<Size>)) // NOLINT(google-explicit-constructor)
 
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
@@ -178,11 +180,11 @@ namespace BBCPU::Lang {
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
-	struct bool_:AsInt< uint8_t>{ DEF_TYPE2(bool_,AsInt< uint8_t>) };
-	struct   u8 :AsInt< uint8_t>{ DEF_TYPE2(  u8 ,AsInt< uint8_t>) };
-	struct   i8 :AsInt<  int8_t>{ DEF_TYPE2(  i8 ,AsInt<  int8_t>) };
-	struct   u16:AsInt<uint16_t>{ DEF_TYPE2(  u16,AsInt<uint16_t>) };
-	struct   i16:AsInt< int16_t>{ DEF_TYPE2(  i16,AsInt< int16_t>) };
+	struct bool_:AsInt< uint8_t>{ DEF_TYPE2(bool_,AsInt< uint8_t>) }; // NOLINT(google-explicit-constructor)
+	struct   u8 :AsInt< uint8_t>{ DEF_TYPE2(  u8 ,AsInt< uint8_t>) }; // NOLINT(google-explicit-constructor)
+	struct   i8 :AsInt<  int8_t>{ DEF_TYPE2(  i8 ,AsInt<  int8_t>) }; // NOLINT(google-explicit-constructor)
+	struct   u16:AsInt<uint16_t>{ DEF_TYPE2(  u16,AsInt<uint16_t>) }; // NOLINT(google-explicit-constructor)
+	struct   i16:AsInt< int16_t>{ DEF_TYPE2(  i16,AsInt< int16_t>) }; // NOLINT(google-explicit-constructor)
 	using usize=u16;
 	using isize=i16;
 
@@ -193,7 +195,7 @@ namespace BBCPU::Lang {
 
 	template<typename T>
 	struct ptr: AsInt<addr_t>{
-		DEF_TYPE(ptr,(ptr<T>),(AsInt<addr_t>))
+		DEF_TYPE(ptr,(ptr<T>),(AsInt<addr_t>)) // NOLINT(google-explicit-constructor)
 
 		explicit ptr(const usize& v): Base(v.value){}
 		template<typename U>
@@ -249,3 +251,5 @@ namespace BBCPU::Lang {
 	inline static const u8 Reg_H{RegVar::make(Reg::H)};
 }
 #endif //BBCPU_TYPE_H
+
+#pragma clang diagnostic pop
