@@ -26,6 +26,7 @@ namespace BBCPU::ASM {
 		inline Code push(Reg fromReg)       {return {OP1(Push, from, fromReg)};}
 		inline Code pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
 		inline Code imm (op_t value)        {return {OP0(ImmVal), value};}
+		inline Code imm (lazy_t value)      {return {OP0(ImmVal), value};}
 		inline Code imm (const Label& addr) {return {OP0(ImmVal), LAZY_L(addr),OP0(ImmVal), LAZY_H(addr)};}
 		inline Code brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
 		inline Code brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
