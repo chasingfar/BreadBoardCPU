@@ -36,6 +36,7 @@ namespace BBCPU::Lang {
 
 		template<typename T>
 		auto as() const{return std::dynamic_pointer_cast<T>(value);}
+		auto as_raw() const{return as<Raw>();}
 		auto as_mem_var() const{return as<MemVar>();}
 		auto as_local_var() const{return as<LocalVar>();}
 		auto as_static_var() const{return as<StaticVar>();}
@@ -89,6 +90,14 @@ namespace BBCPU::Lang {
 		};
 		
 		inline static auto make(T val,Ts ...vals){
+			if((val.as_raw()&&...&&vals.as_raw())){
+				data_t tmp;
+				tmp.reserve(Base::size);
+				for(const auto& data:{val.as_raw()->data,vals.as_raw()->data...}){
+					tmp.insert(tmp.end(),data.begin(),data.end());
+				}
+				return This{std::make_shared<Raw>(tmp)};
+			}
 			return This{Code{val,vals...}};
 		}
 
@@ -101,7 +110,9 @@ namespace BBCPU::Lang {
 		template<size_t I>
 		auto get() const{
 			using type = typename SubType<I>::type;
-			if(auto var=this->as_mem_var();var){
+			if(auto raw=this->as_raw();raw){
+				return type{raw->shift(SubType<I>::offset,type::size)};
+			}else if(auto var=this->as_mem_var();var){
 				return type{var->shift(SubType<I>::offset,type::size)};
 			}else{
 				return type{};
@@ -123,6 +134,11 @@ namespace BBCPU::Lang {
 		};
 		template<typename V>
 		inline static auto make(V val){
+			if(auto v=val.as_raw();v){
+				data_t tmp(Base::size,data_t::value_type(static_cast<op_t>(0)));
+				std::copy(v->data.begin(),v->data.end(),tmp.begin());
+				return This{std::make_shared<Raw>(tmp)};
+			}
 			Code tmp{val};
 			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
 				tmp<<imm(0);
@@ -138,7 +154,9 @@ namespace BBCPU::Lang {
 		template<size_t I>
 		auto get() const{
 			using type = typename SubType<I>::type;
-			if(auto var=this->as_mem_var();var){
+			if(auto raw=this->as_raw();raw){
+				return type{raw->shift(0,type::size)};
+			}else if(auto var=this->as_mem_var();var){
 				return type{var->shift(0,type::size)};
 			}else{
 				return type{};
@@ -155,6 +173,14 @@ namespace BBCPU::Lang {
 		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>)) // NOLINT(google-explicit-constructor)
 
 		inline static auto make(Ts ...vals){
+			if((vals.as_raw()&&...)){
+				data_t tmp;
+				tmp.reserve(Base::size);
+				for(const auto& data:{vals.as_raw()->data...}){
+					tmp.insert(tmp.end(),data.begin(),data.end());
+				}
+				return This{std::make_shared<Raw>(tmp)};
+			}
 			return This{Code{vals...}};
 		}
 		auto operator[](size_t i){
@@ -166,11 +192,38 @@ namespace BBCPU::Lang {
 	struct Int:Type<Size>{
 		DEF_TYPE(Int,(Int<Size,Signed>),(Type<Size>)) // NOLINT(google-explicit-constructor)
 
+		explicit Int(long long val):Base(std::make_shared<Raw>(parse_int(val))){}
+		explicit Int(unsigned long long val):Base(std::make_shared<Raw>(parse_int(val))){}
+		static data_t parse_int(long long val){
+			data_t tmp{};
+			for (addr_t i=0;i<Size;++i){
+				tmp.emplace_back(static_cast<op_t>((val>>i*8)&0xFF));
+			}
+			return tmp;
+		}
+		static data_t parse_int(unsigned long long val){
+			data_t tmp{};
+			for (addr_t i=0;i<Size;++i){
+				tmp.emplace_back(static_cast<op_t>((val>>i*8)&0xFF));
+			}
+			return tmp;
+		}
+		std::optional<std::conditional_t<Signed,long long,unsigned long long>> to_int() const{
+			std::conditional_t<Signed,long long,unsigned long long> v=0;
+			if(auto raw=this->as_raw();raw){
+				for(auto byte:raw->data){
+					v<<=8;
+					v|=byte;
+				}
+				return v;
+			}
+			return {};
+		}
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
 			return This{Code{vals...}};
 		}
-		operator Int<1,false>() const{
+		explicit operator Int<1,false>() const{
 			Code tmp{*this};
 			for (addr_t i = 1; i < Size; ++i) {
 				tmp << OR();
@@ -201,6 +254,7 @@ namespace BBCPU::Lang {
 		explicit ptr(const usize& v): Base(v.value){}
 		template<typename U>
 		explicit ptr(const ptr<U>& v):Base(v.value){}
+		explicit ptr(const Label& v):Base(Raw::make({v.get_lazy(0),v.get_lazy(1)})){}
 
 		using type=T;
 		auto operator*(){
@@ -211,36 +265,10 @@ namespace BBCPU::Lang {
 	template<typename T>struct UnPtr<ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
 
-	template<typename T>
-	struct IntLiteral:AsInt<T>{
-		using This = IntLiteral<T>;
-		using Base = AsInt<T>;
-		T literal;
-		explicit IntLiteral(long long val):literal(val){
-			Code tmp{};
-			for (size_t i=0;i<sizeof(T);++i){
-				tmp<<imm((val>>i*8)&0xFF);
-			}
-			this->value=std::make_shared<Expr>(tmp);
-		}
-		explicit IntLiteral(unsigned long long val):literal(val){
-			Code tmp{};
-			for (size_t i=0;i<sizeof(T);++i){
-				tmp<<imm((val>>i*8)&0xFF);
-			}
-			this->value=std::make_shared<Expr>(tmp);
-		}
-		auto operator-(){
-			return IntLiteral<T>{-literal};
-		}
-		operator AsInt<T>(){
-			return AsInt<T>{this->value};
-		}
-	};
-	inline auto operator""_i8 (unsigned long long val){return IntLiteral<  int8_t>{val};}
-	inline auto operator""_u8 (unsigned long long val){return IntLiteral< uint8_t>{val};}
-	inline auto operator""_i16(unsigned long long val){return IntLiteral< int16_t>{val};}
-	inline auto operator""_u16(unsigned long long val){return IntLiteral<uint16_t>{val};}
+	inline auto operator""_i8 (unsigned long long val){return AsInt<  int8_t>{val};}
+	inline auto operator""_u8 (unsigned long long val){return AsInt< uint8_t>{val};}
+	inline auto operator""_i16(unsigned long long val){return AsInt< int16_t>{val};}
+	inline auto operator""_u16(unsigned long long val){return AsInt<uint16_t>{val};}
 
 	inline static const u8 Reg_A{RegVar::make(Reg::A)};
 	inline static const u8 Reg_B{RegVar::make(Reg::B)};

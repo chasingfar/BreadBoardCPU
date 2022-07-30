@@ -15,6 +15,41 @@ namespace BBCPU::Lang {
 		virtual Code load() const=0;
 		virtual ~Value()=default;
 	};
+	struct Raw:Value{
+		data_t data{};
+		Raw() = default;
+		explicit Raw(data_t data):data(std::move(data)){}
+		static auto make(const data_t& data){ return std::make_shared<Raw>(data);}
+		Code to_code() const{
+			Code code{};
+			for(auto v:data){
+				std::visit(Util::lambda_compose{
+					[&](const lazy_t &fn) { code<<fn; },
+					[&](         op_t op) { code<<op; },
+				}, v);
+			}
+			return code;
+		}
+		Code load() const override{
+			Code code{};
+			for(auto v:data){
+				code<<std::visit(Util::lambda_compose{
+					[](const lazy_t &fn) { return imm(fn); },
+					[](         op_t op) { return imm(op); },
+				}, v);
+			}
+			return code;
+		}
+		std::shared_ptr<Raw> shift(offset_t shift_offset,addr_t new_size) const{
+			data_t tmp(new_size);
+			std::copy_n(data.begin()+shift_offset,new_size,tmp.begin());
+			return make(tmp);
+		}
+	};
+	template<typename T>
+	concept CanAsRaw = requires(T x) {
+		{ x.as_raw() }->std::same_as<std::shared_ptr<Raw>>;
+	};
 	struct Expr:Value{
 		Code code{};
 		Expr() = default;
@@ -146,8 +181,17 @@ namespace BBCPU::Lang {
 			return vars<Types...>();
 		}
 
+		template<CanAsRaw ...Types>
+		std::tuple<Types...> preset_vars(Types ... v) {
+			presets={v.as_raw()->to_code()...};
+			return vars<Types...>();
+		}
 		auto& preset(T v){
 			presets.emplace_front(v);
+			return *this;
+		}
+		auto& preset(CanAsRaw auto v){
+			presets.emplace_front(v.as_raw()->to_code());
 			return *this;
 		}
 	};

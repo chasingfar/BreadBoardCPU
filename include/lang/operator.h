@@ -104,6 +104,13 @@ namespace BBCPU::Lang {
 		return sub(lhs,rhs);
 	}
 	template<addr_t Size,bool Signed>
+	inline auto operator-(const Int<Size,Signed>& lhs){
+		if(auto l=lhs.to_int();l){
+			return Int<Size,Signed>(-(*l));
+		}
+		return sub(Int<Size,Signed>(0),lhs);
+	}
+	template<addr_t Size,bool Signed>
 	inline auto operator<<(const Int<Size,Signed>& lhs,size_t n){
 		Code tmp{lhs};
 		for (size_t i = 0; i < n; ++i) {
