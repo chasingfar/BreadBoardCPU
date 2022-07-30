@@ -36,6 +36,9 @@ namespace BBCPU::Lang {
 
 		template<typename T>
 		auto as() const{return std::dynamic_pointer_cast<T>(value);}
+		auto as_mem_var() const{return as<MemVar>();}
+		auto as_local_var() const{return as<LocalVar>();}
+		auto as_static_var() const{return as<StaticVar>();}
 
 		Type<0> set(const Type<Size>& rhs) const{
 			return Type<0>{Code{rhs.value->load(), as<Var>()->save()}};
@@ -98,7 +101,7 @@ namespace BBCPU::Lang {
 		template<size_t I>
 		auto get() const{
 			using type = typename SubType<I>::type;
-			if(auto var=this->template as<MemVar>();var){
+			if(auto var=this->as_mem_var();var){
 				return type{var->shift(SubType<I>::offset,type::size)};
 			}else{
 				return type{};
@@ -135,7 +138,7 @@ namespace BBCPU::Lang {
 		template<size_t I>
 		auto get() const{
 			using type = typename SubType<I>::type;
-			if(auto var=this->template as<MemVar>();var){
+			if(auto var=this->as_mem_var();var){
 				return type{var->shift(0,type::size)};
 			}else{
 				return type{};
@@ -155,9 +158,7 @@ namespace BBCPU::Lang {
 			return This{Code{vals...}};
 		}
 		auto operator[](size_t i){
-			return T{
-				this->template as<MemVar>()->shift(T::size*i,T::size)
-			};
+			return T{this->as_mem_var()->shift(T::size*i,T::size)};
 		}
 	};
 
