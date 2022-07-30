@@ -79,17 +79,38 @@ namespace BBCPU::ASM {
 			codes.push_back(code);
 			return *this;
 		}
+		static addr_t count(const type& code){
+			return std::visit(Util::lambda_compose{
+				[](    const lazy_t &fn)->addr_t { return 1; },
+				[](             op_t op)->addr_t { return 1; },
+				[](  const Label& label)->addr_t { return 0; },
+				[](const Code& sub_code)->addr_t { return sub_code.size();},
+			}, code);
+		}
 		addr_t size() const{
 			addr_t sum=0;
 			for (const auto &code:codes) {
-				sum+=std::visit(Util::lambda_compose{
-					[](    const lazy_t &fn)->addr_t { return 1; },
-					[](             op_t op)->addr_t { return 1; },
-					[](  const Label& label)->addr_t { return 0; },
-					[](const Code& sub_code)->addr_t { return sub_code.size();},
-				}, code);
+				sum+=count(code);
 			}
 			return sum;
+		}
+		Code sub(addr_t offset,addr_t sub_size) const{
+			Code tmp{};
+			addr_t i=0;
+			for (const auto &code:codes) {
+				if(offset<=i&&i<offset+sub_size){
+					if(const auto* ptr=std::get_if<Code>(&code);ptr!=nullptr){
+						tmp<<ptr->sub(0,sub_size-(i-offset));
+					}else{
+						tmp<<code;
+					}
+				}
+				i+=count(code);
+				if(i>offset+sub_size){
+					break;
+				}
+			}
+			return tmp;
 		}
 		data_t resolve(addr_t start=0) const{
 			data_t data{};
