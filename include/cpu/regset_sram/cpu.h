@@ -117,7 +117,7 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		Port<1> clr;
 
 		Nand<1> nand{"[ClkNot]"};
-		Memory<addr_size, word_size, word_size, word_size,1,addr_t,word_t> mem{"[Memory]"};
+		Memory<addr_size, word_size, word_size, word_size,5,addr_t,word_t> mem{"[Memory]"};
 		RegCLR<MARG::carry::size> creg{"[cReg]"};
 		CU cu{"[CU]"};
 		Sim::ALU<word_size> alu{"[ALU]"};
