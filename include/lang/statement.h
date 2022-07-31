@@ -132,14 +132,37 @@ namespace BBCPU::Lang {
 			};
 		}
 	};
-	struct StaticVars:CodeBlock,PresetAllocator<Code>{
-		std::shared_ptr<MemVar> alloc_preset(addr_t size,Code value) override {
+	struct StaticVars:DataBlock,Allocator{
+		CodeBlock init;
+		std::shared_ptr<MemVar> alloc(addr_t size) override {
 			auto var=StaticVar::make(size, start, static_cast<offset_t>(body.size()));
-			body.codes.insert(body.codes.end(),value.codes.begin(),value.codes.end());
-			for(addr_t i=value.size();i<size;++i){
-				body.codes.emplace_back(static_cast<op_t>(0));
+			body.resize(body.size()+size,static_cast<op_t>(0));
+			return var;
+		}
+		template<typename T>
+		auto operator=(const T& val){
+			T var{alloc(T::size)};
+			init.body<<var.set(val);
+			return var;
+		}
+	};
+	struct ReadOnlyVars:DataBlock,Allocator{
+		std::forward_list<data_t> presets{};
+		std::shared_ptr<MemVar> alloc(addr_t size) override {
+			auto var=StaticVar::make(size, start, static_cast<offset_t>(body.size()));
+			if(presets.empty()){
+				body.resize(body.size()+size,static_cast<op_t>(0));
+			}else{
+				auto data=presets.front();
+				body.insert(body.end(),data.begin(),data.end());
+				presets.pop_front();
 			}
 			return var;
+		}
+		template<typename T>
+		auto operator=(const T& val){
+			presets.push_front(val.as_raw()->data);
+			return T{alloc(T::size)};
 		}
 	};
 }

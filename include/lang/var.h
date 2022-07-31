@@ -20,16 +20,6 @@ namespace BBCPU::Lang {
 		Raw() = default;
 		explicit Raw(data_t data):data(std::move(data)){}
 		static auto make(const data_t& data){ return std::make_shared<Raw>(data);}
-		Code to_code() const{
-			Code code{};
-			for(auto v:data){
-				std::visit(Util::lambda_compose{
-					[&](const lazy_t &fn) { code<<fn; },
-					[&](         op_t op) { code<<op; },
-				}, v);
-			}
-			return code;
-		}
 		Code load() const override{
 			Code code{};
 			for(auto v:data){
@@ -161,39 +151,6 @@ namespace BBCPU::Lang {
 			}
 		}
 		virtual std::shared_ptr<MemVar> alloc(addr_t size)=0;
-	};
-	template<typename T>
-	struct PresetAllocator:Allocator{
-		std::forward_list<T> presets{};
-		virtual std::shared_ptr<MemVar> alloc_preset(addr_t size,T value)=0;
-		std::shared_ptr<MemVar> alloc(addr_t size) override {
-			T value{};
-			if(!presets.empty()){
-				value=presets.front();
-				presets.pop_front();
-			}
-			return alloc_preset(size,value);
-		}
-
-		template<typename ...Types>
-		std::tuple<Types...> preset_vars(typename std::pair<Types,T>::second_type ... v) {
-			presets={v...};
-			return vars<Types...>();
-		}
-
-		template<CanAsRaw ...Types>
-		std::tuple<Types...> preset_vars(Types ... v) {
-			presets={v.as_raw()->to_code()...};
-			return vars<Types...>();
-		}
-		auto& preset(T v){
-			presets.emplace_front(v);
-			return *this;
-		}
-		auto& preset(CanAsRaw auto v){
-			presets.emplace_front(v.as_raw()->to_code());
-			return *this;
-		}
 	};
 }
 #endif //BBCPU_VAR_H

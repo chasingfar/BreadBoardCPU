@@ -347,7 +347,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	Label heap,aa;
 
 	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->Stmt{
-		ptr<void_> next_ptr{global.preset(ptr<void>(heap))};
+		auto next_ptr=global=ptr<void>(heap);
 		return {
 			_.ret=next_ptr,
 			next_ptr+=size,
@@ -375,6 +375,7 @@ TEST_CASE("function pointer","[asm][function]"){
 	cpu.load({global, heap},MEM::ram_min);
 
 	cpu.load({
+		global.init,
 		main(),
 		pop(Reg::B),
 		pop(Reg::A),

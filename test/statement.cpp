@@ -73,22 +73,29 @@ TEST_CASE("while","[asm][statement]"){
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;
-	u8 a{vars.preset({0})};
-	auto [b,c]=vars.preset_vars(12_u8,34_u8);
+
+	auto a=vars=0_u8;
+	auto b=vars=12_u8;
+	auto c=vars=34_u8;
 
 	CPU cpu;
 	cpu.load(vars,MEM::ram_min);
+
+	Label aa;
+	cpu.load({
+		vars.init,
+		aa,
+		a.set(56_u8),
+		b.set(78_u8),
+		c.set(90_u8),
+		halt(),
+	}).run_to_halt({aa});
 
 	REQUIRE(cpu.get_static(vars, a) == 0);
 	REQUIRE(cpu.get_static(vars, b) == 12);
 	REQUIRE(cpu.get_static(vars, c) == 34);
 
-	cpu.load({
-		a.set(56_u8),
-		b.set(78_u8),
-		c.set(90_u8),
-		halt(),
-	}).run_to_halt();
+	cpu.run_to_halt();
 
 	REQUIRE(cpu.get_static(vars, a) == 56);
 	REQUIRE(cpu.get_static(vars, b) == 78);
@@ -102,26 +109,58 @@ struct Vec:Struct<u8,u8,u8>{
 };
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	StaticVars vars;
-	Vec vec{vars.preset(Vec(3_u8,7_u8,11_u8))};
+	//Vec vec{vars.preset(Vec(3_u8,7_u8,11_u8))};
+	auto vec=vars=Vec(3_u8,7_u8,11_u8);
 	auto [x,y,z]=vec.extract();
 	
 	CPU cpu;
 	cpu.load(vars,MEM::ram_min);
 
-	REQUIRE(cpu.get_static(vars, x) == 3);
-	REQUIRE(cpu.get_static(vars, y) == 7);
-	REQUIRE(cpu.get_static(vars, z) == 11);
-
+	Label aa;
 	cpu.load({
+		vars.init,
+		aa,
 		x.set(x+1_u8),
 		y.set(y+2_u8),
 		z.set(z+3_u8),
 		halt(),
-	}).run_to_halt();
+	}).run_to_halt({aa});
+
+	REQUIRE(cpu.get_static(vars, x) == 3);
+	REQUIRE(cpu.get_static(vars, y) == 7);
+	REQUIRE(cpu.get_static(vars, z) == 11);
+
+	cpu.run_to_halt();
 	
 	REQUIRE(cpu.get_static(vars, x) == 4);
 	REQUIRE(cpu.get_static(vars, y) == 9);
 	REQUIRE(cpu.get_static(vars, z) == 14);
+}
+
+TEST_CASE("readonly variable","[asm][statement]"){
+	ReadOnlyVars rovar;
+	
+	auto a=rovar=12_u8;
+	auto b=rovar=34_u8;
+
+	CPU cpu;
+
+	Label aa;
+	cpu.load({
+		aa,
+		Reg_A=a+b,
+		halt(),
+		rovar,
+	}).run_to_halt({aa});
+
+	REQUIRE(cpu.get_static(rovar, a) == 12);
+	REQUIRE(cpu.get_static(rovar, b) == 34);
+
+	cpu.run_to_halt();
+	
+	REQUIRE(cpu.get_static(rovar, a) == 12);
+	REQUIRE(cpu.get_static(rovar, b) == 34);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 12+34);
 }
 
 TEST_CASE("big variable","[asm][statement]"){
