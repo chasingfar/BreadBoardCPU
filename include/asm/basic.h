@@ -152,5 +152,21 @@ namespace BBCPU::ASM {
 			return {start,body,end};
 		}
 	};
+	struct DataBlock{
+		Label start;
+		data_t body{};
+		Label end;
+
+		Code to_code() const{
+			Code code{start};
+			for(auto v:body){
+				std::visit(Util::lambda_compose{
+					[&](const lazy_t &fn) { code<<fn; },
+					[&](         op_t op) { code<<op; },
+				}, v);
+			}
+			return code<<end;
+		}
+	};
 }
 #endif //BBCPU_BASIC_H
