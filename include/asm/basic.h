@@ -70,21 +70,52 @@ namespace BBCPU::ASM {
 	template<typename T>
 	concept CanToCode=requires (T x){x.to_code();};
 	struct Code{
-		using type=std::variant<op_t, lazy_t, Label, Code>;
-		std::vector<type> codes;
-		Code(std::initializer_list<type> codes):codes{codes}{}
-		Code(const CanToCode auto& code):codes{code.to_code()}{}
+		using val_type=std::variant<op_t, lazy_t, Label>;
+		using arg_type=std::variant<op_t, lazy_t, Label, Code, data_t, ops_t>;
+		std::vector<val_type> codes;
+
+		static auto flatten(const arg_type& code){
+			return std::visit(Util::lambda_compose{
+				[](const auto&  other){ return std::vector<val_type>{other}; },
+				[](const Code&    sub){ return sub.codes;},
+				[](const data_t& data){
+					std::vector<val_type> tmp;
+					tmp.reserve(data.size());
+					for(auto d:data){
+						std::visit([&](const auto& v){tmp.template emplace_back(v);}, d);
+					}
+					return tmp;
+				},
+				[](const ops_t&   ops){
+					std::vector<val_type> tmp;
+					tmp.insert(tmp.end(),ops.begin(),ops.end());
+					return tmp;
+				},
+			}, code);
+		}
+		static auto flatten(std::initializer_list<arg_type> codes){
+			std::vector<val_type> res;
+			for (const auto &code:codes) {
+				auto tmp=flatten(code);
+				res.insert(res.end(),tmp.begin(),tmp.end());
+			}
+			return res;
+		}
+
+		Code(std::initializer_list<arg_type> codes):codes{flatten(codes)}{}
+		Code(const CanToCode auto& code):codes{code.to_code().codes}{}
 		Code(int v):codes{static_cast<op_t>(v)}{}
-		Code& operator <<(const type& code){
-			codes.push_back(code);
+
+		Code& operator <<(const arg_type& code){
+			auto tmp=flatten(code);
+			codes.insert(codes.end(),tmp.begin(),tmp.end());
 			return *this;
 		}
-		static addr_t count(const type& code){
+		static addr_t count(const val_type& code){
 			return std::visit(Util::lambda_compose{
 				[](    const lazy_t &fn)->addr_t { return 1; },
 				[](             op_t op)->addr_t { return 1; },
 				[](  const Label& label)->addr_t { return 0; },
-				[](const Code& sub_code)->addr_t { return sub_code.size();},
 			}, code);
 		}
 		addr_t size() const{
@@ -96,20 +127,8 @@ namespace BBCPU::ASM {
 		}
 		Code sub(addr_t offset,addr_t sub_size) const{
 			Code tmp{};
-			addr_t i=0;
-			for (const auto &code:codes) {
-				if(offset<=i&&i<offset+sub_size){
-					if(const auto* ptr=std::get_if<Code>(&code);ptr!=nullptr){
-						tmp<<ptr->sub(0,sub_size-(i-offset));
-					}else{
-						tmp<<code;
-					}
-				}
-				i+=count(code);
-				if(i>offset+sub_size){
-					break;
-				}
-			}
+			tmp.codes.reserve(sub_size);
+			std::copy_n(codes.begin()+offset,sub_size,std::back_inserter(tmp.codes));
 			return tmp;
 		}
 		data_t resolve(addr_t start=0) const{
@@ -117,13 +136,8 @@ namespace BBCPU::ASM {
 			data.reserve(size());
 			for (const auto &code:codes) {
 				std::visit(Util::lambda_compose{
-					[&](const lazy_t &fn)   { data.emplace_back(fn); },
-					[&](op_t op)            { data.emplace_back(op); },
+					[&](const auto&  fn)    { data.emplace_back(fn); },
 					[&](const Label& label) { label.set(start+data.size()); },
-					[&](const Code& sub_code) {
-						data_t sub_data=sub_code.resolve(start+data.size());
-						data.insert(data.end(),sub_data.begin(),sub_data.end());
-					},
 				}, code);
 			}
 			return data;
@@ -158,14 +172,7 @@ namespace BBCPU::ASM {
 		Label end;
 
 		Code to_code() const{
-			Code code{start};
-			for(auto v:body){
-				std::visit(Util::lambda_compose{
-					[&](const lazy_t &fn) { code<<fn; },
-					[&](         op_t op) { code<<op; },
-				}, v);
-			}
-			return code<<end;
+			return {start,body,end};
 		}
 	};
 }
