@@ -102,7 +102,7 @@ struct Vec:Struct<u8,u8,u8>{
 };
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	StaticVars vars;
-	Vec vec{vars.preset(Vec::make(3_u8,7_u8,11_u8))};
+	Vec vec{vars.preset(Vec(3_u8,7_u8,11_u8))};
 	auto [x,y,z]=vec.extract();
 	
 	CPU cpu;

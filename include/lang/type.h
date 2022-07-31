@@ -100,6 +100,7 @@ namespace BBCPU::Lang {
 			}
 			return This{Code{val,vals...}};
 		}
+		explicit Struct(T val,Ts ...vals):Base(make(val,vals...)){}
 
 		auto extract(){
 			return [&]<size_t... I>(std::index_sequence<I...>){
@@ -123,17 +124,14 @@ namespace BBCPU::Lang {
 	struct Union:Type<std::max({Ts::size...})>{
 		DEF_TYPE(Union,(Union<Ts...>),(Type<std::max({Ts::size...})>)) // NOLINT(google-explicit-constructor)
 
-		template<typename T> requires std::disjunction_v<std::is_same<T, Ts>...>
-		explicit Union(const T& v):Base(v.value){}
-
 		static constexpr size_t count=sizeof...(Ts);
 		template<addr_t Index>
 		struct SubType:std::tuple_element_t<Index, std::tuple<Ts...>>{
 			using type = std::tuple_element_t<Index, std::tuple<Ts...>>;
 			static constexpr addr_t offset=0;
 		};
-		template<typename V>
-		inline static auto make(V val){
+		template<typename V> requires std::disjunction_v<std::is_same<V, Ts>...>
+		inline static auto make(const V& val){
 			if(auto v=val.as_raw();v){
 				data_t tmp(Base::size,data_t::value_type(static_cast<op_t>(0)));
 				std::copy(v->data.begin(),v->data.end(),tmp.begin());
@@ -145,6 +143,9 @@ namespace BBCPU::Lang {
 			}
 			return This{tmp};
 		}
+		template<typename V> requires std::disjunction_v<std::is_same<V, Ts>...>
+		explicit Union(const V& v):Base(make(v)){}
+
 		auto extract(){
 			return [&]<size_t... I>(std::index_sequence<I...>){
 				return std::tuple{get<I>()...};
@@ -265,10 +266,10 @@ namespace BBCPU::Lang {
 	template<typename T>struct UnPtr<ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
 
-	inline auto operator""_i8 (unsigned long long val){return AsInt<  int8_t>{val};}
-	inline auto operator""_u8 (unsigned long long val){return AsInt< uint8_t>{val};}
-	inline auto operator""_i16(unsigned long long val){return AsInt< int16_t>{val};}
-	inline auto operator""_u16(unsigned long long val){return AsInt<uint16_t>{val};}
+	inline auto operator""_i8 (unsigned long long val){return i8{val};}
+	inline auto operator""_u8 (unsigned long long val){return u8{val};}
+	inline auto operator""_i16(unsigned long long val){return i16{val};}
+	inline auto operator""_u16(unsigned long long val){return u16{val};}
 
 	inline static const u8 Reg_A{RegVar::make(Reg::A)};
 	inline static const u8 Reg_B{RegVar::make(Reg::B)};
