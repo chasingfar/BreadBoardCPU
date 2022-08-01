@@ -165,14 +165,11 @@ namespace BBCPU::Lang {
 		}
 	};
 
-	template<typename T,size_t N,typename ...Ts>
-	struct Array:Array<T,N-1,T,Ts...>{
-		using Array<T,N-1,T,Ts...>::Array;
-	};
-	template<typename T,typename ...Ts>
-	struct Array<T,0,Ts...>:Struct<Ts...>{
-		DEF_TYPE(Array,(Array<T,sizeof...(Ts)>),(Struct<Ts...>)) // NOLINT(google-explicit-constructor)
+	template<typename T,size_t N>
+	struct Array:Type<N*T::size>{
+		DEF_TYPE(Array,(Array<T,N>),(Type<N*T::size>)) // NOLINT(google-explicit-constructor)
 
+		template<typename ...Ts>requires ((N==sizeof...(Ts))&&...&&std::is_same_v<T,Ts>)
 		inline static auto make(Ts ...vals){
 			if((vals.as_raw()&&...)){
 				data_t tmp;
@@ -184,6 +181,9 @@ namespace BBCPU::Lang {
 			}
 			return This{Code{vals...}};
 		}
+		template<typename ...Ts>requires ((N==sizeof...(Ts))&&...&&std::is_same_v<T,Ts>)
+		explicit Array(Ts ...vals):Base(make(vals...)){}
+
 		auto operator[](size_t i){
 			return T{this->as_mem_var()->shift(T::size*i,T::size)};
 		}
