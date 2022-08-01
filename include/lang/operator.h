@@ -23,7 +23,7 @@ namespace BBCPU::Lang {
 		} else if constexpr (Size == 1) {
 			tmp << fn();
 		}
-		return tmp;
+		return Int<Size,Signed>{tmp};
 	}
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
@@ -112,19 +112,19 @@ namespace BBCPU::Lang {
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<<(const Int<Size,Signed>& lhs,size_t n){
-		Code tmp{lhs};
+		Int<Size,Signed> tmp{lhs.value};
 		for (size_t i = 0; i < n; ++i) {
-			tmp<<Ops::shl();
+			tmp.value=shl(tmp).value;
 		}
-		return Int<Size,Signed>{tmp};
+		return tmp;
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator>>(const Int<Size,Signed>& lhs,size_t n){
-		Code tmp{lhs};
+		Int<Size,Signed> tmp{lhs.value};
 		for (size_t i = 0; i < n; ++i) {
-			tmp<<Ops::shr();
+			tmp.value=shr(tmp).value;
 		}
-		return Int<Size,Signed>{tmp};
+		return tmp;
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator&(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
