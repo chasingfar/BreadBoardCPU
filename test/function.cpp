@@ -347,9 +347,9 @@ TEST_CASE("function pointer","[asm][function]"){
 	Label heap,aa;
 
 	Fn<ptr<void_>(usize)> malloc{[&](auto& _, auto size)->Stmt{
-		auto next_ptr=global=ptr<void>(heap);
+		auto next_ptr=global=ptr<u8>(heap);
 		return {
-			_.ret=next_ptr,
+			_.ret=(ptr<void_>)next_ptr,
 			next_ptr+=size,
 			_.return_(),
 		};
