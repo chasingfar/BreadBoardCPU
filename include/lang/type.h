@@ -247,6 +247,10 @@ namespace BBCPU::Lang {
 		inline static const bool_ true_{imm(1)};
 		inline static const bool_ false_{imm(0)};
 	}
+	inline auto operator""_i8 (unsigned long long val){return i8{val};}
+	inline auto operator""_u8 (unsigned long long val){return u8{val};}
+	inline auto operator""_i16(unsigned long long val){return i16{val};}
+	inline auto operator""_u16(unsigned long long val){return u16{val};}
 
 	template<typename T>
 	struct ptr: AsInt<addr_t>{
@@ -265,11 +269,6 @@ namespace BBCPU::Lang {
 	template<typename T>struct UnPtr        {};
 	template<typename T>struct UnPtr<ptr<T>>{using type = T;};
 	template<typename T>concept IsPtr = requires {typename UnPtr<T>::type;};
-
-	inline auto operator""_i8 (unsigned long long val){return i8{val};}
-	inline auto operator""_u8 (unsigned long long val){return u8{val};}
-	inline auto operator""_i16(unsigned long long val){return i16{val};}
-	inline auto operator""_u16(unsigned long long val){return u16{val};}
 
 	inline static const u8 Reg_A{RegVar::make(Reg::A)};
 	inline static const u8 Reg_B{RegVar::make(Reg::B)};
