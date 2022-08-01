@@ -171,5 +171,30 @@ namespace BBCPU::Lang {
 	inline auto operator^=(const T& var,const U&value){
 		return var.set(var^value);
 	}
+
+	template<addr_t Size,bool Signed>
+	inline auto operator*(const Int<Size,Signed>& lhs,size_t rhs){
+		std::vector<Int<Size,Signed>> res;
+		size_t i=0;
+		while(rhs!=0){
+			if(rhs&1u){
+				res.push_back(lhs<<i);
+			}
+			++i;
+			rhs>>=1;
+		}
+		if(res.empty()){
+			return Int<Size,Signed>{0ull};
+		}
+		auto sum=res[0];
+		for(auto it=res.begin()+1; it!=res.end(); ++it) {
+			sum.value=(sum + *it).value;
+		}
+		return sum;
+	}
+	template<typename T>
+	inline auto operator+(const ptr<T>& p,const AsInt<addr_t>& v){
+		return add(p,v*T::size);
+	}
 }
 #endif //BBCPU_OPERATOR_H
