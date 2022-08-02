@@ -175,7 +175,7 @@ TEST_CASE("inplace function","[asm][function]"){
 		InplaceFn<u16(u8,u8,u8,u8)>{
 			[](auto& _,auto a,auto b,auto c,auto d)->Stmt{
 			return {
-				_.return_(u16::make(add(a, c), adc(b, d))),
+				_.return_(u16::make(add(b, d), adc(a, c))),
 			};
 		}},
 		pop(Reg::B),
@@ -193,7 +193,7 @@ TEST_CASE("inplace function 2","[asm][function]"){
 		InplaceFn<u16(u8,u8,u8,u8)>{
 			[](auto& _,auto a,auto b,auto c,auto d)->Stmt{
 			return {
-				_.ret=u16::make(add(a,c),adc(b,d)),
+				_.ret=u16::make(add(b,d),adc(a,c)),
 			};
 		}},
 		pop(Reg::B),
@@ -221,9 +221,9 @@ TEST_CASE("function with custom type","[asm][function]"){
 		}),
 		main,
 		fn(Vec(3_u8,7_u8,11_u8)),
-		pop(Reg::A),
-		pop(Reg::B),
 		pop(Reg::C),
+		pop(Reg::B),
+		pop(Reg::A),
 		halt(),
 	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
@@ -259,10 +259,10 @@ TEST_CASE("function with custom composite type","[asm][function]"){
 		}),
 		main,
 		fn(Ball(Vec(3_u8,7_u8,11_u8),1_u8)),
-		pop(Reg::A),
-		pop(Reg::B),
-		pop(Reg::C),
 		pop(Reg::D),
+		pop(Reg::C),
+		pop(Reg::B),
+		pop(Reg::A),
 		halt(),
 	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::D) == 12);
@@ -288,8 +288,8 @@ TEST_CASE("function with union","[asm][function]"){
 		}),
 		main,
 		fn(T(0x1234_u16)),
-		pop(Reg::A),
 		pop(Reg::B),
+		pop(Reg::A),
 		halt(),
 	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 0x12);
@@ -314,9 +314,9 @@ TEST_CASE("function with array","[asm][function]"){
 		}),
 		main,
 		fn(Array<u8,3>(3_u8,7_u8,11_u8)),
-		pop(Reg::A),
-		pop(Reg::B),
 		pop(Reg::C),
+		pop(Reg::B),
+		pop(Reg::A),
 		halt(),
 	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::C) == 4);
@@ -377,8 +377,8 @@ TEST_CASE("function pointer","[asm][function]"){
 	cpu.load({
 		global.init,
 		main(),
-		pop(Reg::B),
 		pop(Reg::A),
+		pop(Reg::B),
 		halt(),
 		malloc,
 		fn,

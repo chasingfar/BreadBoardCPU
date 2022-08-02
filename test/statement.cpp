@@ -109,7 +109,7 @@ struct Vec:Struct<u8,u8,u8>{
 };
 TEST_CASE("static variable with custom type","[asm][statement]"){
 	StaticVars vars;
-	//Vec vec{vars.preset(Vec(3_u8,7_u8,11_u8))};
+	
 	auto vec=vars=Vec(3_u8,7_u8,11_u8);
 	auto [x,y,z]=vec.extract();
 	
@@ -167,8 +167,8 @@ TEST_CASE("big variable","[asm][statement]"){
 	CPU cpu;
 	cpu.load({
 		add(0x12f3_u16,0x32cc_u16),
-		pop(Reg::B),
 		pop(Reg::A),
+		pop(Reg::B),
 		halt(),
 	}).run_to_halt();
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 0x45);

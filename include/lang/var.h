@@ -21,14 +21,10 @@ namespace BBCPU::Lang {
 		explicit Raw(data_t data):data(std::move(data)){}
 		static auto make(const data_t& data){ return std::make_shared<Raw>(data);}
 		Code load() const override{
-			Code code{};
-			for(auto v:data){
-				code<<std::visit(Util::lambda_compose{
-					[](const lazy_t &fn) { return imm(fn); },
-					[](         op_t op) { return imm(op); },
-				}, v);
-			}
-			return code;
+			return std::accumulate(data.rbegin(),data.rend(),
+			Code{},[](auto code,auto val){
+				return code<<std::visit([](const auto &v) { return imm(v); }, val);
+			});
 		}
 		std::shared_ptr<Raw> shift(offset_t shift_offset,addr_t new_size) const{
 			data_t tmp(new_size);
@@ -77,14 +73,14 @@ namespace BBCPU::Lang {
 		Code load() const override{
 			Code tmp{};
 			for (addr_t i=0; i<size; ++i) {
-				tmp<<load(i);
+				tmp<<load(size-1-i);
 			}
 			return tmp;
 		}
 		Code save() const override{
 			Code tmp{};
 			for (addr_t i=0; i<size; ++i) {
-				tmp<<save(size-1-i);
+				tmp<<save(i);
 			}
 			return tmp;
 		}
@@ -94,13 +90,13 @@ namespace BBCPU::Lang {
 		explicit LocalVar(addr_t size,offset_t offset):MemVar(size),offset(offset){}
 		static auto make(addr_t size,offset_t offset){ return std::make_shared<LocalVar>(size,offset);}
 		Code load(offset_t index) const override{
-			return load_local(offset-index);
+			return load_local(offset+index);
 		}
 		Code save(offset_t index) const override{
-			return save_local(offset-index);
+			return save_local(offset+index);
 		}
 		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
-			return make(new_size,offset - shift_offset);
+			return make(new_size,offset + shift_offset);
 		}
 	};
 	struct StaticVar:MemVar{

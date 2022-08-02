@@ -57,9 +57,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			FnBase(ret_start,arg_start)
 			{ start.name=name;}
 		std::shared_ptr<MemVar> alloc(addr_t size) override {
-			offset_t pos=-local_size;
 			local_size+=size;
-			return LocalVar::make(size,pos);
+			return LocalVar::make(size,1-local_size);
 		}
 	};
 
@@ -68,15 +67,15 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 	struct Fn<Ret(Args...)>:FnBase<Ret(Args...)>{
 		using This = Fn<Ret(Args...)>;
 		using Base = FnBase<Ret(Args...)>;
-		static constexpr offset_t ret_start=Base::ret_size+Base::arg_size+4;
+		static constexpr offset_t ret_start=Base::arg_size+4+1;
 		static constexpr offset_t arg_start=Base::arg_size+4;
 		explicit Fn(const std::string& name=""):Base{name,ret_start,arg_start}{}
 
-		Ret operator()(const Args&... _args) const{
+		Ret operator()(const Args&... args_) const{
 			Code code{};
 			code<<adj(-Base::ret_size);
 			if constexpr (sizeof...(Args)>0){
-				(code<<...<<_args);
+				(code<<...<<args_);
 			}
 			code<<Ops::call(this->start)
 				<<adj(Base::arg_size);
@@ -130,7 +129,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 	struct InplaceFn<Ret(Args...)>:FnBase<Ret(Args...)>{
 		using This = InplaceFn<Ret(Args...)>;
 		using Base = FnBase<Ret(Args...)>;
-		static constexpr offset_t ret_start=Base::arg_size+2;
+		static constexpr offset_t ret_start=Base::arg_size+2+1-Base::ret_size;
 		static constexpr offset_t arg_start=Base::arg_size+2;
 		Label end_;
 

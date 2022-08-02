@@ -27,7 +27,7 @@ namespace BBCPU::ASM {
 		inline Code pop (Reg toReg)         {return {OP1(Pop, to, toReg)};}
 		inline Code imm (op_t value)        {return {OP0(ImmVal), value};}
 		inline Code imm (lazy_t value)      {return {OP0(ImmVal), value};}
-		inline Code imm (const Label& addr) {return {OP0(ImmVal), LAZY_L(addr),OP0(ImmVal), LAZY_H(addr)};}
+		inline Code imm (const Label& addr) {return {OP0(ImmVal), LAZY_H(addr),OP0(ImmVal), LAZY_L(addr)};}
 		inline Code brz (const Label& addr) {return {OP0(BranchZero), ADDR_HL(addr)};}
 		inline Code brc (const Label& addr) {return {OP0(BranchCF), ADDR_HL(addr)};}
 		inline Code jmp (const Label& addr) {return {OP0(Jump), ADDR_HL(addr)};}
@@ -61,8 +61,8 @@ namespace BBCPU::ASM {
 #undef ADDR_HL
 #undef ADDR_LH
 
-		inline Code push(Reg16 from)        {return {push(from.L()),push(from.H())};}
-		inline Code pop (Reg16 to)          {return {pop(to.H()),pop(to.L())};}
+		inline Code push(Reg16 from)        {return {push(from.H()),push(from.L())};}
+		inline Code pop (Reg16 to)          {return {pop(to.L()),pop(to.H())};}
 		inline Code push(op_t v)            {return imm(v);}
 		inline Code push(const Label& v)    {return imm(v);}
 		inline Code push(Code from)         {return from;}

@@ -40,9 +40,9 @@ TEST_CASE("immediate value","[asm][basic]"){
 	cpu.run_op(imm(123));
 	REQUIRE(cpu.get_stack_top() == 123);
 	cpu.run_op(imm(Label{0xABCD}));
-	REQUIRE(cpu.get_stack_top() == 0xCD);
-	cpu.tick_op();
 	REQUIRE(cpu.get_stack_top() == 0xAB);
+	cpu.tick_op();
+	REQUIRE(cpu.get_stack_top() == 0xCD);
 }
 
 TEST_CASE("jump and branch","[asm][basic]"){
