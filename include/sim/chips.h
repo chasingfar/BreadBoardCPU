@@ -275,5 +275,24 @@ namespace BBCPU::Sim{
 			};
 		}
 	};
+	// Base on IC 74688
+	template<size_t Size=8>
+	struct Eq:Chip{
+		Port<Size> P{Mode::IN},Q{Mode::IN};
+		Enable oe;
+		Port<1> PeqQ{1};
+
+		explicit Eq(std::string name=""):Chip(std::move(name)){
+			add_ports(P,Q,oe,PeqQ);
+		}
+		void run() override{
+			PeqQ=!(oe.is_enable()&&P.value()==Q.value());
+		}
+		Util::Printer print(std::span<const Level> s) const override{
+			return [=](std::ostream& os){
+				os<<"Eq"<<P(s)<<"<=>"<<Q(s)<<"(oe:"<<oe(s)<<"P==Q:"<<PeqQ(s)<<")";
+			};
+		}
+	};
 }
 #endif //BBCPU_SIM_CHIPS_H
