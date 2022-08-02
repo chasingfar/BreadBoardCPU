@@ -223,18 +223,22 @@ namespace BBCPU::Lang {
 		inline static auto make(Int<S,Signed> ...vals){
 			return This{expr({vals...})};
 		}
-		explicit operator Int<1,false>() const{
-			Code tmp{*this};
-			for (addr_t i = 1; i < Size; ++i) {
-				tmp << OR();
-			}
-			return Int<1,false>{expr(tmp)};
-		}
 	};
 	template<typename T>
 	using AsInt=Int<sizeof(T),std::is_signed_v<T>>;
 
-	struct bool_:AsInt< uint8_t>{ DEF_TYPE2(bool_,AsInt< uint8_t>) }; // NOLINT(google-explicit-constructor)
+	struct bool_:AsInt< uint8_t>{
+		DEF_TYPE2(bool_,AsInt< uint8_t>) // NOLINT(google-explicit-constructor)
+		
+		template<addr_t Size,bool Signed=false>
+		explicit bool_(const Int<Size,Signed>& other){
+			Code tmp{other};
+			for (addr_t i = 1; i < Size; ++i) {
+				tmp << OR();
+			}
+			this->value=expr(tmp);
+		}
+	};
 	struct   u8 :AsInt< uint8_t>{ DEF_TYPE2(  u8 ,AsInt< uint8_t>) }; // NOLINT(google-explicit-constructor)
 	struct   i8 :AsInt<  int8_t>{ DEF_TYPE2(  i8 ,AsInt<  int8_t>) }; // NOLINT(google-explicit-constructor)
 	struct   u16:AsInt<uint16_t>{ DEF_TYPE2(  u16,AsInt<uint16_t>) }; // NOLINT(google-explicit-constructor)
