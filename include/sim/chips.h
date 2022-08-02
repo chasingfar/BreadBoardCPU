@@ -271,7 +271,7 @@ namespace BBCPU::Sim{
 		}
 		Util::Printer print(std::span<const Level> s) const override{
 			return [=](std::ostream& os){
-				os<<"Demux"<<P(s)<<"<=>"<<Q(s)<<"(P>Q:"<<PgtQ(s)<<",P==Q:"<<PeqQ<<")";
+				os<<"Cmp"<<P(s)<<"<=>"<<Q(s)<<"(P>Q:"<<PgtQ(s)<<",P==Q:"<<PeqQ(s)<<")";
 			};
 		}
 	};
