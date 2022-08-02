@@ -15,25 +15,25 @@ namespace BBCPU::Sim{
 	template<size_t Size>
 	struct Reg:Chip{
 		Clock clk;
-		Port<Size> input{Mode::IN},output{0};
+		Port<Size> D{Mode::IN},Q{0};
 		val_t data{};
 		explicit Reg(std::string name=""):Chip(std::move(name)){
-			add_ports(clk,input,output);
+			add_ports(clk, D, Q);
 		}
 		void run() override {
 			if(clk.value() == 0){
-				data=input.value();
+				data=D.value();
 			}else{
-				output=data;
+				Q=data;
 			}
 		}
 		void reset() {
 			data=0;
-			output=0;
+			Q=0;
 		}
 		Util::Printer print(std::span<const Level> s) const override{
 			return [=](std::ostream& os){
-				os<<input(s)<<"=>"<<data<<"=>"<<output(s)<<"(clk="<<clk(s)<<")";
+				os << D(s) << "=>" << data << "=>" << Q(s) << "(clk=" << clk(s) << ")";
 			};
 		}
 	};
@@ -48,7 +48,7 @@ namespace BBCPU::Sim{
 		void run() override {
 			Base::run();
 			if(!ce.is_enable()){
-				Base::data=Base::output.value();
+				Base::data=Base::Q.value();
 			}
 		}
 		Util::Printer print(std::span<const Level> s) const override{

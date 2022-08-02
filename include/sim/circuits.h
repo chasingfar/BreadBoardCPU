@@ -24,8 +24,8 @@ namespace BBCPU::Sim{
 			clk.wire(sreg.clk);
 			clr.wire(sreg.clr);
 
-			(tbl.D.template sub<STSize>(STOutOff)).wire(sreg.input.template sub<STSize>(STInOff));
-			sreg.output.wire(tbl.A);
+			(tbl.D.template sub<STSize>(STOutOff)).wire(sreg.D.template sub<STSize>(STInOff));
+			sreg.Q.wire(tbl.A);
 
 			tbl.ce.set(0);
 			tbl.we.set(1);
@@ -173,8 +173,8 @@ namespace BBCPU::Sim{
 
 			clk.wire(reg.clk);
 			clr.wire(reg.clr);
-			adder.O.wire(reg.input);
-			adder.A.wire(reg.output);
+			adder.O.wire(reg.D);
+			adder.A.wire(reg.Q);
 			adder.B.set(1);
 		}
 		Util::Printer print() const override{

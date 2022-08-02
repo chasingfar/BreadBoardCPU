@@ -27,8 +27,8 @@ namespace BBCPU::RegSet_SRAM::Impl{
 				sel.wire(demux.S);
 				((demux.Y.template sub<1>(I)).wire(regs[I].ce),...);
 				clk.wire(regs[I].clk...);
-				input.wire(regs[I].input...);
-				(output[I].wire(regs[I].output),...);
+				input.wire(regs[I].D...);
+				(output[I].wire(regs[I].Q),...);
 			}(std::make_index_sequence<regs_num>{});
 		}
 		explicit RegCESet(const std::string& name=""):RegCESet(
@@ -90,9 +90,9 @@ namespace BBCPU::RegSet_SRAM::Impl{
 
 		explicit CU(std::string name=""):CUBase(std::move(name)){
 #define CUWIRE(PORTA,PORTB,NAME) (PORTA).wire((PORTB).sub<NAME::size>(NAME::low ))
-			CUWIRE(Ci ,sreg.input,MARG::carry );
-			CUWIRE(INT,sreg.input,MARG::INT   );
-			CUWIRE(op ,sreg.input,MARG::opcode);
+			CUWIRE(Ci , sreg.D, MARG::carry );
+			CUWIRE(INT, sreg.D, MARG::INT   );
+			CUWIRE(op , sreg.D, MARG::opcode);
 			
 			CUWIRE(INTA_,tbl.D,MCTRL::INTA_  );
 			CUWIRE(CMS  ,tbl.D,MCTRL::alu    );
@@ -130,8 +130,8 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			clk.wire(nand.A,nand.B,creg.clk,regset.clk,reg.ce);
 			clk_.wire(nand.Y,cu.clk);
 			clr.wire(cu.clr,creg.clr);
-			alu.Co.wire(creg.input);
-			creg.output.wire(cu.Ci);
+			alu.Co.wire(creg.D);
+			creg.Q.wire(cu.Ci);
 			regset.output[RegSet::I.v()].wire(cu.op);
 			regset.output[RegSet::A.v()].wire(alu.A);
 			regset.output[RegSet::L.v()].wire(mem.addr.sub<8>(0));
@@ -166,11 +166,11 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		}
 		void load_op(const std::vector<word_t>& op){
 			load(op, get_reg16(Reg16::PC));
-			regset.regs[RegSet::I.v()].output=regset.regs[RegSet::I.v()].data=op[0];
-			cu.sreg.output=cu.sreg.data=MARG::opcode::set(cu.sreg.input.value(),op[0]);
+			regset.regs[RegSet::I.v()].Q= regset.regs[RegSet::I.v()].data=op[0];
+			cu.sreg.Q= cu.sreg.data=MARG::opcode::set(cu.sreg.D.value(), op[0]);
 		}
 		bool is_halt(){
-			return regset.regs[RegSet::I.v()].output.value()==OpCode::Ops::Halt::id::id;
+			return regset.regs[RegSet::I.v()].Q.value() == OpCode::Ops::Halt::id::id;
 		}
 		void tick(){
 			++tick_count;
