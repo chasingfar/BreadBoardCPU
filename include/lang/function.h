@@ -73,17 +73,17 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		explicit Fn(const std::string& name=""):Base{name,ret_start,arg_start}{}
 
 		Ret operator()(const Args&... _args) const{
-			Code expr{};
-			expr<<adj(-Base::ret_size);
+			Code code{};
+			code<<adj(-Base::ret_size);
 			if constexpr (sizeof...(Args)>0){
-				(expr<<...<<_args);
+				(code<<...<<_args);
 			}
-			expr<<Ops::call(this->start)
+			code<<Ops::call(this->start)
 				<<adj(Base::arg_size);
-			return Ret{expr};
+			return Ret{expr(code)};
 		}
 		This& impl(const Stmt& stmt){
-			this->body<<void_{Code{ent(this->local_size), stmt}};
+			this->body<<asm_({ent(this->local_size), stmt});
 			return *this;
 		}
 
@@ -92,8 +92,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			auto body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		inline void_ return_(Ret value){return void_{Code{this->ret.set(value), lev()}};}
-		inline void_ return_(){return void_{lev()};}
+		inline void_ return_(Ret value){return asm_({this->ret.set(value), lev()});}
+		inline void_ return_(){return asm_(lev());}
 
 		explicit Fn(const Stmt& stmt){impl(stmt);}
 		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
@@ -137,18 +137,18 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		This& impl(F&& fn){
 			auto stmt=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
-			this->body<<void_{Code{
+			this->body<<asm_({
 				saveBP(),
 				adj(-this->local_size),
 				stmt,
 				end_,
 				loadBP(),
 				adj(Base::arg_size-Base::ret_size),
-			}};
+			});
 			return *this;
 		}
-		inline void_ return_(Ret value){return void_{Code{this->ret.set(value), jmp(end_)}};}
-		inline void_ return_(){return void_{jmp(end_)};}
+		inline void_ return_(Ret value){return asm_({this->ret.set(value), jmp(end_)});}
+		inline void_ return_(){return asm_(jmp(end_));}
 
 		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
 		explicit InplaceFn(F&& fn):Base{ret_start,arg_start}{impl(fn);}

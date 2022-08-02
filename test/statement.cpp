@@ -28,9 +28,9 @@ TEST_CASE("if","[asm][statement]"){
 		cpu.init();
 		cpu.load({
 			if_(1_u8).then({
-				void_{imm(Reg::A,5)},
+				asm_(imm(Reg::A,5)),
 			}).else_({
-				void_{imm(Reg::A,6)},
+				asm_(imm(Reg::A,6)),
 			}).end(),
 			halt(),
 		}).run_to_halt();
@@ -40,9 +40,9 @@ TEST_CASE("if","[asm][statement]"){
 		cpu.init();
 		cpu.load({
 			if_(0_u8).then({
-				void_{imm(Reg::A, 5)},
+				asm_(imm(Reg::A, 5)),
 			}).else_({
-				void_{imm(Reg::A,6)},
+				asm_(imm(Reg::A,6)),
 			}).end(),
 			halt(),
 		}).run_to_halt();
@@ -179,9 +179,9 @@ TEST_CASE("if cmp","[asm][statement]"){
 	auto test_if=[=](bool_ cond)->Code{
 		return {
 			if_(cond).then({
-				void_{imm(Reg::A,T)},
+				asm_(imm(Reg::A,T)),
 			}).else_({
-				void_{imm(Reg::A,F)},
+				asm_(imm(Reg::A,F)),
 			}).end(),
 			halt(),
 		};

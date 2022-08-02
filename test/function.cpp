@@ -24,7 +24,7 @@ TEST_CASE("function dynamic args and vars","[asm][function]"){
 			c.set(Reg_C),
 			d.set(Reg_D),
 			dd,
-			void_{lev()},
+			asm_(lev()),
 		}),
 		main,
 		fn(8_u8,3_u8),

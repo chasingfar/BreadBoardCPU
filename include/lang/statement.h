@@ -54,18 +54,18 @@ namespace BBCPU::Lang {
 		Block if_false{};
 		explicit if_(const bool_& cond):cond(cond){}
 		if_& then(Ret t_code){
-			if_true.body<<void_{Code{t_code}};
+			if_true.body<<asm_(t_code);
 			return *this;
 		}
 		if_& else_(Ret f_code){
-			if_false.body<<void_{Code{f_code}};
+			if_false.body<<asm_(f_code);
 			return *this;
 		}
 		Ret end() const{
 			if constexpr(std::is_same_v<Ret,Stmt>){
-				return Stmt{void_{to_code()}};
+				return Stmt{asm_(to_code())};
 			}else{
-				return Ret{to_code()};
+				return Ret{expr(to_code())};
 			}
 		}
 		Code to_code() const{
@@ -85,18 +85,18 @@ namespace BBCPU::Lang {
 		Block if_carry{};
 		explicit ifc(const void_& cond):cond(cond){}
 		ifc& then(Ret no_carry){
-			if_no_carry.body<<void_{Code{no_carry}};
+			if_no_carry.body<<asm_(no_carry);
 			return *this;
 		}
 		ifc& else_(Ret carry){
-			if_carry.body<<void_{Code{carry}};
+			if_carry.body<<asm_(carry);
 			return *this;
 		}
 		Ret end() const{
 			if constexpr(std::is_same_v<Ret,Stmt>){
-				return Stmt{void_{to_code()}};
+				return Stmt{void_{asm_(to_code())}};
 			}else{
-				return Ret{to_code()};
+				return Ret{expr(to_code())};
 			}
 		}
 		Code to_code() const {
@@ -118,7 +118,7 @@ namespace BBCPU::Lang {
 			return *this;
 		}
 		void_ end() const{
-			return void_{to_code()};
+			return asm_(to_code());
 		}
 		Code to_code() const {
 			Label start,end;

@@ -53,6 +53,7 @@ namespace BBCPU::Lang {
 			return *this;
 		}
 	};
+	inline auto expr(const Code& code){return std::make_shared<Expr>(code);}
 	struct Var:Value{
 		virtual Code save() const=0;
 	};

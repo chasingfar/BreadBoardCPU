@@ -32,7 +32,6 @@ namespace BBCPU::Lang {
 		template<typename T> requires std::is_base_of_v<Value,T>
 		explicit Type(std::shared_ptr<T> value):value(value){}
 		explicit Type(Allocator& allocator):value(allocator.alloc(size)){}
-		explicit Type(const Code& expr):value(std::make_shared<Expr>(expr)){}
 
 		template<typename T>
 		auto as() const{return std::dynamic_pointer_cast<T>(value);}
@@ -42,7 +41,7 @@ namespace BBCPU::Lang {
 		auto as_static_var() const{return as<StaticVar>();}
 
 		Type<0> set(const Type<Size>& rhs) const{
-			return Type<0>{Code{rhs.value->load(), as<Var>()->save()}};
+			return Type<0>{expr({rhs.value->load(), as<Var>()->save()})};
 		}
 		auto operator =(const Type<Size>& rhs) const{ // NOLINT(bugprone-unhandled-self-assignment,misc-unconventional-assign-operator)
 			return set(rhs);
@@ -58,13 +57,13 @@ namespace BBCPU::Lang {
 
 		}
 		explicit operator Type<0>(){
-			return Type<0>{to_stmt()};
+			return Type<0>{expr(to_stmt())};
 		}
 	};
 	using void_ = Type<0>;
-
+	inline auto asm_(const Code& code){return void_{expr(code)};}
 	namespace Val{
-		inline static const void_ none{Code{}};
+		inline static const void_ none{expr({})};
 	}
 
 	template<typename To,typename From>
@@ -98,7 +97,7 @@ namespace BBCPU::Lang {
 				}
 				return This{std::make_shared<Raw>(tmp)};
 			}
-			return This{Code{val,vals...}};
+			return This{expr({val, vals...})};
 		}
 		explicit Struct(T val,Ts ...vals):Base(make(val,vals...)){}
 
@@ -141,7 +140,7 @@ namespace BBCPU::Lang {
 			for (size_t i=0; i<std::max({Ts::size...})-V::size; ++i) {
 				tmp<<imm(0);
 			}
-			return This{tmp};
+			return This{expr(tmp)};
 		}
 		template<typename V> requires std::disjunction_v<std::is_same<V, Ts>...>
 		explicit Union(const V& v):Base(make(v)){}
@@ -179,7 +178,7 @@ namespace BBCPU::Lang {
 				}
 				return This{std::make_shared<Raw>(tmp)};
 			}
-			return This{Code{vals...}};
+			return This{expr({vals...})};
 		}
 		template<typename ...Ts>requires ((N==sizeof...(Ts))&&...&&std::is_same_v<T,Ts>)
 		explicit Array(Ts ...vals):Base(make(vals...)){}
@@ -222,14 +221,14 @@ namespace BBCPU::Lang {
 		}
 		template<addr_t ...S> requires(Size==(S+...+0))
 		inline static auto make(Int<S,Signed> ...vals){
-			return This{Code{vals...}};
+			return This{expr({vals...})};
 		}
 		explicit operator Int<1,false>() const{
 			Code tmp{*this};
 			for (addr_t i = 1; i < Size; ++i) {
 				tmp << OR();
 			}
-			return Int<1,false>{tmp};
+			return Int<1,false>{expr(tmp)};
 		}
 	};
 	template<typename T>
@@ -244,8 +243,8 @@ namespace BBCPU::Lang {
 	using isize=i16;
 
 	namespace Val{
-		inline static const bool_ true_{imm(1)};
-		inline static const bool_ false_{imm(0)};
+		inline static const bool_  true_{expr(imm(1))};
+		inline static const bool_ false_{expr(imm(0))};
 	}
 	inline auto operator""_i8 (unsigned long long val){return i8{val};}
 	inline auto operator""_u8 (unsigned long long val){return u8{val};}

@@ -23,7 +23,7 @@ namespace BBCPU::Lang {
 		} else if constexpr (Size == 1) {
 			tmp << fn();
 		}
-		return Int<Size,Signed>{tmp};
+		return Int<Size,Signed>{expr(tmp)};
 	}
 
 	template<addr_t Size,bool Signed,auto fn,auto fnc=fn>
@@ -43,7 +43,7 @@ namespace BBCPU::Lang {
 		} else if constexpr (Size == 1) {
 			tmp << fn();
 		}
-		return Int<Size,Signed>{tmp};
+		return Int<Size,Signed>{expr(tmp)};
 	}
 
 	template<addr_t Size,bool Signed> inline auto shl(const Int<Size,Signed>& lhs)                      {return calc_<Size,Signed,Ops::shl,Ops::rcl>(lhs);}
