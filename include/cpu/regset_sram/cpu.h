@@ -61,10 +61,10 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			nand.Y.sub<1>(0).wire(RiBo.oe,reg_oe);
 			nand.Y.sub<1>(1).wire(MiBo.oe,mem_oe);
 
-			RiBo.dir.set(1);
-			RoFi.dir.set(0);
-			MiBo.dir.set(1);
-			MoFi.dir.set(0);
+			RiBo.dir.set(Bus<8>::AtoB);
+			RoFi.dir.set(Bus<8>::BtoA);
+			MiBo.dir.set(Bus<8>::AtoB);
+			MoFi.dir.set(Bus<8>::BtoA);
 
 			R.wire(RiBo.A,RoFi.A);
 			M.wire(MiBo.A,MoFi.A);
@@ -72,7 +72,7 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			F.wire(RoFi.B,MoFi.B);
 
 			dir.wire(demux.S);
-			demux.G.set(0);
+			demux.G.enable();
 		}
 	};
 	struct CU:CUBase<MARG::size,MCTRL::size,MARG::state::size,MARG::state::low,MCTRL::state::low>{
@@ -166,8 +166,8 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		}
 		void load_op(const std::vector<word_t>& op){
 			load(op, get_reg16(Reg16::PC));
-			regset.regs[RegSet::I.v()].Q= regset.regs[RegSet::I.v()].data=op[0];
-			cu.sreg.Q= cu.sreg.data=MARG::opcode::set(cu.sreg.D.value(), op[0]);
+			regset.regs[RegSet::I.v()].set(op[0]);
+			cu.sreg.set(MARG::opcode::set(cu.sreg.D.value(), op[0]));
 		}
 		bool is_halt(){
 			return regset.regs[RegSet::I.v()].Q.value() == OpCode::Ops::Halt::id::id;

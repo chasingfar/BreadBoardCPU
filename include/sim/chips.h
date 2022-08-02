@@ -27,9 +27,12 @@ namespace BBCPU::Sim{
 				Q=data;
 			}
 		}
+		void set(val_t val){
+			data=val;
+			Q=val;
+		}
 		void reset() {
-			data=0;
-			Q=0;
+			set(0);
 		}
 		Util::Printer print(std::span<const Level> s) const override{
 			return [=](std::ostream& os){
@@ -208,7 +211,7 @@ namespace BBCPU::Sim{
 		Enable oe;
 		Port<1> dir{Mode::IN};
 		Port<Size> A,B;
-
+		enum Dir{BtoA=0,AtoB=1};
 		explicit Bus(std::string name=""):Chip(std::move(name)){
 			add_ports(oe,dir,A,B);
 		}
@@ -216,7 +219,7 @@ namespace BBCPU::Sim{
 			A=Level::Floating;
 			B=Level::Floating;
 			if(oe.is_enable()){
-				if(dir.value()==1){
+				if(dir.value()==AtoB){
 					if(auto v=A.get();v){
 						B=*v;
 					}

@@ -27,9 +27,9 @@ namespace BBCPU::Sim{
 			(tbl.D.template sub<STSize>(STOutOff)).wire(sreg.D.template sub<STSize>(STInOff));
 			sreg.Q.wire(tbl.A);
 
-			tbl.ce.set(0);
-			tbl.we.set(1);
-			tbl.oe.set(0);
+			tbl.ce.enable();
+			tbl.we.disable();
+			tbl.oe.enable();
 		}
 	};
 	template<
@@ -64,8 +64,8 @@ namespace BBCPU::Sim{
 			ram.oe.wire(oe);
 			ram.we.wire(we);
 
-			rom.oe.set(0);
-			rom.we.set(1);
+			rom.oe.enable();
+			rom.we.disable();
 
 			cmp.P.set(CVal);
 
