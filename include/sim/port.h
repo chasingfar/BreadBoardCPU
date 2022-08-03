@@ -111,9 +111,12 @@ namespace BBCPU::Sim{
 	struct Enable:Port<1>{
 		using Port<1>::Port;
 		Enable():Port(Mode::IN){}
+		enum En{Yes=0,No=1};
 		bool is_enable(){
-			return value()==0;
+			return value()==Yes;
 		}
+		void  enable(){set(Yes);}
+		void disable(){set(No);}
 	};
 	struct Clock:Port<1>{
 		using Port<1>::Port;
