@@ -2,12 +2,12 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BBCPU_CPU_MARG_H
-#define BBCPU_CPU_MARG_H
+#ifndef BBCPU_CPU_REGFILE8X16_MARG_H
+#define BBCPU_CPU_REGFILE8X16_MARG_H
 
 #include "regs.h"
 #include "../alu.h"
-namespace BBCPU {
+namespace BBCPU::RegFile8x16 {
 	BITFILEDBASE(9) struct STATE : Base {
 		using index  = BitField<Size-2,Base,FollowMode::innerLow>;
 		using CF     = BitField<1,index>;
@@ -33,4 +33,4 @@ namespace BBCPU {
 		}
 	};
 }
-#endif //BBCPU_CPU_MARG_H
+#endif //BBCPU_CPU_REGFILE8X16_MARG_H

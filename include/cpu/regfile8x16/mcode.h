@@ -2,11 +2,11 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BBCPU_CPU_MCODE_H
-#define BBCPU_CPU_MCODE_H
+#ifndef BBCPU_CPU_REGFILE8X16_MCODE_H
+#define BBCPU_CPU_REGFILE8X16_MCODE_H
 
 #include "mctrl.h"
-namespace BBCPU{
+namespace BBCPU::RegFile8x16{
 	struct MCode{
 		MARG::type marg;
 		MCTRL::type mctrl;
@@ -275,4 +275,4 @@ namespace BBCPU{
 		}
 	};
 }
-#endif //BBCPU_CPU_MCODE_H
+#endif //BBCPU_CPU_REGFILE8X16_MCODE_H

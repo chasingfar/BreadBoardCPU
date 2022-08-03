@@ -2,10 +2,10 @@
 // Created by chasingfar on 2020/11/23.
 //
 
-#ifndef BBCPU_CPU_MCTRL_H
-#define BBCPU_CPU_MCTRL_H
+#ifndef BBCPU_CPU_REGFILE8X16_MCTRL_H
+#define BBCPU_CPU_REGFILE8X16_MCTRL_H
 #include "marg.h"
-namespace BBCPU {
+namespace BBCPU::RegFile8x16 {
 
 	BITFILEDBASE(2) struct IODIR : Base {
 		using mem_write_ = BitField<1, Base, FollowMode::innerLow>;
@@ -171,4 +171,4 @@ namespace BBCPU {
 		return MCTRL::setIndex(mctrl, MARG::getIndex(marg) + 1);
 	}
 }
-#endif //BBCPU_CPU_MCTRL_H
+#endif //BBCPU_CPU_REGFILE8X16_MCTRL_H

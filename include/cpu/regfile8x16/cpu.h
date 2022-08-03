@@ -2,234 +2,277 @@
 // Created by chasingfar on 2021/2/2.
 //
 
-#ifndef BBCPU_CPU_CPU_H
-#define BBCPU_CPU_CPU_H
+#ifndef BBCPU_CPU_REGFILE8X16_CPU_H
+#define BBCPU_CPU_REGFILE8X16_CPU_H
 #include <memory>
 #include "opcode.h"
+#include "sim/sim.h"
+namespace BBCPU::RegFile8x16::Impl{
+	using namespace Sim;
+	template<size_t Size>
+	struct EqBus:Circuit{
+		Port<Size> A,D,S,Q;
+		Port<1> oe;
+		Eq<Size> eq{name+"[EQ]"};
+		Bus<Size> bus{name+"[BUS]"};
+		explicit EqBus(std::string name=""):Circuit(std::move(name)){
+			add_comps(eq,bus);
 
-namespace BBCPU{
-	struct CPU{
+			eq.oe.enable();
+			eq.P.wire(S);
+			eq.Q.wire(A);
+			eq.PeqQ.wire(bus.oe,oe);
+
+			bus.B.wire(D);
+			bus.B.wire(Q);
+			bus.dir.set(Bus<Size>::AtoB);
+		}
+	};
+	template<size_t Size>
+	struct RegCore:Circuit{
+		Port<Size> A,D,F,XS,X;
+		Port<1> clr,clk;
+		Enable ce;
+
+		Nand<3> nand{name+"[NAND]"};
+		RegCLR<Size> reg{name+"[REG]"};
+		explicit RegCore(std::string name=""):Circuit(std::move(name)){
+			add_comps(nand,reg);
+
+			clk.wire(nand.A.sub<1>(0),nand.B.sub<1>(0));
+			nand.A.sub<1>(1).wire(nand.Y.sub<1>(0));
+			nand.B.sub<1>(1).wire(ce);
+			nand.Y.sub<1>(1).wire(nand.A.sub<1>(2),nand.B.sub<1>(2));
+
+			reg.clk.wire(nand.Y.sub<1>(2));
+			reg.clr.wire(clr);
+			reg.D.wire(F);
+			reg.Q.wire(D);
+		}
+	};
+	template<size_t Size,size_t PortNum>
+	struct RegUnit:Circuit{
+		Port<1> clr,clk;
+		Port<Size> F,S[PortNum],Q[PortNum];
+
+		RegCore<Size> core;
+		EqBus<Size> bus[PortNum];
+		explicit RegUnit(val_t idx,std::string name="",std::array<std::string,PortNum> port_names):Circuit(std::move(name)){
+			[&]<size_t ...I>(std::index_sequence<I...>){
+				((bus[I].name=port_names[I]),...);
+				add_comps(core,bus[I]...);
+
+				core.A.wire(bus[I].A...);
+				core.D.wire(bus[I].D...);
+				core.F.wire(F);
+				core.clr.wire(clr);
+				core.clk.wire(clk);
+
+				(S[I].wire(bus[I].S),...);
+				(Q[I].wire(bus[I].Q),...);
+
+				core.ce.wire(bus[0].ce);
+				core.A.set(idx);
+			}(std::make_index_sequence<PortNum>{});
+
+		}
+		explicit RegUnit(val_t idx,const std::string& name=""):RegUnit(idx,name,
+				[name]<size_t ...I>(std::index_sequence<I...>){
+					return std::array{(name+"[Port"+std::to_string(I)+"]")...};
+				}(std::make_index_sequence<PortNum>{})
+			){}
+	};
+	template<size_t Size,size_t RegNum,size_t PortNum>
+	struct RegFile:Circuit{
+		RegUnit<Size,PortNum> regs[RegNum];
+		explicit RegFile(std::string name="",std::array<std::string,RegNum> reg_names):Circuit(std::move(name)){
+			[&]<size_t ...I>(std::index_sequence<I...>){
+				((regs[I].name=reg_names[I]),...);
+				add_comps(regs[I]...);
+
+			}(std::make_index_sequence<RegNum>{});
+
+		}
+		explicit RegFile(const std::string& name=""):RegFile(name,
+		[name]<size_t ...I>(std::index_sequence<I...>){
+			return std::array{(name+"[Port"+std::to_string(I)+"]")...};
+		}(std::make_index_sequence<RegNum>{})
+		){}
+	};
+
+	struct CU:CUBase<MARG::size,MCTRL::size,MARG::state::size,MARG::state::low,MCTRL::state::low>{
+
+		Port<MARG::carry ::size> Ci ;
+		Port<MARG::INT   ::size> INT{Level::PullDown};
+		Port<MARG::opcode::size> op ;
+
+		Port<MCTRL::INTA_    ::size> INTA_;
+		Port<MCTRL::alu      ::size> CMS  ;
+		Port<MCTRL::io::to   ::size> Os   ;
+		Port<MCTRL::io::fromA::size> As   ;
+		Port<MCTRL::io::fromB::size> Bs   ;
+		Port<MCTRL::io::dir  ::size> dir  ;
+
+		explicit CU(std::string name=""):CUBase(std::move(name)){
+#define CUWIRE(PORTA,PORTB,NAME) (PORTA).wire((PORTB).sub<NAME::size>(NAME::low ))
+			CUWIRE(Ci , sreg.D, MARG::carry );
+			CUWIRE(INT, sreg.D, MARG::INT   );
+			CUWIRE(op , sreg.D, MARG::opcode);
+
+			CUWIRE(INTA_,tbl.D,MCTRL::INTA_    );
+			CUWIRE(CMS  ,tbl.D,MCTRL::alu      );
+			CUWIRE(Os   ,tbl.D,MCTRL::io::to   );
+			CUWIRE(As   ,tbl.D,MCTRL::io::fromA);
+			CUWIRE(Bs   ,tbl.D,MCTRL::io::fromB);
+			CUWIRE(dir  ,tbl.D,MCTRL::io::dir  );
+#undef CUWIRE
+		}
+	};
+	/*
+	struct CPU:Circuit{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
-		using op_t = uint8_t;
 		using addr_t = uint16_t;
-		template<typename T>
-		struct wire_t{
-			T old_val;
-			T val;
-			wire_t(T val):val{val},old_val{val}{}
-			bool is_changed(){return val!=old_val;}
-			void backup(){old_val=val;}
-			void set_if(T new_val){
-				if(val!=new_val){
-					if(is_changed()){
-						throw "conflict";
-					} else {
-						val=new_val;
-					}
-				}
-			}
-			operator T(){return val;}
-			wire_t<T>& operator=(T new_val){
-				set_if(new_val);
-				return *this;
-			}
-		};
-		struct data_t:wire_t<op_t>{
-			std::string desc;
-			data_t(op_t val,std::string desc):wire_t{val},desc{desc}{}
-			data_t& operator=(data_t data){
-				set_if(data.val);
-				desc=reg.desc;
-			}
-		};
-		template<size_t size>
-		struct reg_t{
-			struct proxy_t{
-				reg_t& parent;
-				size_t index;
-				proxy_t& operator=(data_t data){
-					parent.reg[index]=data.val;
-					std::cout<<parent.name<<"["<<index<<"]"<<"="<<data.desc<<"="<<data.val<<std::endl;
-					return *this;
-				}
-			};
-			op_t reg[size]{0};
-			std::string name;
-			reg_t(std::string name):name{name}{}
-			proxy_t& operator[](size_t index){
-				return {*this,index};
-			}
-		};
-		using src_t = std::pair<op_t,std::string>;
+		using word_t = uint8_t;
+		static constexpr size_t addr_size=sizeof(addr_t)*8;
+		static constexpr size_t word_size=sizeof(word_t)*8;
+		size_t tick_count=0;
 
-		bool debug{true};
-		op_t REG[16]{};
-		op_t RAM[1u<<16u]{};
-		wire_t<bool> CLK{false};
-		wire_t<MARG::type> marg{0};
-		wire_t<MCTRL::type> mctrl{0};
-		wire_t<bool> MW_{false},MR_{false},C{false},C_reg{false};
-		wire_t<size_t> FS,LS,RS;
-		wire_t<src_t> L{},R{},AH{},AL{},F{};
-		CPU(){clear();}
-		void update(){
-			std::map<std::string,decltype(&CPU::do_clk)> fns{};
-#define IFCHG(name,...) if(name.is_changed()){act name.backup();}
-			IFCHG(CLK,do_clk();)
-			IFCHG(marg,do_marg();)
-			IFCHG(mctrl,do_mctrl();)
+		Clock clk,clk_;
+		Port<1> clr;
 
-			IFCHG(FS,do_regfile();)
-			IFCHG(LS,do_regfile();)
-			IFCHG(RS,do_regfile();)
-			IFCHG(MW_,do_regfile();do_ram_bus();)
-			IFCHG(MR_,do_regfile();do_ram_bus();)
-		}
-		void clear(){
-			for (auto& reg:REG){
-				reg=0;
-			}
-			for (auto& ram:RAM){
-				ram=0;
-			}
-			marg=0;
-			do_marg();
-		}
-		std::string get_reg_str(size_t i){
-			return "REG["+std::to_string(i)+"]("+std::to_string(REG[i])+")";
-		}
-		std::string get_ram_str(size_t i){
-			return "RAM["+std::to_string(i)+"]("+std::to_string(RAM[i])+")";
-		}
-		src_t get_reg(size_t s){
-			return {REG[s],get_reg_str(s)};
-		}
-		src_t get_ram(size_t addr){
-			return {RAM[addr],get_ram_str(addr)};
-		}
-		addr_t get_addr(){
-			return (static_cast<addr_t>(AH.first)<<8u)|AL.first;
-		}
-		void do_marg(){
-			mctrl=OpCode::Ops::all::gen(marg);
-			do_mctrl();
-		}
-		void do_mctrl(){
-			FS=MCTRL::io::to::get(mctrl);
-			LS=MCTRL::io::fromA::get(mctrl);
-			RS=MCTRL::io::fromB::get(mctrl);
+		Nand<1> nand{"[ClkNot]"};
+		Memory<addr_size, word_size, word_size, word_size,5,addr_t,word_t> mem{"[Memory]"};
+		RegCLR<MARG::carry::size> creg{"[cReg]"};
+		CU cu{"[CU]"};
+		Sim::ALU<word_size> alu{"[ALU]"};
+		IOControl ioctl{"[IOctl]"};
+		RegCESet<MCTRL::io::Rs::size, word_size> regset{"[RegSet]"};
+		RAM<MCTRL::io::Bs::size, word_size> reg{"[RegFile]"};
+		explicit CPU(std::string name=""):Circuit(std::move(name)){
+			add_comps(nand,mem,creg,cu,alu,ioctl,regset,reg);
 
-			MW_=static_cast<bool>(MCTRL::io::dir::mem_write_::get(mctrl));
-			MR_=static_cast<bool>(MCTRL::io::dir::mem_read_::get(mctrl));
-			//do_regfile();
-			//do_ram_bus();
-			//do_alu();
-		}
-		void do_regfile(){
-			auto X=get_reg(FS);
-			auto Y=get_reg(LS);
-			auto Z=get_reg(RS);
+			clk.wire(nand.A,nand.B,creg.clk,regset.clk,reg.ce);
+			clk_.wire(nand.Y,cu.clk);
+			clr.wire(cu.clr,creg.clr);
+			alu.Co.wire(creg.D);
+			creg.Q.wire(cu.Ci);
+			regset.Q[RegSet::I.v()].wire(cu.op);
+			regset.Q[RegSet::A.v()].wire(alu.A);
+			regset.Q[RegSet::L.v()].wire(mem.addr.sub<8>(0));
+			regset.Q[RegSet::H.v()].wire(mem.addr.sub<8>(8));
+			ioctl.B.wire(alu.B);
+			ioctl.F.wire(alu.O,regset.D);
+			ioctl.R.wire(reg.D);
+			ioctl.M.wire(mem.data);
+			cu.CMS.wire(alu.CMS);
+			cu.bs.wire(reg.A);
+			cu.rs.wire(regset.sel);
+			cu.rs_en.wire(regset.en);
+			cu.dir.wire(ioctl.dir);
+			ioctl.mem_oe.wire(mem.oe);
+			ioctl.mem_we.wire(mem.we);
+			ioctl.reg_oe.wire(reg.oe);
+			ioctl.reg_we.wire(reg.we);
 
-			if(!MW_ == false){L=Y;}
-			R=Z;
-			if(MW_ == false){AL=X;}
-			if(MR_ == false){AL=Y;}
-			if(MW_ && MR_ == false){AH=Z;}
+			auto tbl=OpCode::genOpTable();
+			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
+			init();
 		}
-		void do_ram_bus(){
-			if(MR_ == false){L=get_ram(get_addr());}
-			if(MW_ == false){
-				RAM[get_addr()]=F.first;
-				if(debug){
-					std::cout<<get_ram_str(get_addr())<<"="<<F.second<<std::endl;
-				}
-			}
+		void init(){
+			clk.set(1);
+			clr.set(0);
+			run();
+			clr.set(1);
+			run();
 		}
-		void do_alu(){
-			auto [carry,O]=MCTRL::alu::run<8>(mctrl,L.first,R.first);
-			F={O,MCTRL::alu::get_fn_str(mctrl,L.second,R.second)+"="+std::to_string(O)};
-			C=(static_cast<MARG::type>(carry)==1);
-			do_ram_bus();
+		void load(const std::vector<word_t>& data, addr_t start=0){
+			mem.load(data,start);
 		}
-		void do_clk(){}
-		void clk_up(){
-			C_reg=C;
-			if(CLK && MW_ == true){
-				REG[FS]=F.first;
-				if(debug){
-					std::cout<<get_reg_str(FS)<<"="<<F.second<<std::endl;
-				}
-			}
-			do_regfile();
-			do_ram_bus();
-			do_alu();
+		void load_op(const std::vector<word_t>& op){
+			load(op, get_reg16(Reg16::PC));
+			regset.regs[RegSet::I.v()].Q= regset.regs[RegSet::I.v()].data=op[0];
+			cu.sreg.Q= cu.sreg.data=MARG::opcode::set(cu.sreg.D.value(), op[0]);
 		}
-		void clk_down(){
-			marg=MARG::carry::set(0,static_cast<MARG::type>(C_reg));
-			marg=MARG::state::set(marg,MCTRL::state::get(mctrl));
-			marg=MARG::opcode::set(marg,REG[0]);
-			do_marg();
-		}
-		void load(auto data,addr_t addr=0){
-			for (auto op:data){
-				RAM[addr]=op;
-				addr++;
-			}
-		}
-		void print_reg(){
-			for (int i = 0; i < 16; ++i) {
-				std::cout<<std::to_string(REG[i]);
-				if(i%8==8-1)std::cout<<std::endl;
-				else if(i%4==4-1)std::cout<<"|";
-				else if(i%2==2-1)std::cout<<",";
-				else std::cout<<" ";
-			}
-		}
-		void print_stack(){
-			size_t addr_max=1u<<16u;
-			size_t sp=get_addr(Reg::SPL.v(),Reg::SPH.v())+1;
-			size_t i;
-			for (i=sp; i < std::min(sp+10,addr_max); ++i) {
-				std::cout<<std::to_string(RAM[i])<<" ";
-			}
-			if(i<addr_max){
-				std::cout<<"...";
-			}
-			std::cout<<std::endl;
-		}
-		addr_t get_addr(auto a,auto b){
-			return (static_cast<addr_t>(REG[b])<<8u)|REG[a];
-		}
-		addr_t get_pair(Reg16 reg16){
-			return get_addr(reg16.L().v(),reg16.H().v());
-		}
-		op_t read_pair(Reg16 reg16, int16_t offset= 0){
-			return RAM[get_pair(reg16)+offset];
-		}
-		void load_op(auto op){
-			load(op, get_pair(Reg16::PC));
-			REG[Reg::OPR.v()]=op[0];
-			marg=MARG::opcode::set(marg,op[0]);
-			do_marg();
-		}
-		bool isHalt(){
-			return MARG::opcode::get(marg)==OpCode::Ops::Halt::id::id;
+		bool is_halt(){
+			return regset.regs[RegSet::I.v()].Q.value() == OpCode::Ops::Halt::id::id;
 		}
 		void tick(){
-			CLK= true;
-			clk_up();
-			CLK= false;
-			clk_down();
+			++tick_count;
+			clk.clock();
+			run();
+			clk.clock();
+			run();
 		}
 		void tick_op(){
 			do{
 				tick();
-			}while(MARG::getIndex(marg)!=0);
-			if(debug){
-				std::cout<<std::endl;
-			}
+			}while(MCTRL::state::index::get(cu.tbl.D.value())!=0);
+		}
+
+		word_t get_reg(Reg r) const{
+			return reg.data[r.v()];
+		}
+		void set_reg(Reg r,word_t v){
+			reg.data[r.v()]=v;
+		}
+		addr_t get_reg16(Reg16 reg16) const{
+			return (static_cast<addr_t>(get_reg(reg16.H()))<<8u)|get_reg(reg16.L());
+		}
+		void set_reg16(Reg16 reg16,addr_t v){
+			set_reg(reg16.H(),(v>>8u)&0xff);
+			set_reg(reg16.L(),      v&0xff);
+		}
+
+		word_t read_ptr(Reg16 reg16, int16_t offset=0) const{
+			return mem.get_data(get_reg16(reg16)+offset).value_or(0);
+		}
+		word_t get_stack_top() const{
+			return read_ptr(Reg16::SP,1);
+		}
+		word_t get_stack_insert() const{
+			return read_ptr(Reg16::SP);
+		}
+		word_t get_mem_data(addr_t addr) const{
+			return mem.get_data(addr).value();
+		}
+
+		using Flags=MCTRL::state;
+		template<typename FLAG>
+		void set_flag(auto v){
+			cu.tbl.D=FLAG::set(cu.tbl.D.value(),v);
+		}
+
+		Util::Printer print() const override{
+			return [&](std::ostream& os){
+				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
+				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
+				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
+				os<<"TICK:"<<tick_count<<std::endl;
+
+				for(size_t i=0;i<4;++i){
+					os << "RS[" << RegSet(i).str() << "]=" << regset.Q[i].value() << " ";
+				}
+				os<<std::endl;
+
+				for(size_t i=0;i<16;++i){
+					os<<"Reg["<<Reg(i).str()<<"]="<<reg.data[i];
+					if(i%8==7){
+						os<<std::endl;
+					}else{
+						os<<" ";
+					}
+				}
+
+				mem.print_ptrs(os,{
+						{get_reg16(Reg16::PC),"PC"},
+						{get_reg16(Reg16::SP),"SP"},
+						{get_reg16(Reg16::HL),"HL"},
+				},3);
+				os<<std::endl;
+			};
 		}
 	};
+	*/
 }
-#endif //BBCPU_CPU_H
+#endif //BBCPU_CPU_REGFILE8X16_CPU_H
