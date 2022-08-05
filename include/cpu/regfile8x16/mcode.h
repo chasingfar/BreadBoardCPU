@@ -212,6 +212,10 @@ namespace BBCPU::RegFile8x16{
 			load(Reg16::PC, Reg::OPR);
 			end();
 		}
+		void init_op(){
+			LOG(i);
+			if(step()){mctrl=MCTRL::zero(mctrl, Reg::OPR);}
+		}
 		void next_op(){
 			LOG(i);
 			inc16(Reg16::PC);
@@ -263,6 +267,9 @@ namespace BBCPU::RegFile8x16{
 			test_zero(lhs,dest);
 			save_carry();
 			branch(addr,MCTRL::alu::ifAeqZero);
+		}
+		void branch_zero(Reg16 addr,Reg lhs){
+			branch_zero(addr,lhs,lhs);
 		}
 		void branch_less(Reg16 addr,Reg lhs,Reg rhs,Reg dest){
 			LOG(addr);
