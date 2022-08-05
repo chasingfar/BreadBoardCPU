@@ -97,6 +97,38 @@ namespace BBCPU::Sim{
 			};
 		}
 	};
+	// IC 7408
+	template<size_t Size>
+	struct And:Chip{
+		Port<Size> A{Mode::IN},B{Mode::IN},Y{0};
+		explicit And(std::string name=""):Chip(std::move(name)){
+			add_ports(A,B,Y);
+		}
+		void run() override{
+			Y=(A.value()&B.value());
+		}
+		Util::Printer print(std::span<const Level> s) const override{
+			return [=](std::ostream& os){
+				os<<"A("<<A(s)<<") AND B("<<B(s)<<") = "<<Y(s);
+			};
+		}
+	};
+	// IC 7404
+	template<size_t Size>
+	struct Not:Chip{
+		Port<Size> A{Mode::IN},Y{0};
+		explicit Not(std::string name=""):Chip(std::move(name)){
+			add_ports(A,Y);
+		}
+		void run() override{
+			Y=~(A.value());
+		}
+		Util::Printer print(std::span<const Level> s) const override{
+			return [=](std::ostream& os){
+				os<<"NOT A("<<A(s)<<") = "<<Y(s);
+			};
+		}
+	};
 	template<size_t Size>
 	struct Adder:Chip{
 		Port<Size> A{Mode::IN},B{Mode::IN},O{0};
