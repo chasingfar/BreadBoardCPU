@@ -92,7 +92,7 @@ namespace BBCPU::Sim{
 			auto before=is_need_update();
 			if(before.empty()){
 				input_floating=true;
-				if(log_state){ std::cout<<"{"<<print(before)<<"}"<<std::endl; }
+				if(log_state){ std::cout<<name<<"{"<<print(before)<<"}"<<std::endl; }
 				return {};
 			}
 			try{
@@ -102,12 +102,19 @@ namespace BBCPU::Sim{
 			}catch(const std::bad_variant_access& e){
 				++err_count;
 				input_floating=true;
-				if(log_state){ std::cout<<"{"<<print(before)<<"}"<<std::endl; }
+				if(log_state){ std::cout<<name<<"{"<<print(before)<<"}"<<std::endl; }
 				if(log_warning){ std::cerr<<"[Warning]"<<name<<"Read Floating"<<std::endl; }
 				return {};
 			}
-			if(log_change){ std::cout<<"{"<<print(before)<<"}=>{"<<print()<<"}"<<std::endl; }
-			return get_affected(before);
+			affected_t affected=get_affected(before);
+			if(log_change){
+				std::cout<<name<<"{"<<print(before)<<"}";
+				if(!affected.empty()){
+					std::cout<<"=>{"<<print()<<"}";
+				}
+				std::cout<<std::endl;
+			}
+			return affected;
 		}
 
 		virtual Util::Printer print(std::span<const Level> state) const{
