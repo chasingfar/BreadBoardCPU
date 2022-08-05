@@ -234,13 +234,13 @@ namespace BBCPU::RegFile8x16{
 		}
 		void stack_pop16(Reg16 reg16){
 			LOG(reg16);
-			stack_pop(reg16.H());
 			stack_pop(reg16.L());
+			stack_pop(reg16.H());
 		}
 		void stack_push16(Reg16 reg16){
 			LOG(reg16);
-			stack_push(reg16.L());
 			stack_push(reg16.H());
+			stack_push(reg16.L());
 		}
 		void load_imm16(Reg16 reg16){
 			LOG(reg16);

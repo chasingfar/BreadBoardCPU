@@ -18,8 +18,14 @@ namespace BBCPU::RegFile8x16::OpCode {
 			return static_cast<As>(Base::get(o));
 		}
 	};
-
-	using layout_t=std::pair<std::string,size_t>;
+	using int_t = std::pair<bool,size_t>;
+	namespace OpType{
+		static constexpr int_t u8 {false,1};
+		static constexpr int_t i8 { true,1};
+		static constexpr int_t u16{false,2};
+		static constexpr int_t i16{ true,2};
+	}
+	using layout_t=std::pair<std::string,std::vector<int_t>>;
 
 	struct Base: MARG::opcode{
 		template <typename T>
@@ -36,7 +42,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		using id    = OPID<6,Base,V>;
 		using from  = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<from>(ctx).str(),3};
+			return {name+" "+getUReg16<from>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("LOAD");
@@ -54,7 +60,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		using id    = OPID<6,Base,V>;
 		using to    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<to>(ctx).str(),3};
+			return {name+" "+getUReg16<to>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Save");
@@ -71,7 +77,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="ImmVal";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,2};
+			return {name,{OpType::u8}};
 		}
 		static void gen(MCode& ctx){
 			LOG("ImmVal");
@@ -96,7 +102,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 #include "../../define_enum_x.h"
 		using fn = OPField<3,FN,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(fn::get(ctx.marg)),1};
+			return {name+" "+std::string(fn::get(ctx.marg)),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Calc");
@@ -144,7 +150,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 #include "../../define_enum_x.h"
 		using fn = OPField<2,FN, id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+fn::get(ctx.marg).str(),1};
+			return {name+" "+fn::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Logic");
@@ -176,7 +182,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		using id    = OPID<5,Base,V>;
 		using from  = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+from::get(ctx.marg).str(),1};
+			return {name+" "+from::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Push");
@@ -190,7 +196,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		using id    = OPID<5,Base,V>;
 		using to    = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+to::get(ctx.marg).str(),1};
+			return {name+" "+to::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Pop");
@@ -204,7 +210,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="BranchZero";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("BranchZero");
@@ -219,7 +225,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="BranchCF";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("BranchCF");
@@ -233,7 +239,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Jump";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Jump");
@@ -247,7 +253,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Call";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Call");
@@ -262,7 +268,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Return";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Return");
@@ -275,7 +281,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Enter";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Enter");
@@ -291,7 +297,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Adjust";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Adjust");
@@ -305,7 +311,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Leave";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Leave");
@@ -320,7 +326,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Local";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,3};
+			return {name,{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Local");
@@ -335,7 +341,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Push SP";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("PushSP");
@@ -349,7 +355,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Pop SP";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("PopSP");
@@ -364,7 +370,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Interrupt";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Interrupt");
@@ -384,7 +390,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Initialize";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Init");
@@ -399,7 +405,7 @@ namespace BBCPU::RegFile8x16::OpCode {
 		inline static const std::string name="Halt";
 		using id    = OPID<8,Base,V>;
 		static layout_t parse(MCode ctx){
-			return {name,1};
+			return {name,{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Halt");
@@ -453,6 +459,29 @@ namespace BBCPU::RegFile8x16::OpCode {
 			( parse_if<Ops>(ctx,result) || ... );
 			return result;
 		}
+		static std::string parse_iter(std::input_iterator auto& begin,std::input_iterator auto end){
+			auto [op,operands]=parse(*begin);
+			++begin;
+			for(auto [is_signed,size]:operands){
+				unsigned long long val=0;
+				if(size>0&&is_signed){
+					if((*begin>>7)!=0){
+						val=~val;
+					}
+				}
+				for(;size>0&&begin!=end;--size){
+					val<<=8;
+					val|=*begin;
+					++begin;
+				}
+				if(is_signed){
+					op+=" "+std::to_string((long long)val);
+				}else{
+					op+=" "+std::to_string(val);
+				}
+			}
+			return op;
+		}
 	};
 	
 	namespace Ops{
@@ -500,6 +529,15 @@ namespace BBCPU::RegFile8x16::OpCode {
 				INT4,INT5,INT6,INT7,
 				Initialize
 		>;
+	}
+
+	inline auto genOpTable(){
+		return TruthTable<MARG::type,MCTRL::type,MARG::size>(std::function{[=](MARG::type marg){
+			//std::cout<<std::bitset<MARG::size>(marg);
+			auto mctrl=Ops::all::gen(marg);
+			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
+			return mctrl;
+		}});
 	}
 
 	inline void generateOPROM(const std::string& name,size_t size=MCTRL::size,size_t i=0){

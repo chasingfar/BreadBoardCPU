@@ -47,6 +47,26 @@ namespace BBCPU::RegFile8x16 {
 			o=dir::set(o, DirMode::RegToMem);
 			return o;
 		}
+
+		static std::tuple<std::string,std::string,std::string> decode(auto o,std::string addr=""){
+			std::string 
+				O="Reg["+Reg(   to::get(o)).str()+"]",
+				A="Reg["+Reg(fromA::get(o)).str()+"]",
+				B="Reg["+Reg(fromB::get(o)).str()+"]",
+				MEM="MEM["+addr+"]";
+			switch (static_cast<DirMode>(dir::get(o))) {
+				case DirMode::MemToMem:
+				case DirMode::RegToReg:
+					return {A,B,O};
+				case DirMode::MemToReg:
+					return {MEM+"("+B+"|"+A+")","",O};
+				case DirMode::RegToMem:
+					return {A,"",MEM+"("+B+"|"+O+")"};
+			}
+		}
+		static auto decode(auto o,size_t addr){
+			return decode(o,std::to_string(addr));
+		}
 	};
 	BITFILEDBASE(3) struct SIGNAL : Base {
 		using HALT   = BitField<1, Base,FollowMode::innerLow >;
@@ -165,6 +185,15 @@ namespace BBCPU::RegFile8x16 {
 		}
 		static auto dec(auto o, Reg reg, alu::Carry carry){
 			return dec(o, reg, reg, carry);
+		}
+
+		static std::string decode(auto o,std::string addr){
+			auto [L,R,O]=MCTRL::io::decode(o,addr);
+			auto fn_str=MCTRL::alu::get_fn_str(o, L, R);
+			return O+"="+fn_str;
+		}
+		static auto decode(auto o,size_t addr){
+			return decode(o,std::to_string(addr));
 		}
 	};
 	static auto incIndex(auto marg,auto mctrl){

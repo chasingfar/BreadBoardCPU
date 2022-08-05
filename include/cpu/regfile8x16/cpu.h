@@ -23,7 +23,7 @@ namespace BBCPU::RegFile8x16::Impl{
 			eq.Q.wire(A);
 			eq.PeqQ.wire(bus.oe,oe);
 
-			bus.B.wire(D);
+			bus.A.wire(D);
 			bus.B.wire(Q);
 			bus.dir.set(Bus<Size>::AtoB);
 		}
@@ -34,17 +34,17 @@ namespace BBCPU::RegFile8x16::Impl{
 		Port<1> clr,clk;
 		Enable ce;
 
-		Nand<3> nand{name+"[NAND]"};
+		And<1> and_{name+"[AND]"};
+		Not<1> not_{name+"[NOT]"};
 		RegCLR<Size> reg{name+"[REG]"};
 		explicit RegCore(std::string name=""):Circuit(std::move(name)){
-			add_comps(nand,reg);
+			add_comps(and_,not_,reg);
 
-			clk.wire(nand.A.sub<1>(0),nand.B.sub<1>(0));
-			nand.A.sub<1>(1).wire(nand.Y.sub<1>(0));
-			nand.B.sub<1>(1).wire(ce);
-			nand.Y.sub<1>(1).wire(nand.A.sub<1>(2),nand.B.sub<1>(2));
+			clk.wire(and_.A);
+			not_.Y.wire(and_.B);
+			ce.wire(not_.A);
 
-			reg.clk.wire(nand.Y.sub<1>(2));
+			reg.clk.wire(and_.Y);
 			reg.clr.wire(clr);
 			reg.D.wire(F);
 			reg.Q.wire(D);
@@ -55,49 +55,113 @@ namespace BBCPU::RegFile8x16::Impl{
 		Port<1> clr,clk;
 		Port<Size> F,S[PortNum],Q[PortNum];
 
-		RegCore<Size> core;
+		RegCore<Size> core{name+"[Core]"};
 		EqBus<Size> bus[PortNum];
-		explicit RegUnit(val_t idx,std::string name="",std::array<std::string,PortNum> port_names):Circuit(std::move(name)){
-			[&]<size_t ...I>(std::index_sequence<I...>){
-				((bus[I].name=port_names[I]),...);
-				add_comps(core,bus[I]...);
+		template <size_t ...I>
+		explicit RegUnit(val_t idx,std::string name,std::index_sequence<I...>)
+		:Circuit(name),
+		bus{EqBus<Size>(name+"[Port"+std::to_string(I)+"]")...}
+		{
+			add_comps(core,bus[I]...);
 
-				core.A.wire(bus[I].A...);
-				core.D.wire(bus[I].D...);
-				core.F.wire(F);
-				core.clr.wire(clr);
-				core.clk.wire(clk);
+			core.A.wire(bus[I].A...);
+			core.D.wire(bus[I].D...);
+			core.F.wire(F);
+			core.clr.wire(clr);
+			core.clk.wire(clk);
 
-				(S[I].wire(bus[I].S),...);
-				(Q[I].wire(bus[I].Q),...);
+			(S[I].wire(bus[I].S),...);
+			(Q[I].wire(bus[I].Q),...);
 
-				core.ce.wire(bus[0].ce);
-				core.A.set(idx);
-			}(std::make_index_sequence<PortNum>{});
-
+			core.ce.wire(bus[0].oe);
+			core.A.set(idx);
 		}
-		explicit RegUnit(val_t idx,const std::string& name=""):RegUnit(idx,name,
-				[name]<size_t ...I>(std::index_sequence<I...>){
-					return std::array{(name+"[Port"+std::to_string(I)+"]")...};
-				}(std::make_index_sequence<PortNum>{})
-			){}
+		explicit RegUnit(val_t idx,const std::string& name=""):RegUnit(idx,name,std::make_index_sequence<PortNum>{}){}
 	};
 	template<size_t Size,size_t RegNum,size_t PortNum>
 	struct RegFile:Circuit{
+		Port<1> clr,clk;
+		Port<Size> F,S[PortNum],Q[PortNum];
+
 		RegUnit<Size,PortNum> regs[RegNum];
-		explicit RegFile(std::string name="",std::array<std::string,RegNum> reg_names):Circuit(std::move(name)){
-			[&]<size_t ...I>(std::index_sequence<I...>){
-				((regs[I].name=reg_names[I]),...);
-				add_comps(regs[I]...);
+		template <size_t ...I>
+		explicit RegFile(std::string name,std::index_sequence<I...>)
+		:Circuit(name),
+		regs{RegUnit<Size,PortNum>(I,name+"[Reg "+Reg(I).str()+"]")...}
+		{
+			add_comps(regs[I]...);
 
-			}(std::make_index_sequence<RegNum>{});
-
+			clr.wire(regs[I].clr...);
+			clk.wire(regs[I].clk...);
+			F.wire(regs[I].F...);
+			for(size_t j=0;j<PortNum;++j){
+				S[j].wire(regs[I].S[j]...);
+				Q[j].wire(regs[I].Q[j]...);
+			}
 		}
-		explicit RegFile(const std::string& name=""):RegFile(name,
-		[name]<size_t ...I>(std::index_sequence<I...>){
-			return std::array{(name+"[Port"+std::to_string(I)+"]")...};
-		}(std::make_index_sequence<RegNum>{})
-		){}
+		explicit RegFile(const std::string& name=""):RegFile(name,std::make_index_sequence<RegNum>{}){}
+	};
+
+	template<size_t Size,size_t SelSize>
+	struct RegCTL:Circuit{
+		constexpr static size_t reg_num=(1<<SelSize);
+		Port<Size> F,L,R;
+		Port<Size*2> A{Level::PullDown};
+		Port<1> clr,clk;
+		Port<SelSize> FS,LS,RS;
+		Enable Mr,Mw;
+
+		Not<1> notMr{name+"[notMr]"};
+		And<1> rClk{name+"[rClk]"},isM{name+"[isM]"};
+		Bus<Size> YtoL{name+"[YtoL]"},XtoAL{name+"[XtoAL]"},YtoAL{name+"[YtoAL]"},ZtoAH{name+"[ZtoAH]"};
+		RegFile<Size,reg_num,3> regfile{name+"[REGFILE]"};
+		explicit RegCTL(std::string name=""):Circuit(std::move(name)){
+			add_comps(notMr,rClk,isM,YtoL,XtoAL,YtoAL,ZtoAH,regfile);
+			F.wire(regfile.F);
+			clr.wire(regfile.clr);
+			clk.wire(rClk.A);
+			Mw.wire(rClk.B);
+			rClk.Y.wire(regfile.clk);
+
+			FS.wire(regfile.S[0].template sub<SelSize>(0));
+			LS.wire(regfile.S[1].template sub<SelSize>(0));
+			RS.wire(regfile.S[2].template sub<SelSize>(0));
+
+			regfile.S[0].template sub<Size-SelSize>(SelSize).set(0);
+			regfile.S[1].template sub<Size-SelSize>(SelSize).set(0);
+			regfile.S[2].template sub<Size-SelSize>(SelSize).set(0);
+
+			 YtoL.dir.set(Bus<Size>::AtoB);
+			XtoAL.dir.set(Bus<Size>::AtoB);
+			YtoAL.dir.set(Bus<Size>::AtoB);
+			ZtoAH.dir.set(Bus<Size>::AtoB);
+			 YtoL.A.wire(regfile.Q[1]);
+			XtoAL.A.wire(regfile.Q[0]);
+			YtoAL.A.wire(regfile.Q[1]);
+			ZtoAH.A.wire(regfile.Q[2],R);
+			 YtoL.B.wire(L);
+			XtoAL.B.wire(A.template sub<Size>(0));
+			YtoAL.B.wire(A.template sub<Size>(0));
+			ZtoAH.B.wire(A.template sub<Size>(Size));
+			 YtoL.oe.wire(notMr.Y);
+			XtoAL.oe.wire(Mw);
+			YtoAL.oe.wire(Mr);
+			ZtoAH.oe.wire(isM.Y);
+			Mw.wire(isM.A);
+			Mr.wire(isM.B,notMr.A);
+		}
+		auto& operator[](size_t i){
+			return regfile.regs[i].core.reg;
+		}
+		auto& operator[](size_t i) const{
+			return regfile.regs[i].core.reg;
+		}
+		auto& operator[](Reg r){
+			return regfile.regs[r.v()].core.reg;
+		}
+		auto& operator[](Reg r) const{
+			return regfile.regs[r.v()].core.reg;
+		}
 	};
 
 	struct CU:CUBase<MARG::size,MCTRL::size,MARG::state::size,MARG::state::low,MCTRL::state::low>{
@@ -106,29 +170,31 @@ namespace BBCPU::RegFile8x16::Impl{
 		Port<MARG::INT   ::size> INT{Level::PullDown};
 		Port<MARG::opcode::size> op ;
 
-		Port<MCTRL::INTA_    ::size> INTA_;
-		Port<MCTRL::alu      ::size> CMS  ;
-		Port<MCTRL::io::to   ::size> Os   ;
-		Port<MCTRL::io::fromA::size> As   ;
-		Port<MCTRL::io::fromB::size> Bs   ;
-		Port<MCTRL::io::dir  ::size> dir  ;
+		Port<MCTRL::INTA_              ::size> INTA_;
+		Port<MCTRL::alu                ::size> CMS  ;
+		Port<MCTRL::io::to             ::size> Os   ;
+		Port<MCTRL::io::fromA          ::size> As   ;
+		Port<MCTRL::io::fromB          ::size> Bs   ;
+		Port<MCTRL::io::dir::mem_write_::size> Mw   ;
+		Port<MCTRL::io::dir::mem_read_ ::size> Mr   ;
 
 		explicit CU(std::string name=""):CUBase(std::move(name)){
-#define CUWIRE(PORTA,PORTB,NAME) (PORTA).wire((PORTB).sub<NAME::size>(NAME::low ))
+#define CUWIRE(PORTA,PORTB,NAME) (PORTA).wire((PORTB).template sub<NAME::size>(NAME::low ))
 			CUWIRE(Ci , sreg.D, MARG::carry );
 			CUWIRE(INT, sreg.D, MARG::INT   );
 			CUWIRE(op , sreg.D, MARG::opcode);
 
-			CUWIRE(INTA_,tbl.D,MCTRL::INTA_    );
-			CUWIRE(CMS  ,tbl.D,MCTRL::alu      );
-			CUWIRE(Os   ,tbl.D,MCTRL::io::to   );
-			CUWIRE(As   ,tbl.D,MCTRL::io::fromA);
-			CUWIRE(Bs   ,tbl.D,MCTRL::io::fromB);
-			CUWIRE(dir  ,tbl.D,MCTRL::io::dir  );
+			CUWIRE(INTA_,tbl.D, MCTRL::INTA_              );
+			CUWIRE(CMS  ,tbl.D, MCTRL::alu                );
+			CUWIRE(Os   ,tbl.D, MCTRL::io::to             );
+			CUWIRE(As   ,tbl.D, MCTRL::io::fromA          );
+			CUWIRE(Bs   ,tbl.D, MCTRL::io::fromB          );
+			CUWIRE(Mw   ,tbl.D, MCTRL::io::dir::mem_write_);
+			CUWIRE(Mr   ,tbl.D, MCTRL::io::dir::mem_read_ );
 #undef CUWIRE
 		}
 	};
-	/*
+	
 	struct CPU:Circuit{
 		using Reg = Regs::Reg;
 		using Reg16 = Regs::Reg16;
@@ -141,39 +207,43 @@ namespace BBCPU::RegFile8x16::Impl{
 		Clock clk,clk_;
 		Port<1> clr;
 
-		Nand<1> nand{"[ClkNot]"};
+		Not<1> clkNot{"[ClkNot]"};
+		Bus<word_size> FiMo{name+"FiMo"},MiBo{name+"MiBo"};
 		Memory<addr_size, word_size, word_size, word_size,5,addr_t,word_t> mem{"[Memory]"};
 		RegCLR<MARG::carry::size> creg{"[cReg]"};
 		CU cu{"[CU]"};
 		Sim::ALU<word_size> alu{"[ALU]"};
-		IOControl ioctl{"[IOctl]"};
-		RegCESet<MCTRL::io::Rs::size, word_size> regset{"[RegSet]"};
-		RAM<MCTRL::io::Bs::size, word_size> reg{"[RegFile]"};
+		RegCTL<word_size,MCTRL::io::to::size> reg{"[RegCTL]"};
 		explicit CPU(std::string name=""):Circuit(std::move(name)){
-			add_comps(nand,mem,creg,cu,alu,ioctl,regset,reg);
+			add_comps(clkNot,FiMo,MiBo,mem,creg,cu,alu,reg);
 
-			clk.wire(nand.A,nand.B,creg.clk,regset.clk,reg.ce);
-			clk_.wire(nand.Y,cu.clk);
-			clr.wire(cu.clr,creg.clr);
+			clk.wire(clkNot.A,creg.clk,reg.clk);
+			clk_.wire(clkNot.Y,cu.clk);
+			clr.wire(cu.clr,creg.clr,reg.clr);
 			alu.Co.wire(creg.D);
 			creg.Q.wire(cu.Ci);
-			regset.Q[RegSet::I.v()].wire(cu.op);
-			regset.Q[RegSet::A.v()].wire(alu.A);
-			regset.Q[RegSet::L.v()].wire(mem.addr.sub<8>(0));
-			regset.Q[RegSet::H.v()].wire(mem.addr.sub<8>(8));
-			ioctl.B.wire(alu.B);
-			ioctl.F.wire(alu.O,regset.D);
-			ioctl.R.wire(reg.D);
-			ioctl.M.wire(mem.data);
+
+			cu.op.wire(reg[Reg::OPR].Q);
 			cu.CMS.wire(alu.CMS);
-			cu.bs.wire(reg.A);
-			cu.rs.wire(regset.sel);
-			cu.rs_en.wire(regset.en);
-			cu.dir.wire(ioctl.dir);
-			ioctl.mem_oe.wire(mem.oe);
-			ioctl.mem_we.wire(mem.we);
-			ioctl.reg_oe.wire(reg.oe);
-			ioctl.reg_we.wire(reg.we);
+			cu.Os.wire(reg.FS);
+			cu.As.wire(reg.LS);
+			cu.Bs.wire(reg.RS);
+			cu.Mw.wire(reg.Mw,mem.we);
+			cu.Mr.wire(reg.Mr,mem.oe);
+
+			reg.F.wire(alu.O);
+			reg.L.wire(alu.A);
+			reg.R.wire(alu.B);
+			reg.A.wire(mem.addr);
+
+			FiMo.dir.set(Bus<word_size>::AtoB);
+			MiBo.dir.set(Bus<word_size>::AtoB);
+			FiMo.A.wire(alu.O);
+			MiBo.A.wire(mem.data);
+			FiMo.B.wire(mem.data);
+			MiBo.B.wire(alu.A);
+			FiMo.oe.wire(cu.Mw);
+			MiBo.oe.wire(cu.Mr);
 
 			auto tbl=OpCode::genOpTable();
 			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
@@ -191,11 +261,11 @@ namespace BBCPU::RegFile8x16::Impl{
 		}
 		void load_op(const std::vector<word_t>& op){
 			load(op, get_reg16(Reg16::PC));
-			regset.regs[RegSet::I.v()].Q= regset.regs[RegSet::I.v()].data=op[0];
-			cu.sreg.Q= cu.sreg.data=MARG::opcode::set(cu.sreg.D.value(), op[0]);
+			set_reg(Reg::OPR,op[0]);
+			cu.sreg.set(MARG::opcode::set(cu.sreg.D.value(), op[0]));
 		}
 		bool is_halt(){
-			return regset.regs[RegSet::I.v()].Q.value() == OpCode::Ops::Halt::id::id;
+			return get_reg(Reg::OPR) == OpCode::Ops::Halt::id::id;
 		}
 		void tick(){
 			++tick_count;
@@ -207,14 +277,15 @@ namespace BBCPU::RegFile8x16::Impl{
 		void tick_op(){
 			do{
 				tick();
+				std::cout<<print()<<std::endl;
 			}while(MCTRL::state::index::get(cu.tbl.D.value())!=0);
 		}
 
 		word_t get_reg(Reg r) const{
-			return reg.data[r.v()];
+			return reg[r].Q.value();
 		}
 		void set_reg(Reg r,word_t v){
-			reg.data[r.v()]=v;
+			reg[r].set(v);
 		}
 		addr_t get_reg16(Reg16 reg16) const{
 			return (static_cast<addr_t>(get_reg(reg16.H()))<<8u)|get_reg(reg16.L());
@@ -250,13 +321,8 @@ namespace BBCPU::RegFile8x16::Impl{
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
 				os<<"TICK:"<<tick_count<<std::endl;
 
-				for(size_t i=0;i<4;++i){
-					os << "RS[" << RegSet(i).str() << "]=" << regset.Q[i].value() << " ";
-				}
-				os<<std::endl;
-
 				for(size_t i=0;i<16;++i){
-					os<<"Reg["<<Reg(i).str()<<"]="<<reg.data[i];
+					os<<"Reg["<<Reg(i).str()<<"]="<<(int)get_reg(Reg(i));
 					if(i%8==7){
 						os<<std::endl;
 					}else{
@@ -265,14 +331,14 @@ namespace BBCPU::RegFile8x16::Impl{
 				}
 
 				mem.print_ptrs(os,{
-						{get_reg16(Reg16::PC),"PC"},
-						{get_reg16(Reg16::SP),"SP"},
-						{get_reg16(Reg16::HL),"HL"},
+					{get_reg16(Reg16::PC),"PC"},
+					{get_reg16(Reg16::SP),"SP"},
+					{get_reg16(Reg16::HL),"HL"},
+					{get_reg16(Reg16::FE),"FE"},
 				},3);
 				os<<std::endl;
 			};
 		}
 	};
-	*/
 }
 #endif //BBCPU_CPU_REGFILE8X16_CPU_H
