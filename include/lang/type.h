@@ -211,9 +211,13 @@ namespace BBCPU::Lang {
 		std::optional<std::conditional_t<Signed,long long,unsigned long long>> to_int() const{
 			std::conditional_t<Signed,long long,unsigned long long> v=0;
 			if(auto raw=this->as_raw();raw){
-				for(auto byte:raw->data){
-					v<<=8;
-					v|=byte;
+				for(auto data:raw->data){
+					if(auto byte=std::get_if<op_t>(&data);byte){
+						v<<=8;
+						v|=*byte;
+					}else{
+						return {};
+					}
 				}
 				return v;
 			}
