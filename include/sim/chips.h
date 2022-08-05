@@ -325,7 +325,7 @@ namespace BBCPU::Sim{
 		}
 		Util::Printer print(std::span<const Level> s) const override{
 			return [=](std::ostream& os){
-				os<<"Eq"<<P(s)<<"<=>"<<Q(s)<<"(oe:"<<oe(s)<<"P==Q:"<<PeqQ(s)<<")";
+				os<<"Eq"<<P(s)<<(PeqQ(s).value()==1?"!=":"==")<<Q(s)<<"(oe:"<<oe(s)<<")";
 			};
 		}
 	};
