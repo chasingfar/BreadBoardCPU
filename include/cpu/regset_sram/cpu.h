@@ -4,7 +4,7 @@
 
 #ifndef BBCPU_CPU_REGSET_SRAM_CPU_H
 #define BBCPU_CPU_REGSET_SRAM_CPU_H
-#include "opcode.h"
+#include "mcode.h"
 #include "sim/sim.h"
 namespace BBCPU::RegSet_SRAM::Impl{
 	using namespace Sim;
@@ -149,10 +149,6 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			ioctl.mem_we.wire(mem.we);
 			ioctl.reg_oe.wire(reg.oe);
 			ioctl.reg_we.wire(reg.we);
-
-			auto tbl=OpCode::genOpTable();
-			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
-			init();
 		}
 		void init(){
 			clk.set(1);
@@ -169,8 +165,8 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			regset.regs[RegSet::I.v()].set(op[0]);
 			cu.sreg.set(MARG::opcode::set(cu.sreg.D.value(), op[0]));
 		}
-		bool is_halt(){
-			return regset.regs[RegSet::I.v()].Q.value() == OpCode::Ops::Halt::id::id;
+		word_t get_op() const{
+			return regset.regs[RegSet::I.v()].Q.value();
 		}
 		void tick(){
 			++tick_count;
@@ -220,7 +216,6 @@ namespace BBCPU::RegSet_SRAM::Impl{
 
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
-				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
 				os<<"TICK:"<<tick_count<<std::endl;

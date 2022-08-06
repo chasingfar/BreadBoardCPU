@@ -7,8 +7,8 @@
 
 #include "ops.h"
 namespace BBCPU::ASM::Impl{
-	struct CPU:CPU_ISA::Impl::CPU{
-		using Base=CPU_ISA::Impl::CPU;
+	struct CPU:OpCode::Impl::CPU{
+		using Base=OpCode::Impl::CPU;
 		using Base::load;
 		CPU& load(Code code,addr_t start=0){
 			Base::load(code.assemble(start),start);

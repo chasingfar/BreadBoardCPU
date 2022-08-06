@@ -8,9 +8,9 @@
 #include "basic.h"
 namespace BBCPU::ASM {
 
-#define OP0(op) op::id::setAs<MARG::opcode,op_t>()
-#define OP1(op, n1, v1) op::n1::setAs<MARG::opcode>(OP0(op),v1)
-#define OP2(op, n1, v1, n2, v2) op::n2::setAs<MARG::opcode>(OP1(op,n1,v1),v2)
+#define OP0(op) op::id::setAs<OpCode::Base,op_t>()
+#define OP1(op, n1, v1) op::n1::setAs<OpCode::Base>(OP0(op),v1)
+#define OP2(op, n1, v1, n2, v2) op::n2::setAs<OpCode::Base>(OP1(op,n1,v1),v2)
 #define GET_H(v) static_cast<op_t>(((v) >> 8) & 0xff)
 #define GET_L(v) static_cast<op_t>((v)  & 0xff)
 #define GET_HL(v) GET_H(v),GET_L(v)

@@ -1,12 +1,8 @@
-//
-// Created by chasingfar on 2020/11/12.
-//
+#ifndef BBCPU_CPU_OPCODE_H
+#define BBCPU_CPU_OPCODE_H
 
-#ifndef BBCPU_CPU_REGSET_SRAM_OPCODE_H
-#define BBCPU_CPU_REGSET_SRAM_OPCODE_H
-
-#include "mcode.h"
-namespace BBCPU::RegSet_SRAM::OpCode {
+namespace BBCPU::OpCode {
+	using namespace CPU_ISA;
 	template <size_t Size,typename Ref,auto Id>
 	using OPID=BitId<Id,BitField<Size,Ref,FollowMode::innerHigh> >;
 	template <size_t Size,typename As,typename Ref,typename Base=BitField<Size,Ref,FollowMode::outerLow>>
@@ -548,6 +544,7 @@ namespace BBCPU::RegSet_SRAM::OpCode {
 			//std::cout<<std::bitset<MARG::size>(marg);
 			auto mctrl=Ops::all::gen(marg);
 			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
+			//return (mctrl>>(i*size)) & ((~MCTRL::type(0)) >> (Util::Bitwise::BitSize<MCTRL::type> - size));
 			return (mctrl>>(i*size)) % (1<<size);
 		}}));
 		std::cout<<"imax="<<Ops::all::imax<<std::endl;

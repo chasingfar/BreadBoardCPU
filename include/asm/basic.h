@@ -14,11 +14,9 @@
 
 
 namespace BBCPU::ASM {
-	using namespace CPU_ISA::OpCode::Ops;
-	using CPU_ISA::MARG;
-	using CPU_ISA::MCTRL;
-	using Reg=CPU_ISA::Regs::UReg;
-	using Reg16=CPU_ISA::Regs::UReg16;
+	using namespace OpCode::Ops;
+	using Reg=OpCode::UReg;
+	using Reg16=OpCode::UReg16;
 	using op_t = uint8_t;
 	using addr_t = uint16_t;
 	using offset_t = int16_t;

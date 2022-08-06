@@ -5,7 +5,7 @@
 #ifndef BBCPU_CPU_REGFILE8X16_CPU_H
 #define BBCPU_CPU_REGFILE8X16_CPU_H
 #include <memory>
-#include "opcode.h"
+#include "mcode.h"
 #include "sim/sim.h"
 namespace BBCPU::RegFile8x16::Impl{
 	using namespace Sim;
@@ -208,7 +208,7 @@ namespace BBCPU::RegFile8x16::Impl{
 		Port<1> clr;
 
 		Not<1> clkNot{"[ClkNot]"};
-		Bus<word_size> FiMo{name+"FiMo"},MiBo{name+"MiBo"};
+		Bus<word_size> FiMo{name+"[FiMo]"},MiBo{name+"[MiBo]"};
 		Memory<addr_size, word_size, word_size, word_size,5,addr_t,word_t> mem{"[Memory]"};
 		RegCLR<MARG::carry::size> creg{"[cReg]"};
 		CU cu{"[CU]"};
@@ -244,10 +244,6 @@ namespace BBCPU::RegFile8x16::Impl{
 			MiBo.B.wire(alu.A);
 			FiMo.oe.wire(cu.Mw);
 			MiBo.oe.wire(cu.Mr);
-
-			auto tbl=OpCode::genOpTable();
-			std::copy(tbl.begin(), tbl.end(), cu.tbl.data);
-			init();
 		}
 		void init(){
 			clk.set(1);
@@ -264,8 +260,8 @@ namespace BBCPU::RegFile8x16::Impl{
 			set_reg(Reg::OPR,op[0]);
 			cu.sreg.set(MARG::opcode::set(cu.sreg.D.value(), op[0]));
 		}
-		bool is_halt(){
-			return get_reg(Reg::OPR) == OpCode::Ops::Halt::id::id;
+		word_t get_op() const{
+			return get_reg(Reg::OPR);
 		}
 		void tick(){
 			++tick_count;
@@ -277,7 +273,6 @@ namespace BBCPU::RegFile8x16::Impl{
 		void tick_op(){
 			do{
 				tick();
-				std::cout<<print()<<std::endl;
 			}while(MCTRL::state::index::get(cu.tbl.D.value())!=0);
 		}
 
@@ -316,7 +311,6 @@ namespace BBCPU::RegFile8x16::Impl{
 
 		Util::Printer print() const override{
 			return [&](std::ostream& os){
-				os<<"OP:"<<OpCode::Ops::all::parse(cu.op.value()).first<<std::endl;
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
 				os<<"TICK:"<<tick_count<<std::endl;
