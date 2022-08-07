@@ -22,10 +22,10 @@ namespace BBCPU::OpCode::Impl{
 		bool is_halt() const{
 			return get_op() == Ops::Halt::id::id;
 		}
-		Util::Printer print() const override{
-			return [&](std::ostream& os){
+		Util::Printer print(const std::vector<Reg16>& reg_ptrs) const override{
+			return [=](std::ostream& os){
 				os<<"OP:"<<Ops::all::parse(get_op()).first<<std::endl;
-				os<<Base::print();
+				os<<Base::print(reg_ptrs);
 			};
 		}
 	};

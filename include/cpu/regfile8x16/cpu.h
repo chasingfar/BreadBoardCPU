@@ -309,8 +309,8 @@ namespace BBCPU::RegFile8x16::Impl{
 			cu.tbl.D=FLAG::set(cu.tbl.D.value(),v);
 		}
 
-		Util::Printer print() const override{
-			return [&](std::ostream& os){
+		virtual Util::Printer print(const std::vector<Reg16>& reg_ptrs) const {
+			return [=](std::ostream& os){
 				os<<"MCTRL:"<<MCTRL::decode(cu.tbl.D.value(),mem.addr.value())<<std::endl;
 				os<<"INDEX:"<<MCTRL::state::index::get(cu.tbl.D.value())<<std::endl;
 				os<<"TICK:"<<tick_count<<std::endl;
@@ -323,15 +323,16 @@ namespace BBCPU::RegFile8x16::Impl{
 						os<<" ";
 					}
 				}
-
-				mem.print_ptrs(os,{
-					{get_reg16(Reg16::PC),"PC"},
-					{get_reg16(Reg16::SP),"SP"},
-					{get_reg16(Reg16::HL),"HL"},
-					{get_reg16(Reg16::FE),"FE"},
-				},3);
+				std::multimap<addr_t,std::string> ptrs{};
+				for(auto r:reg_ptrs){
+					ptrs.emplace(get_reg16(r),r.str());
+				}
+				mem.print_ptrs(os,ptrs,3);
 				os<<std::endl;
 			};
+		}
+		Util::Printer print() const override{
+			return print({Reg16::PC,Reg16::SP});
 		}
 	};
 }
