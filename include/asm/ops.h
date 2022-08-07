@@ -87,6 +87,7 @@ namespace BBCPU::ASM {
 		inline Code save_local(Reg16 BP, offset_t offset, Reg value) {return {push(value), save_local(BP,offset)};}
 #define ASM_BP Reg16::HL
 #define ASM_PTR Reg16::FE
+		inline Code pushBP()                               {return push(ASM_BP);}
 		inline Code saveBP()                               {return saveBP(ASM_BP);}
 		inline Code loadBP()                               {return loadBP(ASM_BP);}
 		inline Code ent (op_t size)                        {return ent(ASM_BP,size);}
