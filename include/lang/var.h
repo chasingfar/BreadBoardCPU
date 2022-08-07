@@ -70,6 +70,7 @@ namespace BBCPU::Lang {
 		explicit MemVar(addr_t size,offset_t offset):size(size),offset(offset){}
 		virtual Code load(offset_t index) const=0;
 		virtual Code save(offset_t index) const=0;
+		virtual Code get_ref() const=0;
 		virtual std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const=0;
 		Code load() const override{
 			Code tmp{};
@@ -95,6 +96,9 @@ namespace BBCPU::Lang {
 		Code save(offset_t index) const override{
 			return save_local(offset+index);
 		}
+		Code get_ref() const override{
+			return pushBP();
+		}
 		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
 			return make(new_size,offset + shift_offset);
 		}
@@ -109,6 +113,9 @@ namespace BBCPU::Lang {
 		Code save(offset_t index) const override{
 			return Ops::save(label,offset+index);
 		}
+		Code get_ref() const override{
+			return push(label);
+		}
 		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
 			return make(new_size,label,offset + shift_offset);
 		}
@@ -122,6 +129,9 @@ namespace BBCPU::Lang {
 		}
 		Code save(offset_t index) const override{
 			return {ptr,Ops::save(offset+index)};
+		}
+		Code get_ref() const override{
+			return ptr;
 		}
 		std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const override{
 			return make(new_size,ptr,offset + shift_offset);
