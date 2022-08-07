@@ -192,16 +192,8 @@ namespace BBCPU::Lang {
 	struct Int:Type<Size>{
 		DEF_TYPE(Int,(Int<Size,Signed>),(Type<Size>)) // NOLINT(google-explicit-constructor)
 
-		explicit Int(long long val):Base(std::make_shared<Raw>(parse_int(val))){}
-		explicit Int(unsigned long long val):Base(std::make_shared<Raw>(parse_int(val))){}
-		static data_t parse_int(long long val){
-			data_t tmp{};
-			for (addr_t i=0;i<Size;++i){
-				tmp.emplace_back(static_cast<op_t>((val>>i*8)&0xFF));
-			}
-			return tmp;
-		}
-		static data_t parse_int(unsigned long long val){
+		explicit Int(std::integral auto val):Base(std::make_shared<Raw>(parse_int(val))){}
+		static data_t parse_int(std::integral auto val){
 			data_t tmp{};
 			for (addr_t i=0;i<Size;++i){
 				tmp.emplace_back(static_cast<op_t>((val>>i*8)&0xFF));
