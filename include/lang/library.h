@@ -57,7 +57,7 @@ namespace BBCPU::Lang::Library{
 				};
 			}
 		};
-		stdlib.add(&fn,fn.to_code());
+		stdlib.add(std::addressof(fn),fn.to_code());
 		return fn(lhs,rhs);
 	}
 	template<addr_t Size,bool Signed>

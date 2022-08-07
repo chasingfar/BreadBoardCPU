@@ -200,5 +200,11 @@ namespace BBCPU::Lang {
 	inline auto operator+(const ptr<T>& p,const AsInt<addr_t>& v){
 		return add(p,v*T::size);
 	}
+	template<typename T> requires std::is_base_of_v<Type<T::size>,T>
+	inline auto operator&(const T& v){
+		auto var=v.as_mem_var();
+		u16 ref{expr(var->get_ref())},off{var->offset};
+		return ptr<T>(ref+off);
+	}
 }
 #endif //BBCPU_OPERATOR_H
