@@ -3,8 +3,6 @@
 //
 #include "asm_test_util.h"
 
-using namespace Function;
-
 TEST_CASE("function dynamic args and vars","[asm][function]"){
 	Fn<void_(u8, u8)> fn{"fn(a,b)"};
 	auto [a,b]=fn.args;

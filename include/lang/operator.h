@@ -12,7 +12,7 @@ namespace BBCPU::Lang {
 		Code tmp{lhs};
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::InplaceFn<Int<Size,Signed>(Array<Int<1,Signed>,Size>)>{
+				return InplaceFn<Int<Size,Signed>(Array<Int<1,Signed>,Size>)>{
 					[](auto& _,Array<Int<1,Signed>,Size> ls)->Stmt{
 						return {
 							ls[I].set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls[I]))...
@@ -32,7 +32,7 @@ namespace BBCPU::Lang {
 		tmp << rhs.to_code();
 		if constexpr (Size > 1) {
 			tmp << []<size_t ...I>(std::index_sequence<I...>){
-				return Function::InplaceFn<Int<Size,Signed>(Array<Int<1,Signed>,Size>,Array<Int<1,Signed>,Size>)>{
+				return InplaceFn<Int<Size,Signed>(Array<Int<1,Signed>,Size>,Array<Int<1,Signed>,Size>)>{
 					[](auto& _,Array<Int<1,Signed>,Size> ls,Array<Int<1,Signed>,Size> rs)->Stmt{
 						return {
 							ls[I].set(calc_<1,Signed,I==0?fn:fnc,fnc>(ls[I],rs[I]))...

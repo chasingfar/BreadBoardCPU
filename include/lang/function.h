@@ -7,7 +7,7 @@
 
 #include <utility>
 #include "statement.h"
-namespace BBCPU::Lang::Function{
+namespace BBCPU::Lang{
 /*
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 

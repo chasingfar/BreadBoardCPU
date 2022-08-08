@@ -32,7 +32,7 @@ namespace BBCPU::Lang::Library{
 
 	template<addr_t Size,bool Signed>
 	inline Int<Size,Signed> mul(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		static Function::Fn<Int<Size,Signed>(Int<Size,Signed>,Int<Size,Signed>)> fn{
+		static Fn<Int<Size,Signed>(Int<Size,Signed>,Int<Size,Signed>)> fn{
 			[](auto& _,const Int<Size,Signed>& ls,const Int<Size,Signed>& rs)->Stmt{
 				u8 rs1{rs.as_mem_var()->shift(0,1)};
 				auto ret_value=_.ret.as_mem_var();
