@@ -1,13 +1,6 @@
 #ifndef BBCPU_CPU_H
 #define BBCPU_CPU_H
 
-#ifndef CPU_ISA
-#define CPU_ISA RegSet_SRAM
-#endif
-
-#include "regfile8x16/cpu.h"
-#include "regset_sram/cpu.h"
-
 #include "opcode.h"
 
 namespace BBCPU::OpCode::Impl{
