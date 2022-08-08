@@ -68,21 +68,21 @@ namespace BBCPU::Lang {
 		addr_t size;
 		offset_t offset;
 		explicit MemVar(addr_t size,offset_t offset):size(size),offset(offset){}
-		virtual Code load(offset_t index) const=0;
-		virtual Code save(offset_t index) const=0;
+		virtual Code load(offset_t index,bool is_first=true) const=0;
+		virtual Code save(offset_t index,bool is_first=true) const=0;
 		virtual Code get_ref() const=0;
 		virtual std::shared_ptr<MemVar> shift(offset_t shift_offset,addr_t new_size) const=0;
 		Code load() const override{
 			Code tmp{};
 			for (addr_t i=0; i<size; ++i) {
-				tmp<<load(size-1-i);
+				tmp<<load(size-1-i,i==0);
 			}
 			return tmp;
 		}
 		Code save() const override{
 			Code tmp{};
 			for (addr_t i=0; i<size; ++i) {
-				tmp<<save(i);
+				tmp<<save(i,i==0);
 			}
 			return tmp;
 		}
@@ -90,10 +90,10 @@ namespace BBCPU::Lang {
 	struct LocalVar:MemVar{
 		explicit LocalVar(addr_t size,offset_t offset):MemVar(size,offset){}
 		static auto make(addr_t size,offset_t offset){ return std::make_shared<LocalVar>(size,offset);}
-		Code load(offset_t index) const override{
+		Code load(offset_t index,bool is_first=true) const override{
 			return load_local(offset+index);
 		}
-		Code save(offset_t index) const override{
+		Code save(offset_t index,bool is_first=true) const override{
 			return save_local(offset+index);
 		}
 		Code get_ref() const override{
@@ -107,11 +107,19 @@ namespace BBCPU::Lang {
 		Label label;
 		StaticVar(addr_t size,Label label,offset_t offset):MemVar(size,offset),label(std::move(label)){}
 		static auto make(addr_t size,const Label& label,offset_t offset){ return std::make_shared<StaticVar>(size,label,offset);}
-		Code load(offset_t index) const override{
-			return Ops::load(label,offset+index);
+		Code load(offset_t index,bool is_first=true) const override{
+			if(is_first){
+				return Ops::load(label,offset+index);
+			}else{
+				return Ops::load(ASM_PTR,offset+index);
+			}
 		}
-		Code save(offset_t index) const override{
-			return Ops::save(label,offset+index);
+		Code save(offset_t index,bool is_first=true) const override{
+			if(is_first){
+				return Ops::save(label,offset+index);
+			}else{
+				return Ops::save(ASM_PTR,offset+index);
+			}
 		}
 		Code get_ref() const override{
 			return push(label);
@@ -124,11 +132,19 @@ namespace BBCPU::Lang {
 		Code ptr;
 		explicit PtrVar(addr_t size,Code ptr,offset_t offset=0):MemVar(size,offset),ptr(std::move(ptr)){}
 		static auto make(addr_t size,const Code& ptr,offset_t offset=0){ return std::make_shared<PtrVar>(size,ptr,offset);}
-		Code load(offset_t index) const override{
-			return {ptr,Ops::load(offset+index)};
+		Code load(offset_t index,bool is_first=true) const override{
+			if(is_first){
+				return {ptr,Ops::load(offset+index)};
+			}else{
+				return Ops::load(ASM_PTR,offset+index);
+			}
 		}
-		Code save(offset_t index) const override{
-			return {ptr,Ops::save(offset+index)};
+		Code save(offset_t index,bool is_first=true) const override{
+			if(is_first){
+				return {ptr,Ops::save(offset+index)};
+			}else{
+				return Ops::save(ASM_PTR,offset+index);
+			}
 		}
 		Code get_ref() const override{
 			return ptr;
