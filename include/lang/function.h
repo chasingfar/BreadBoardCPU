@@ -102,6 +102,28 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		}
 	};
 
+	template<typename Ret,typename ...Args>
+	struct ptr<Fn<Ret(Args...)>>: AsInt<addr_t>{
+		DEF_TYPE(ptr,(ptr<Fn<Ret(Args...)>>),(AsInt<addr_t>)) // NOLINT(google-explicit-constructor)
+
+		explicit ptr(const usize& v): Base(v.value){}
+		template<typename U>
+		explicit ptr(const ptr<U>& v):Base(v.value){}
+		explicit ptr(const Label& v):Base(Raw::make({v.get_lazy(0),v.get_lazy(1)})){}
+
+		using type=Fn<Ret(Args...)>;
+		Ret operator()(const Args&... args_) const{
+			Code code{};
+			code<<adj(-type::ret_size);
+			if constexpr (sizeof...(Args)>0){
+				(code<<...<<args_);
+			}
+			code<<value->load()
+				<<call_ptr()
+				<<adj(type::arg_size);
+			return Ret{expr(code)};
+		}
+	};
 /*
 
 int16 sub_function(int8 arg1, int16 arg2, int8 arg3);

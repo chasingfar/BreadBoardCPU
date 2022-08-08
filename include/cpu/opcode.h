@@ -260,6 +260,21 @@ namespace BBCPU::OpCode {
 		}
 	};
 	template <auto V>
+	struct CallPtr:Base{
+		inline static const std::string name="CallPtr";
+		using id    = OPID<8,Base,V>;
+		static layout_t parse(MCode ctx){
+			return {name,{}};
+		}
+		static void gen(MCode& ctx){
+			LOG("CallPtr");
+			ctx.stack_pop16(Reg16::TMP);
+			ctx.inc16(Reg16::PC);
+			ctx.stack_push16(Reg16::PC);
+			ctx.jump(Reg16::TMP);
+		}
+	};
+	template <auto V>
 	struct Return:Base{
 		inline static const std::string name="Return";
 		using id    = OPID<8,Base,V>;
@@ -498,6 +513,7 @@ namespace BBCPU::OpCode {
 		using Adjust     = Adjust     <0b11010100>;
 		using PushSP     = PushSP     <0b11010011>;
 		using PopSP      = PopSP      <0b11010010>;
+		using CallPtr    = CallPtr    <0b11010001>;
 		/*using Enter    = Enter      <0b11001100>;
 		using Adjust     = Adjust     <0b11001011>;
 		using Leave      = Leave      <0b11001010>;
@@ -519,7 +535,7 @@ namespace BBCPU::OpCode {
 				BranchCF,BranchZero,
 				ImmVal,
 				Jump,Call,Return,
-				Adjust,PushSP,PopSP,
+				Adjust,PushSP,PopSP,CallPtr,
 				Halt,
 				INT0,INT1,INT2,INT3,
 				INT4,INT5,INT6,INT7,

@@ -37,6 +37,7 @@ namespace BBCPU::ASM {
 		inline Code adj (offset_t offset)   {return {OP0(Adjust), GET_HL(offset)};}
 		inline Code pushSP()                {return {OP0(PushSP)};}
 		inline Code popSP ()                {return {OP0(PopSP)};}
+		inline Code call_ptr()              {return {OP0(CallPtr)};}
 
 		inline Code shl(){return {OP1(Calc,fn,Calc::FN::SHL)};}
 		inline Code shr(){return {OP1(Calc,fn,Calc::FN::SHR)};}

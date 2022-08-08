@@ -321,7 +321,7 @@ TEST_CASE("function with array","[asm][function]"){
 	REQUIRE(cpu.get_reg(CPU::Reg::B) == 9);
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 14);
 }
-TEST_CASE("function pointer","[asm][function]"){
+TEST_CASE("function with pointer","[asm][function]"){
 	/*
 	main();
 	void* malloc(u16 size){
@@ -400,4 +400,21 @@ TEST_CASE("library function","[asm][function]"){
 
 	REQUIRE(stdlib.fns.size()==1);
 	REQUIRE(cpu.get_stack_top() == 3 * 5 + 6 * 7);
+}
+TEST_CASE("function pointer","[asm][function]"){
+	Fn<u8(ptr<Fn<u8(u8)>>)> fn;
+	Fn<u8(u8)> inc_u8;
+	CPU cpu;
+	cpu.load({
+		fn(&inc_u8),
+		halt(),
+		inc_u8.impl([](auto& _,auto v){return Stmt{
+			_.return_(v+6_u8),
+		};}),
+		fn.impl([](auto& _,auto f){return Stmt{
+			_.return_(f(3_u8)),
+		};}),
+	}).run_to_halt();
+
+	REQUIRE(cpu.get_stack_top() == 3 + 6);
 }
