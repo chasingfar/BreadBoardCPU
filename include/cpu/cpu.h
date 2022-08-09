@@ -4,8 +4,8 @@
 #include "opcode.h"
 
 namespace BBCPU::OpCode::Impl{
-	struct CPU : CPU_ISA::Impl::CPU {
-		using Base = CPU_ISA::Impl::CPU;
+	struct CPU : CPU_IMPL::Impl::CPU {
+		using Base = CPU_IMPL::Impl::CPU;
 
 		CPU():Base(){
 			auto tbl=genOpTable();

@@ -1,15 +1,15 @@
 #ifndef BBCPU_CPU_OPCODE_H
 #define BBCPU_CPU_OPCODE_H
 
-#ifndef CPU_ISA
-#define CPU_ISA RegSet_SRAM
+#ifndef CPU_IMPL
+#define CPU_IMPL RegSet_SRAM
 #endif
 
 #include "regfile8x16/cpu.h"
 #include "regset_sram/cpu.h"
 
 namespace BBCPU::OpCode {
-	using namespace CPU_ISA;
+	using namespace CPU_IMPL;
 	template <size_t Size,typename Ref,auto Id>
 	using OPID=BitId<Id,BitField<Size,Ref,FollowMode::innerHigh> >;
 	template <size_t Size,typename As,typename Ref,typename Base=BitField<Size,Ref,FollowMode::outerLow>>
