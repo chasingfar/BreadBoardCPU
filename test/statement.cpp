@@ -70,6 +70,39 @@ TEST_CASE("while","[asm][statement]"){
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 6);
 	REQUIRE(cpu.is_halt()==true);
 }
+TEST_CASE("while with break and continue","[asm][statement]"){
+	/*
+	a=0,b=0;
+	while(b!=4){
+		b+=1;
+		if(b==2){
+			continue;
+		}
+		a+=b;
+		if(b==3){
+			break;
+		}
+	}
+	*/
+	CPU cpu;
+	cpu.load({
+		Reg_A=0_u8,Reg_B=0_u8,
+		while_(Reg_B!=4_u8).do_([](auto _){return Stmt{
+			Reg_B+=1_u8,
+			if_(Reg_B==2_u8).then({
+				_.continue_,
+			}).end(),
+			Reg_A+=Reg_B,
+			if_(Reg_B==3_u8).then({
+				_.break_,
+			}).end(),
+		};}).end(),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 4);
+	REQUIRE(cpu.is_halt()==true);
+}
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;

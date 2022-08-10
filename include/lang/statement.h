@@ -109,26 +109,35 @@ namespace BBCPU::Lang {
 			};
 		}
 	};
+	struct LoopStmt{
+		void_ break_,continue_;
+	};
 	struct while_{
+		Label start_;
 		bool_ cond;
 		Block body{};
+		Label end_;
 		explicit while_(const bool_& cond):cond(cond){}
 		while_& do_(Stmt code){
 			body.body=std::move(code);
+			return *this;
+		}
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, LoopStmt>
+		while_& do_(F&& fn){
+			body.body=fn(LoopStmt{asm_(jmp(end_)),asm_(jmp(start_))});
 			return *this;
 		}
 		void_ end() const{
 			return asm_(to_code());
 		}
 		Code to_code() const {
-			Label start,end;
 			return {
-				start,
+				start_,
 				cond.to_code(),
-				brz(end),
+				brz(end_),
 				body.to_code(),
-				jmp(start),
-				end,
+				jmp(start_),
+				end_,
 			};
 		}
 	};
