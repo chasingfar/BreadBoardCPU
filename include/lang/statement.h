@@ -47,19 +47,30 @@ namespace BBCPU::Lang {
 			return {jmp(end),to_code()};
 		}
 	};
-	template<typename Ret=Stmt>
+	template<typename Ret=Stmt,typename Cond=bool_,Code (*Br)(const Label&)=Ops::brz>
+	struct IF;
+	template<typename Ret=Stmt,typename Cond=bool_,Code (*Br)(const Label&)=Ops::brz>
 	struct if_{
-		bool_ cond;
-		Block if_true{};
-		Block if_false{};
-		explicit if_(const bool_& cond):cond(cond){}
-		if_& then(Ret t_code){
-			if_true.body<<asm_(t_code);
-			return *this;
+		std::vector<std::pair<Cond,Block>> conds;
+		explicit if_(const Cond& cond):conds{{cond,{}}}{}
+		explicit if_(const std::vector<std::pair<Cond,Block>>& conds):conds{conds}{}
+		auto then(Ret t_code){
+			conds.back().second.body<<asm_(t_code);
+			return IF<Ret,Cond,Br>(conds);
 		}
-		if_& else_(Ret f_code){
-			if_false.body<<asm_(f_code);
-			return *this;
+	};
+	template<typename Ret,typename Cond,Code (*Br)(const Label&)>
+	struct IF{
+		std::vector<std::pair<Cond,Block>> conds;
+		Block else_block{};
+		explicit IF(const std::vector<std::pair<Cond,Block>>& conds):conds{conds}{}
+		auto elif(const Cond& cond){
+			conds.emplace_back(cond,Block{});
+			return if_<Ret,Cond,Br>(conds);
+		}
+		Ret else_(Ret f_code){
+			else_block.body<<asm_(f_code);
+			return end();
 		}
 		Ret end() const{
 			if constexpr(std::is_same_v<Ret,Stmt>){
@@ -69,46 +80,46 @@ namespace BBCPU::Lang {
 			}
 		}
 		Code to_code() const{
-			return {
-				cond,
-				brz(if_false.start),
-				if_true,
-				jmp(if_false.end),
-				if_false,
-			};
-		}
-	};
-	template<typename Ret=Stmt>
-	struct ifc{
-		void_ cond;
-		Block if_no_carry{};
-		Block if_carry{};
-		explicit ifc(const void_& cond):cond(cond){}
-		ifc& then(Ret no_carry){
-			if_no_carry.body<<asm_(no_carry);
-			return *this;
-		}
-		ifc& else_(Ret carry){
-			if_carry.body<<asm_(carry);
-			return *this;
-		}
-		Ret end() const{
-			if constexpr(std::is_same_v<Ret,Stmt>){
-				return Stmt{void_{asm_(to_code())}};
-			}else{
-				return Ret{expr(to_code())};
+			Label end;
+			Code code{};
+			if(!conds.empty()){
+				for(auto it=conds.begin();it!=conds.end()-1;++it){
+					auto [cond,block]=*it;
+					Label next;
+					code<<Code{
+						cond,
+						Br(next),
+						block,
+						jmp(end),
+						next,
+					};
+				}
+				auto [cond,block]=conds.back();
+				if(else_block.body.stmts.empty()){
+					return code<<Code{
+						cond,
+						Br(end),
+						block,
+						end,
+					};
+				}else{
+					return code<<Code{
+						cond,
+						Br(else_block.start),
+						block,
+						jmp(end),
+						else_block,
+						end,
+					};
+				}
 			}
-		}
-		Code to_code() const {
-			return {
-				cond.to_code(),
-				brc(if_carry.start),
-				if_no_carry.to_code(),
-				jmp(if_carry.end),
-				if_carry.to_code(),
-			};
+			return {};
 		}
 	};
+	
+	template<typename Ret=Stmt>
+	using ifc=if_<Ret,void_,Ops::brc>;
+
 	struct LoopStmt{
 		void_ break_,continue_;
 	};

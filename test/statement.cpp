@@ -31,7 +31,7 @@ TEST_CASE("if","[asm][statement]"){
 				asm_(imm(Reg::A,5)),
 			}).else_({
 				asm_(imm(Reg::A,6)),
-			}).end(),
+			}),
 			halt(),
 		}).run_to_halt();
 		REQUIRE(cpu.get_reg(CPU::Reg::A) == 5);
@@ -43,7 +43,7 @@ TEST_CASE("if","[asm][statement]"){
 				asm_(imm(Reg::A, 5)),
 			}).else_({
 				asm_(imm(Reg::A,6)),
-			}).end(),
+			}),
 			halt(),
 		}).run_to_halt();
 		REQUIRE(cpu.get_reg(CPU::Reg::A) == 6);
@@ -325,7 +325,7 @@ TEST_CASE("if cmp","[asm][statement]"){
 				asm_(imm(Reg::A,T)),
 			}).else_({
 				asm_(imm(Reg::A,F)),
-			}).end(),
+			}),
 			halt(),
 		};
 	};
@@ -447,6 +447,68 @@ TEST_CASE("if cmp","[asm][statement]"){
 			cpu.init();
 			cpu.load(test_if(5_u8 > 3_u8)).run_to_halt();
 			REQUIRE(cpu.get_reg(CPU::Reg::A) == T);
+		}
+	}
+}
+TEST_CASE("if elif else","[asm][statement]"){
+	CPU cpu;
+	SECTION("without else") {
+		auto if_elif=[](u8 sel)->Code{
+			return {
+				Reg_A=sel,
+				Reg_B=13_u8,
+				if_(Reg_A==1_u8).then({
+					Reg_B=11_u8,
+				}).elif(Reg_A==2_u8).then({
+					Reg_B=12_u8,
+				}).end(),
+				halt(),
+			};
+		};
+		SECTION("elif 1") {
+			cpu.init();
+			cpu.load(if_elif(1_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 11);
+		}
+		SECTION("elif 2") {
+			cpu.init();
+			cpu.load(if_elif(2_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 12);
+		}
+		SECTION("elif 3") {
+			cpu.init();
+			cpu.load(if_elif(3_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 13);
+		}
+	}
+	SECTION("with else") {
+		auto if_elif_else=[](u8 sel)->Code{
+			return {
+				Reg_A=sel,
+				if_(Reg_A==1_u8).then({
+					Reg_B=11_u8,
+				}).elif(Reg_A==2_u8).then({
+					Reg_B=12_u8,
+				}).else_({
+					Reg_B=13_u8,
+				}),
+				halt(),
+			};
+		};
+		SECTION("else 1") {
+			cpu.init();
+			cpu.load(if_elif_else(1_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 11);
+		}
+		SECTION("else 2") {
+			cpu.init();
+			cpu.load(if_elif_else(2_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 12);
+		}
+		SECTION("else 3") {
+			cpu.init();
+			cpu.load(if_elif_else(3_u8)).run_to_halt();
+			REQUIRE(cpu.get_reg(CPU::Reg::B) == 13);
 		}
 	}
 }

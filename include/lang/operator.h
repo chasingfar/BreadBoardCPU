@@ -67,7 +67,7 @@ namespace BBCPU::Lang {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator!(const Int<Size,Signed>& lhs){
-		return if_<bool_>(lhs).then(Val::false_).else_(Val::true_).end();
+		return if_<bool_>(lhs).then(Val::false_).else_(Val::true_);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator!=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
@@ -80,11 +80,11 @@ namespace BBCPU::Lang {
 
 	template<addr_t Size,bool Signed>
 	inline auto operator>=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return ifc<bool_>((void_)(lhs - rhs)).then(Val::false_).else_(Val::true_).end();
+		return ifc<bool_>((void_)(lhs - rhs)).then(Val::false_).else_(Val::true_);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){
-		return ifc<bool_>((void_)(lhs - rhs)).then(Val::true_).else_(Val::false_).end();
+		return ifc<bool_>((void_)(lhs - rhs)).then(Val::true_).else_(Val::false_);
 	}
 	template<addr_t Size,bool Signed>
 	inline auto operator<=(const Int<Size,Signed>& lhs,const Int<Size,Signed>& rhs){

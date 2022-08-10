@@ -121,7 +121,7 @@ TEST_CASE("function recursion","[asm][function]"){
 					_.return_(i),
 				}).else_({
 					_.return_(fib(i - 1_u8) + fib(i - 2_u8)),
-				}).end(),
+				}),
 			};
 		}),
 		main,
