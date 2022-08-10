@@ -103,6 +103,116 @@ TEST_CASE("while with break and continue","[asm][statement]"){
 	REQUIRE(cpu.get_reg(CPU::Reg::A) == 4);
 	REQUIRE(cpu.is_halt()==true);
 }
+TEST_CASE("do while","[asm][statement]"){
+	/*
+	a=0,b=0;
+	do{
+		a+=b;
+		b+=1
+	}while(b!=4);
+	do{
+		a+=b;
+	}while(b!=4);
+	*/
+	CPU cpu;
+	cpu.load({
+		Reg_A=0_u8,Reg_B=0_u8,
+		do_({
+			Reg_A+=Reg_B,
+			Reg_B+=1_u8,
+		}).while_(Reg_B!=4_u8),
+		do_({
+			Reg_A+=Reg_B,
+		}).while_(Reg_B!=4_u8),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 10);
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 4);
+	REQUIRE(cpu.is_halt()==true);
+}
+TEST_CASE("do while with break and continue","[asm][statement]"){
+	/*
+	a=0,b=0;
+	do{
+		b+=1;
+		if(b==2){
+			continue;
+		}
+		a+=b;
+		if(b==3){
+			break;
+		}
+	}while(b!=4)
+	*/
+	CPU cpu;
+	cpu.load({
+		Reg_A=0_u8,Reg_B=0_u8,
+		do_([](auto _){return Stmt{
+			Reg_B+=1_u8,
+			if_(Reg_B==2_u8).then({
+				_.continue_,
+			}).end(),
+			Reg_A+=Reg_B,
+			if_(Reg_B==3_u8).then({
+				_.break_,
+			}).end(),
+		};}).while_(Reg_B!=4_u8),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 4);
+	REQUIRE(cpu.is_halt()==true);
+}
+TEST_CASE("for","[asm][statement]"){
+	/*
+	a=0;
+	for(b=0;b!=4;b+=1){
+		a+=b;
+	}
+	*/
+	CPU cpu;
+	cpu.load({
+		Reg_A=0_u8,
+		for_(Reg_B=0_u8,Reg_B!=4_u8,Reg_B+=1_u8).do_({
+			Reg_A+=Reg_B,
+		}),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 4);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 6);
+	REQUIRE(cpu.is_halt()==true);
+}
+TEST_CASE("for with break and continue","[asm][statement]"){
+	/*
+	a=0;
+	for(b=0;b!=4;b+=1){
+		if(b==2){
+			continue;
+		}
+		a+=b;
+		if(b==3){
+			break;
+		}
+	}
+	*/
+	CPU cpu;
+	cpu.load({
+		Reg_A=0_u8,
+		for_(Reg_B=0_u8,Reg_B!=4_u8,Reg_B+=1_u8).do_([](auto _){return Stmt{
+			if_(Reg_B==2_u8).then({
+				_.continue_,
+			}).end(),
+			Reg_A+=Reg_B,
+			if_(Reg_B==3_u8).then({
+				_.break_,
+			}).end(),
+		};}),
+		halt(),
+	}).run_to_halt();
+	REQUIRE(cpu.get_reg(CPU::Reg::B) == 3);
+	REQUIRE(cpu.get_reg(CPU::Reg::A) == 4);
+	REQUIRE(cpu.is_halt()==true);
+}
 
 TEST_CASE("static variable","[asm][statement]"){
 	StaticVars vars;

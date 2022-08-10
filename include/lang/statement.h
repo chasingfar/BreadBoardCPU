@@ -133,9 +133,64 @@ namespace BBCPU::Lang {
 		Code to_code() const {
 			return {
 				start_,
-				cond.to_code(),
+				cond,
 				brz(end_),
-				body.to_code(),
+				body,
+				jmp(start_),
+				end_,
+			};
+		}
+	};
+	struct do_{
+		Label start_,cont,end_;
+		Block body{};
+		bool_ cond;
+		explicit do_(Stmt code):body{std::move(code)}{}
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, LoopStmt>
+		explicit do_(F&& fn):body{fn(LoopStmt{asm_(jmp(end_)),asm_(jmp(cont))})}{}
+		void_ while_(const bool_& cond_){
+			cond.value=cond_.value;
+			return asm_(to_code());
+		}
+		Code to_code() const {
+			return {
+				start_,
+				body,
+				cont,
+				cond,
+				brz(end_),
+				jmp(start_),
+				end_,
+			};
+		}
+	};
+	struct for_{
+		Label start_,cont,end_;
+		void_ init,iter;
+		bool_ cond;
+		Block body{};
+		explicit for_(void_ init,const bool_& cond,void_ iter):init(init),cond(cond),iter(iter){}
+		for_& do_(Stmt code){
+			body.body=std::move(code);
+			return *this;
+		}
+		template<typename F>requires std::is_invocable_r_v<Stmt , F, LoopStmt>
+		for_& do_(F&& fn){
+			body.body=fn(LoopStmt{asm_(jmp(end_)),asm_(jmp(cont))});
+			return *this;
+		}
+		void_ end() const{
+			return asm_(to_code());
+		}
+		Code to_code() const {
+			return {
+				init,
+				start_,
+				cond,
+				brz(end_),
+				body,
+				cont,
+				iter,
 				jmp(start_),
 				end_,
 			};
