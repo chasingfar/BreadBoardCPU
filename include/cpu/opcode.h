@@ -297,16 +297,16 @@ namespace BBCPU::OpCode {
 	template <auto V>
 	struct Enter:Base{
 		inline static const std::string name="Enter";
-		using id    = OPID<8,Base,V>;
+		using id    = OPID<6,Base,V>;
+		using bp    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name,{OpType::i16}};
+			return {name+" "+getUReg16<bp>(ctx).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Enter");
-			ctx.stack_push16(Reg16::HL);
-			ctx.copy16(Reg16::SP,Reg16::HL);
-			ctx.load_imm16(Reg16::TMP);
-			ctx.sub16(Reg16::SP,Reg16::TMP,Reg16::SP);
+			Reg16 BP=getUReg16<bp>(ctx).toReg16();
+			ctx.stack_push16(BP);
+			ctx.copy16(Reg16::SP,BP);
 			ctx.next_op();
 		}
 	};
@@ -327,58 +327,16 @@ namespace BBCPU::OpCode {
 	template <auto V>
 	struct Leave:Base{
 		inline static const std::string name="Leave";
-		using id    = OPID<8,Base,V>;
+		using id    = OPID<6,Base,V>;
+		using bp    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name,{}};
+			return {name+" "+getUReg16<bp>(ctx).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG("Leave");
-			ctx.copy16(Reg16::HL,Reg16::SP);
-			ctx.stack_pop16(Reg16::HL);
-			ctx.stack_pop16(Reg16::TMP);
-			ctx.jump(Reg16::TMP);
-		}
-	};
-	template <auto V>
-	struct Local:Base{
-		inline static const std::string name="Local";
-		using id    = OPID<8,Base,V>;
-		static layout_t parse(MCode ctx){
-			return {name,{OpType::i16}};
-		}
-		static void gen(MCode& ctx){
-			LOG("Local");
-			ctx.load_imm16(Reg16::TMP);
-			ctx.add16(Reg16::HL,Reg16::TMP,Reg16::TMP);
-			ctx.stack_push16(Reg16::TMP);
-			ctx.next_op();
-		}
-	};
-	template <auto V>
-	struct PushSP:Base{
-		inline static const std::string name="Push SP";
-		using id    = OPID<8,Base,V>;
-		static layout_t parse(MCode ctx){
-			return {name,{}};
-		}
-		static void gen(MCode& ctx){
-			LOG("PushSP");
-			ctx.copy16(Reg16::SP,Reg16::TMP);
-			ctx.stack_push16(Reg16::TMP);
-			ctx.next_op();
-		}
-	};
-	template <auto V>
-	struct PopSP:Base{
-		inline static const std::string name="Pop SP";
-		using id    = OPID<8,Base,V>;
-		static layout_t parse(MCode ctx){
-			return {name,{}};
-		}
-		static void gen(MCode& ctx){
-			LOG("PopSP");
-			ctx.stack_pop16(Reg16::TMP);
-			ctx.copy16(Reg16::TMP,Reg16::SP);
+			Reg16 BP=getUReg16<bp>(ctx).toReg16();
+			ctx.copy16(BP,Reg16::SP);
+			ctx.stack_pop16(BP);
 			ctx.next_op();
 		}
 	};
@@ -518,13 +476,9 @@ namespace BBCPU::OpCode {
 		using Return     = Return     <0b11010101>;
 
 		using Adjust     = Adjust     <0b11010100>;
-		using PushSP     = PushSP     <0b11010011>;
-		using PopSP      = PopSP      <0b11010010>;
-		using CallPtr    = CallPtr    <0b11010001>;
-		/*using Enter    = Enter      <0b11001100>;
-		using Adjust     = Adjust     <0b11001011>;
-		using Leave      = Leave      <0b11001010>;
-		using Local      = Local      <0b11001001>;*/
+		using Enter      = Enter      <0b110100>;
+		using Leave      = Leave      <0b110011>;
+		using CallPtr    = CallPtr    <0b11001011>;
 
 		using INT0       = Interrupt  <0b00001000>;
 		using INT1       = Interrupt  <0b00001001>;
@@ -542,7 +496,7 @@ namespace BBCPU::OpCode {
 				BranchCF,BranchZero,
 				ImmVal,
 				Jump,Call,Return,
-				Adjust,PushSP,PopSP,CallPtr,
+				Adjust,Enter,Leave,CallPtr,
 				Halt,
 				INT0,INT1,INT2,INT3,
 				INT4,INT5,INT6,INT7,

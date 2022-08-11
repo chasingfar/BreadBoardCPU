@@ -35,8 +35,8 @@ namespace BBCPU::ASM {
 		inline Code ret ()                  {return {OP0(Return)};}
 		inline Code halt()                  {return {OP0(Halt)};}
 		inline Code adj (offset_t offset)   {return {OP0(Adjust), GET_HL(offset)};}
-		inline Code pushSP()                {return {OP0(PushSP)};}
-		inline Code popSP ()                {return {OP0(PopSP)};}
+		inline Code ent(Reg16 BP)           {return {OP1(Enter,bp,BP)};}
+		inline Code lev(Reg16 BP)           {return {OP1(Leave,bp,BP)};}
 		inline Code call_ptr()              {return {OP0(CallPtr)};}
 
 		inline Code shl(){return {OP1(Calc,fn,Calc::FN::SHL)};}
@@ -78,10 +78,8 @@ namespace BBCPU::ASM {
 		inline Code imm (Reg16 reg, const Label& addr) {return {imm(addr), pop(reg)};}
 		inline Code brz (const Label& addr, Reg reg)   {return {push(reg), brz(addr)};}
 
-		inline Code saveBP(Reg16 BP)            {return {push(BP),pushSP(),pop(BP)};}
-		inline Code loadBP(Reg16 BP)            {return {push(BP),popSP(),pop(BP)};}
-		inline Code ent (Reg16 BP, op_t size)   {return {saveBP(BP),adj(-size)};}
-		inline Code lev (Reg16 BP)              {return {loadBP(BP),ret()};}
+		inline Code enter     (Reg16 BP, offset_t size)              {return {ent(BP),adj(-size)};}
+		inline Code leave     (Reg16 BP)                             {return {lev(BP),ret()};}
 		inline Code load_local(Reg16 BP, offset_t offset)            {return load(BP,offset);}
 		inline Code save_local(Reg16 BP, offset_t offset)            {return save(BP,offset);}
 		inline Code load_local(Reg16 BP, offset_t offset, Reg to)    {return {load_local(BP,offset), pop(to)};}
@@ -89,10 +87,10 @@ namespace BBCPU::ASM {
 #define ASM_BP Reg16::HL
 #define ASM_PTR Reg16::FE
 		inline Code pushBP()                               {return push(ASM_BP);}
-		inline Code saveBP()                               {return saveBP(ASM_BP);}
-		inline Code loadBP()                               {return loadBP(ASM_BP);}
-		inline Code ent (op_t size)                        {return ent(ASM_BP,size);}
-		inline Code lev ()                                 {return lev(ASM_BP);}
+		inline Code ent()                                  {return ent(ASM_BP);}
+		inline Code lev()                                  {return lev(ASM_BP);}
+		inline Code enter(offset_t size)                   {return enter(ASM_BP,size);}
+		inline Code leave()                                {return leave(ASM_BP);}
 		inline Code load_local(offset_t offset)            {return load_local(ASM_BP,offset);}
 		inline Code save_local(offset_t offset)            {return save_local(ASM_BP,offset);}
 		inline Code load_local(offset_t offset, Reg to)    {return load_local(ASM_BP,offset,to);}

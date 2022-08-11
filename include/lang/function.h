@@ -82,7 +82,7 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			return Ret{expr(code)};
 		}
 		This& impl(const Stmt& stmt){
-			this->body<<asm_({ent(this->local_size), stmt});
+			this->body<<asm_({enter(this->local_size), stmt});
 			return *this;
 		}
 
@@ -91,8 +91,8 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 			auto body=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			return impl(body);
 		}
-		inline void_ return_(Ret value){return asm_({this->ret.set(value), lev()});}
-		inline void_ return_(){return asm_(lev());}
+		inline void_ return_(Ret value){return asm_({this->ret.set(value), leave()});}
+		inline void_ return_(){return asm_(leave());}
 
 		explicit Fn(const Stmt& stmt){impl(stmt);}
 		template<typename F>requires std::is_invocable_r_v<Stmt , F, This&, Args...>
@@ -162,11 +162,10 @@ int16 sub_function(int8 arg1, int16 arg2, int8 arg3);
 		This& impl(F&& fn){
 			auto stmt=std::apply(fn,std::tuple_cat(std::forward_as_tuple(*this),this->args));
 			this->body<<asm_({
-				saveBP(),
-				adj(-this->local_size),
+				enter(this->local_size),
 				stmt,
 				end_,
-				loadBP(),
+				lev(),
 				adj(Base::arg_size-Base::ret_size),
 			});
 			return *this;
