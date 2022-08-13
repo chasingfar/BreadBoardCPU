@@ -35,19 +35,137 @@ namespace BBCPU::RegSet_SRAM {
 		void save_TCF(){
 			mctrl=MCTRL::state::TCF::set(mctrl, MARG::carry::get(marg));
 		}
-		void load_reg(Reg from){
-			if(step()){mctrl=MCTRL::BtoReg(mctrl, from, RegSet::A);}
+
+		void halt(){
+			end();
 		}
-		void save_reg(Reg to,bool save_tcf=false){
+
+		void reg_to_rs(Reg from,RegSet to,bool save_tcf=false){
+			if(step()){mctrl=MCTRL::BtoReg(mctrl, from, to);if(save_tcf){save_TCF();}}
+		}
+		void rsA_to_reg(Reg to,bool save_tcf=false){
 			if(step()){mctrl=MCTRL::AtoB(mctrl, to);if(save_tcf){save_TCF();}}
 		}
-		void load_addr(Reg16 addr){
-			if(step()){mctrl=MCTRL::BtoReg(mctrl, addr.L(), RegSet::L);}
-			if(step()){mctrl=MCTRL::BtoReg(mctrl, addr.H(), RegSet::H);}
+		void mem_to_rs(RegSet to,bool save_tcf=false){
+			if(step()){mctrl=MCTRL::MtoReg(mctrl, to);if(save_tcf){save_TCF();}}
 		}
-		void halt(){
-			//if(step()){mctrl=MCTRL::sig::halt(MCTRL::noOp(mctrl));}
-			end();
+		void rsA_to_mem(bool save_tcf=false){
+			if(step()){mctrl=MCTRL::AtoM(mctrl);if(save_tcf){save_TCF();}}
+		}
+		void no_op(bool save_tcf=false){
+			if(step()){mctrl=MCTRL::noOp(mctrl);if(save_tcf){save_TCF();}}
+		}
+
+
+		void load_reg(Reg from){
+			reg_to_rs(from,RegSet::A);
+		}
+		void save_reg(Reg to,bool save_tcf=false){
+			rsA_to_reg(to,save_tcf);
+		}
+
+		void set_zero(RegSet rs){
+			LOG(rs);
+			if(step()){mctrl=MCTRL::zero(mctrl, rs);}
+		}
+		void set_zero(Reg reg){
+			LOG(reg);
+			if(step()){mctrl=MCTRL::zero(mctrl, reg);}
+		}
+
+		void set_minus_one(RegSet rs){
+			LOG(rs);
+			if(step()){mctrl=MCTRL::minusOne(mctrl, rs);}
+		}
+		void set_minus_one(Reg reg){
+			LOG(reg);
+			if(step()){mctrl=MCTRL::minusOne(mctrl, reg);}
+		}
+
+		void inc(){
+			if(step()){mctrl=MCTRL::inc(mctrl);}
+		}
+		void inc(Carry carry){
+			if(step()){mctrl=MCTRL::inc(mctrl, carry);}
+		}
+
+		void dec(){
+			if(step()){mctrl=MCTRL::dec(mctrl);}
+		}
+		void dec(Carry carry){
+			if(step()){mctrl=MCTRL::dec(mctrl, carry);}
+		}
+
+		void add(Reg rhs,Carry carry){
+			LOG(rhs,carry);
+			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::add<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, carry);}
+		}
+		void add(Reg rhs){
+			LOG(rhs);
+			constexpr MCTRL::type(*fn)(MCTRL::type)=MCTRL::alu::add<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs);}
+		}
+		void sub(Reg rhs,Carry carry){
+			LOG(rhs,carry);
+			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::sub<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, carry);}
+		}
+		void sub(Reg rhs){
+			LOG(rhs);
+			constexpr MCTRL::type(*fn)(MCTRL::type)=MCTRL::alu::sub<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs);}
+		}
+		void shift_left(Reg rhs,Carry carry){
+			LOG(rhs,carry);
+			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::shiftLeft<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, carry);}
+		}
+		void shift_left(Reg rhs,unsigned pad){
+			LOG(rhs);
+			constexpr MCTRL::type(*fn)(MCTRL::type,unsigned)=MCTRL::alu::shiftLeft<MCTRL::type>;
+			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, pad);}
+		}
+
+		void logic_and(Reg rhs){
+			LOG(lhs,rhs,dest);
+			constexpr auto fn=MCTRL::alu::AND<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+		}
+		void logic_or(Reg rhs){
+			LOG(lhs,rhs,dest);
+			constexpr auto fn=MCTRL::alu::OR<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+		}
+		void logic_not(){
+			constexpr auto fn=MCTRL::alu::NOT<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, Reg::OPR);}
+		}
+		void logic_xor(Reg rhs){
+			LOG(lhs,rhs,dest);
+			constexpr auto fn=MCTRL::alu::XOR<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+		}
+
+		void test_zero(){
+			LOG(i);
+			constexpr auto fn=MCTRL::alu::testAeqZero<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, Reg::OPR);}
+		}
+		void test_less(Reg rhs){
+			LOG(rhs);
+			constexpr auto fn=MCTRL::alu::testALessB<MCTRL::type>;
+			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+		}
+		void save_carry(){
+			LOG(i);
+			if(step()){mctrl=MCTRL::state::CF::set(MCTRL::noOp(mctrl), MARG::state::TCF::get(marg));}
+		}
+
+
+		void load_addr(Reg16 addr){
+			reg_to_rs(addr.L(), RegSet::L);
+			reg_to_rs(addr.H(), RegSet::H);
 		}
 		void copy(Reg from,Reg to){
 			LOG(from,to);
@@ -59,19 +177,10 @@ namespace BBCPU::RegSet_SRAM {
 			copy(from.L(),to.L());
 			copy(from.H(),to.H());
 		}
-
-		void set_zero(Reg reg){
-			LOG(reg);
-			if(step()){mctrl=MCTRL::zero(mctrl, reg);}
-		}
 		void set_zero16(Reg16 reg16){
 			LOG(reg16);
 			set_zero(reg16.L());
 			set_zero(reg16.H());
-		}
-		void set_minus_one(Reg reg){
-			LOG(reg);
-			if(step()){mctrl=MCTRL::minusOne(mctrl, reg);}
 		}
 		void set_minus_one16(Reg16 reg16){
 			LOG(reg16);
@@ -81,13 +190,13 @@ namespace BBCPU::RegSet_SRAM {
 		void inc(Reg from,Reg to){
 			LOG(from, to);
 			load_reg(from);
-			if(step()){mctrl=MCTRL::inc(mctrl);}
+			inc();
 			save_reg(to,true);
 		}
 		void inc(Reg from, Reg to, Carry carry){
 			LOG(from, to);
 			load_reg(from);
-			if(step()){mctrl=MCTRL::inc(mctrl, carry);}
+			inc(carry);
 			save_reg(to,true);
 		}
 		void inc(Reg reg){
@@ -105,13 +214,13 @@ namespace BBCPU::RegSet_SRAM {
 		void dec(Reg from,Reg to){
 			LOG(from, to);
 			load_reg(from);
-			if(step()){mctrl= MCTRL::dec(mctrl);}
+			dec();
 			save_reg(to,true);
 		}
 		void dec(Reg from, Reg to, Carry carry){
 			LOG(from, to);
 			load_reg(from);
-			if(step()){mctrl= MCTRL::dec(mctrl, carry);}
+			dec(carry);
 			save_reg(to,true);
 		}
 		void dec(Reg reg){
@@ -128,38 +237,40 @@ namespace BBCPU::RegSet_SRAM {
 		void load(Reg16 from,Reg to){
 			LOG(from,to);
 			load_addr(from);
-			if(step()){mctrl=MCTRL::MtoReg(mctrl, RegSet::A);}
+			mem_to_rs(RegSet::A);
 			save_reg(to);
 		}
 		void load_op(){
 			LOG(i);
 			load_addr(Reg16::PC);
-			if(step()){mctrl=MCTRL::MtoReg(mctrl, RegSet::I);}
+			mem_to_rs(RegSet::I);
 			end();
 		}
 		void init_op(){
 			LOG(i);
-			if(step()){mctrl=MCTRL::zero(mctrl, RegSet::I);}
+			set_zero(RegSet::I);
+		}
+		void save(Reg16 to){
+			LOG(to);
+			load_addr(to);
+			rsA_to_mem();
 		}
 		void save(Reg from,Reg16 to){
 			LOG(from,to);
 			load_reg(from);
-			load_addr(to);
-			if(step()){mctrl=MCTRL::AtoM(mctrl);}
+			save(to);
 		}
 
 		void add(Reg lhs,Reg rhs,Reg dest,Carry carry){
 			LOG(lhs,rhs,dest,carry);
-			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::add<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, carry);}
+			add(rhs, carry);
 			save_reg(dest, true);
 		}
 		void add(Reg lhs,Reg rhs,Reg dest){
 			LOG(lhs,rhs,dest);
-			constexpr MCTRL::type(*fn)(MCTRL::type)=MCTRL::alu::add<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs);}
+			add(rhs);
 			save_reg(dest, true);
 		}
 		void add16(Reg16 lhs,Reg16 rhs,Reg16 dest){
@@ -169,16 +280,14 @@ namespace BBCPU::RegSet_SRAM {
 		}
 		void sub(Reg lhs,Reg rhs,Reg dest,Carry carry){
 			LOG(lhs,rhs,dest,carry);
-			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::sub<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs, carry);}
+			sub(rhs, carry);
 			save_reg(dest, true);
 		}
 		void sub(Reg lhs,Reg rhs,Reg dest){
 			LOG(lhs,rhs,dest);
-			constexpr MCTRL::type(*fn)(MCTRL::type)=MCTRL::alu::sub<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, rhs);}
+			sub(rhs);
 			save_reg(dest, true);
 		}
 		void sub16(Reg16 lhs,Reg16 rhs,Reg16 dest){
@@ -188,87 +297,71 @@ namespace BBCPU::RegSet_SRAM {
 		}
 		void shift_left(Reg lhs,Reg dest,unsigned pad){
 			LOG(lhs,dest,pad);
-			constexpr MCTRL::type(*fn)(MCTRL::type,unsigned)=MCTRL::alu::shiftLeft<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, lhs, pad);}
+			shift_left(lhs, pad);
 			save_reg(dest, true);
 		}
 		void shift_left(Reg lhs,Reg dest,Carry carry){
 			LOG(lhs,dest,carry);
-			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::shiftLeft<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, lhs, carry);}
+			shift_left(lhs, carry);
 			save_reg(dest, true);
 		}
 		void shift_right(Reg lhs,Reg dest,unsigned pad){
 			LOG(lhs,dest,pad);
-			constexpr MCTRL::type(*fn)(MCTRL::type,unsigned)=MCTRL::alu::shiftLeft<MCTRL::type>;
-			constexpr MCTRL::type(*fnc)(MCTRL::type,Carry)=MCTRL::alu::shiftLeft<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, lhs, pad);}
+			shift_left(lhs, pad);
 			auto carry=MARG::getCarry(marg);
 			for(int j=0;j<7;j++){
-				if(step()){mctrl=MCTRL::calc<fnc>(mctrl, lhs, carry);}
+				shift_left(lhs, carry);
 			}
 			save_reg(dest, true);
 		}
 		void shift_right(Reg lhs,Reg dest,Carry CF){
 			LOG(lhs,dest,CF);
-			constexpr MCTRL::type(*fn)(MCTRL::type,Carry)=MCTRL::alu::shiftLeft<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::calc<fn>(mctrl, lhs, CF);}
+			shift_left(lhs, CF);
 			auto carry=MARG::getCarry(marg);
 			for(int j=0;j<7;j++){
-				if(step()){mctrl=MCTRL::calc<fn>(mctrl, lhs, carry);}
+				shift_left(lhs, carry);
 			}
 			save_reg(dest, true);
 		}
 		void logic_and(Reg lhs,Reg rhs,Reg dest){
 			LOG(lhs,rhs,dest);
-			constexpr auto fn=MCTRL::alu::AND<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+			logic_and(rhs);
 			save_reg(dest);
 		}
 		void logic_or(Reg lhs,Reg rhs,Reg dest){
 			LOG(lhs,rhs,dest);
-			constexpr auto fn=MCTRL::alu::OR<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+			logic_or(rhs);
 			save_reg(dest);
 		}
 		void logic_not(Reg lhs,Reg dest){
 			LOG(lhs,dest);
-			constexpr auto fn=MCTRL::alu::NOT<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, lhs);}
+			logic_not();
 			save_reg(dest);
 		}
 		void logic_xor(Reg lhs,Reg rhs,Reg dest){
 			LOG(lhs,rhs,dest);
-			constexpr auto fn=MCTRL::alu::XOR<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
+			logic_xor(rhs);
 			save_reg(dest);
 		}
 		void test_zero(Reg lhs){
-			LOG(lhs,dest);
-			constexpr auto fn=MCTRL::alu::testAeqZero<MCTRL::type>;
+			LOG(lhs);
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, lhs);}
-			if(step()){mctrl=MCTRL::noOp(mctrl);save_TCF();}
-
+			test_zero();
+			no_op(true);
 		}
 		void test_less(Reg lhs,Reg rhs){
 			LOG(lhs,rhs,dest);
-			constexpr auto fn=MCTRL::alu::testALessB<MCTRL::type>;
 			load_reg(lhs);
-			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
-			if(step()){mctrl=MCTRL::noOp(mctrl);save_TCF();}
-		}
-		void save_carry(){
-			LOG(i);
-			if(step()){mctrl=MCTRL::state::CF::set(MCTRL::noOp(mctrl), MARG::state::TCF::get(marg));}
+			test_less(rhs);
+			no_op(true);
 		}
 
 		void next_op(){

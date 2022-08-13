@@ -149,6 +149,11 @@ namespace BBCPU::RegSet_SRAM {
 			o=io::setBw(o,reg);
 			return o;
 		}
+		static auto minusOne(auto o,RegSet reg){
+			o=alu::minusOne(o);
+			o=io::setBr(o, Reg::OPR, reg);
+			return o;
+		}
 
 		static auto inc(auto o){
 			LOG(from,to);
