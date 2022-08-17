@@ -509,7 +509,7 @@ namespace BBCPU::OpCode {
 			//std::cout<<std::bitset<MARG::size>(marg);
 			auto mctrl=Ops::all::gen(marg);
 			//std::cout<<"=>"<<std::bitset<MCTRL::size>(mctrl)<<std::endl;
-			return mctrl;
+			return mctrl % (1<<MCTRL::size);
 		}});
 	}
 
