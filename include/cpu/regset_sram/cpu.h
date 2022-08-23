@@ -103,6 +103,24 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			rs_en.wire(tbl.D.sub<1>(MCTRL::io::dir::low));
 		}
 	};
+	struct Clocker:Circuit{
+		Clock clk;
+		Enable clr;
+		Port<1> sclk,wclk;
+
+		Counter<2> counter{name+"[Counter]"};
+		Demux<2> demux{name+"[DeMux]"};
+		explicit Clocker(std::string name=""):Circuit(std::move(name)){
+			add_comps(counter,demux);
+
+			clr.wire(counter.clr);
+			clk.wire(counter.clk);
+			demux.S.wire(counter.Q);
+			demux.G.set(0);
+			demux.Y.sub<1>(1).wire(sclk);
+			demux.Y.sub<1>(3).wire(wclk);
+		}
+	};
 
 	struct CPU:Circuit{
 		using Reg = Regs::Reg;
@@ -113,10 +131,11 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		static constexpr size_t word_size=sizeof(word_t)*8;
 		size_t tick_count=0;
 
-		Clock clk,clk_;
+		Clock clk;
 		Port<1> clr;
 
-		Nand<1> nand{"[ClkNot]"};
+		Clocker clocker{"[Clker]"};
+		Or<1> reg_wctl{"[RegWCtl]"},mem_wctl{"[RegWCtl]"};
 		Memory<addr_size, word_size, word_size, word_size,5,addr_t,word_t> mem{"[Memory]"};
 		RegCLR<MARG::carry::size> creg{"[cReg]"};
 		CU cu{"[CU]"};
@@ -125,11 +144,13 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		RegCESet<MCTRL::io::Rs::size, word_size> regset{"[RegSet]"};
 		RAM<MCTRL::io::Bs::size, word_size> reg{"[RegFile]"};
 		explicit CPU(std::string name=""):Circuit(std::move(name)){
-			add_comps(nand,mem,creg,cu,alu,ioctl,regset,reg);
+			add_comps(clocker,reg_wctl,mem_wctl,mem,creg,cu,alu,ioctl,regset,reg);
 
-			clk.wire(nand.A,nand.B,creg.clk,regset.clk,reg.ce);
-			clk_.wire(nand.Y,cu.clk);
-			clr.wire(cu.clr,creg.clr);
+			clocker.clk.wire(clk);
+			clocker.sclk.wire(cu.clk);
+			clocker.wclk.wire(creg.clk,regset.clk,reg_wctl.A,mem_wctl.A);
+			reg.ce.enable();
+			clr.wire(cu.clr,creg.clr,clocker.clr);
 			alu.Co.wire(creg.D);
 			creg.Q.wire(cu.Ci);
 			regset.output[RegSet::I.v()].wire(cu.op);
@@ -146,12 +167,14 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			cu.rs_en.wire(regset.en);
 			cu.dir.wire(ioctl.dir);
 			ioctl.mem_oe.wire(mem.oe);
-			ioctl.mem_we.wire(mem.we);
+			ioctl.mem_we.wire(mem_wctl.B);
 			ioctl.reg_oe.wire(reg.oe);
-			ioctl.reg_we.wire(reg.we);
+			ioctl.reg_we.wire(reg_wctl.B);
+			mem_wctl.Y.wire(mem.we);
+			reg_wctl.Y.wire(reg.we);
 		}
 		void init(){
-			clk.set(1);
+			clk.set(0);
 			clr.set(0);
 			run();
 			clr.set(1);
@@ -170,6 +193,10 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		}
 		void tick(){
 			++tick_count;
+			clk.clock();
+			run();
+			clk.clock();
+			run();
 			clk.clock();
 			run();
 			clk.clock();
