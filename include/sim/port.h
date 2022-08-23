@@ -63,22 +63,23 @@ namespace BBCPU::Sim{
 			}
 			return os;
 		}
-		std::ostream& print_bit(std::ostream& os) const{
-			for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
-				if(auto v=read(*it);v) {
-					os << *v;
-				}else{
-					os << (v.error()==Level::Floating?"F":"E");
+		Util::Printer print_bit() const{
+			return [&](std::ostream& os){
+				for (auto it = pins.rbegin(); it != pins.rend(); ++it) {
+					if(auto v=read(*it);v) {
+						os << (*v?"1":"0");
+					}else{
+						os << (v.error()==Level::Floating?"F":"E");
+					}
 				}
-			}
-			return os;
+			};
 		}
 		friend std::ostream& operator<<(std::ostream& os,const Port<Size,Pins>& port){
 			//return port.print_ptr(os);
 			if(auto v=port.get();v) {
 				os << *v;
 			}else{
-				port.print_bit(os);
+				os << port.print_bit();
 			}
 			return os;
 		}
