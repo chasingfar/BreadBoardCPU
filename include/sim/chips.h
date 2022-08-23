@@ -345,5 +345,38 @@ namespace BBCPU::Sim{
 			};
 		}
 	};
+	template<size_t Size=8>
+	struct Counter:Chip{
+		Port<Size> Q{0,"Q"};
+		Enable clr{"CLR"};
+		Clock clk{"CCLK"};
+
+		val_t cnt=1;
+		explicit Counter(std::string name=""):Chip(std::move(name)){
+			add_ports(Q,clr,clk);
+		}
+		void run() override{
+			if(clr.is_enable()){
+				reset();
+			}
+			if(clk.value()==0){
+				cnt=Q.value()+1;
+			}else{
+				Q=cnt;
+			}
+		}
+		void set(val_t val){
+			Q=val;
+			cnt=val+1;
+		}
+		void reset() {
+			set(0);
+		}
+		Util::Printer print(std::span<const Level> s) const override{
+			return [=](std::ostream& os){
+				os<<"Cnt="<<Q(s)<<"(clr:"<<clr(s)<<",clk:"<<clk(s)<<")";
+			};
+		}
+	};
 }
 #endif //BBCPU_SIM_CHIPS_H
