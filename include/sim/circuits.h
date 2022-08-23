@@ -163,12 +163,12 @@ namespace BBCPU::Sim{
 		}
 	};
 	template<size_t Size>
-	struct Counter:Circuit{
+	struct Accumulator:Circuit{
 		Clock clk{Level::PullDown};
 		Port<1> clr{Level::PullUp};
 		Adder<Size> adder{name+"[Adder]"};
 		RegCLR<Size> reg{name+"[Reg]"};
-		explicit Counter(std::string name=""):Circuit(std::move(name)){
+		explicit Accumulator(std::string name=""):Circuit(std::move(name)){
 			add_comps(adder,reg);
 
 			clk.wire(reg.clk);
