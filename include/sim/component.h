@@ -3,6 +3,7 @@
 
 #include "port.h"
 #include <numeric>
+#include <sstream>
 #include <unordered_set>
 
 namespace BBCPU::Sim{
@@ -33,6 +34,7 @@ namespace BBCPU::Sim{
 
 		using state_t=std::vector<Level>;
 		std::vector<std::pair<Mode,Wire*>> pins;
+		std::vector<std::pair<std::string,size_t>> port_names;
 		bool input_floating=false;
 
 		explicit Chip(std::string name=""):Component(std::move(name)){}
@@ -48,6 +50,7 @@ namespace BBCPU::Sim{
 			pins.reserve((pins.size()+...+Sizes));
 			([&](auto& port){
 				port.offset=pins.size();
+				port_names.emplace_back(port.name,port.pins.size());
 				for(auto& w:port.pins){
 					w.chip=this;
 					pins.emplace_back(port.mode,&w);
@@ -125,8 +128,41 @@ namespace BBCPU::Sim{
 				os<<print(save());
 			};
 		}
+		void print_port_names(std::ostream& os1,std::ostream& os2){
+			std::stringstream ss;
+			for(auto [name,size]:port_names){
+				ss<<std::setw(std::max(name.size(),size))<<name<<"|";
+			}
+			auto str=ss.str();
+			os1<<std::setw(std::max(str.size(),name.size()+1))<<name+"|";
+			os2<<std::setw(std::max(str.size(),name.size()+1))<<str;
+		}
+		void print_port_status(std::ostream& os){
+			auto it=pins.begin();
+			std::stringstream ss;
+			for(auto [name,size]:port_names){
+				std::string str="";
+				for(size_t i=0;i<size;++i){
+					Level level=it->second->get();
+					if(level==Level::Floating){
+						str="F"+str;
+					}else if(level==Level::Error){
+						str="E"+str;
+					}else  if(static_cast<int8_t>(level)>0){
+						str="1"+str;
+					}else {
+						str="0"+str;
+					}
+					++it;
+				}
+				ss<<std::setw(std::max(name.size(),size))<<str<<"|";
+			}
+			auto str=ss.str();
+			os<<std::setw(std::max(str.size(),name.size()+1))<<str;
+		}
 	};
 	struct Circuit:Component{
+		inline static bool log_port_status=false;
 		std::vector<Component*> comps;
 		explicit Circuit(std::string name=""):Component(std::move(name)){}
 
@@ -138,9 +174,40 @@ namespace BBCPU::Sim{
 					return res;
 				});
 		}
+		std::vector<Chip*> get_chips(){
+			std::vector<Chip*> chips;
+			for(auto* comp:comps){
+				if(auto* chip=dynamic_cast<Chip*>(comp);chip){
+					chips.emplace_back(chip);
+				}else if(auto* circuit=dynamic_cast<Circuit*>(comp);circuit){
+					auto vec=circuit->get_chips();
+					chips.insert(chips.end(),vec.begin(),vec.end());
+				}
+			}
+			return chips;
+		}
+		void print_port_names(){
+			auto chips=get_chips();
+			std::stringstream ss;
+			for(auto* chip:chips){
+				chip->print_port_names(std::cout, ss);
+			}
+			std::cout<<std::endl;
+			std::cout<<ss.str()<<std::endl;
+		}
+		void print_port_status(){
+			auto chips=get_chips();
+			for(auto* chip:chips){
+				chip->print_port_status(std::cout);
+			}
+			std::cout<<std::endl;
+		}
 		void run() override {
 			affected_t affected=update();
 			while(!affected.empty()){
+				if(log_port_status){
+					print_port_status();
+				}
 				affected=std::reduce(affected.begin(),affected.end(),
 				affected_t{},
 				[](affected_t res,Chip* c){

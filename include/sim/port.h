@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <span>
+#include <string>
 #include "wire.h"
 
 namespace BBCPU::Sim{
@@ -15,15 +16,16 @@ namespace BBCPU::Sim{
 
 	template<size_t Size,typename Pins=std::array<Wire,Size> >
 	struct Port{
+		std::string name;
 		Mode mode=Mode::IO;
 		Pins pins;
 		size_t offset=0;
 
-		Port()=default;
-		explicit Port(Pins&& pins,size_t offset=0):pins{pins},offset{offset}{}
-		explicit Port(val_t val):mode(Mode::OUT){set(val);}
-		explicit Port(Level level):mode(Mode::OUT){set(0,level);}
-		explicit Port(Mode mode):mode(mode){}
+		Port(std::string name=""):name(std::move(name)){}
+		explicit Port(Pins&& pins,size_t offset=0,std::string name=""):name(std::move(name)),pins{pins},offset{offset}{}
+		explicit Port(val_t val,std::string name=""):name(std::move(name)),mode(Mode::OUT){set(val);}
+		explicit Port(Level level,std::string name=""):name(std::move(name)),mode(Mode::OUT){set(0,level);}
+		explicit Port(Mode mode,std::string name=""):name(std::move(name)),mode(mode){}
 
 		void set(val_t val,Level zero=Level::Low,Level one=Level::High){
 			for(auto& p:pins){
@@ -110,7 +112,7 @@ namespace BBCPU::Sim{
 	};
 	struct Enable:Port<1>{
 		using Port<1>::Port;
-		Enable():Port(Mode::IN){}
+		Enable(std::string name=""):Port(Mode::IN,name){}
 		enum En{Yes=0,No=1};
 		bool is_enable(){
 			return value()==Yes;
@@ -120,7 +122,7 @@ namespace BBCPU::Sim{
 	};
 	struct Clock:Port<1>{
 		using Port<1>::Port;
-		Clock():Port(Mode::IN){}
+		Clock(std::string name=""):Port(Mode::IN,name){}
 		void clock(){
 			set(~value());
 		}

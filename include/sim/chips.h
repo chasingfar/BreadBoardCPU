@@ -14,8 +14,8 @@ namespace BBCPU::Sim{
 	// Basic clock-up register
 	template<size_t Size>
 	struct Reg:Chip{
-		Clock clk;
-		Port<Size> D{Mode::IN},Q{0};
+		Clock clk{"CLK"};
+		Port<Size> D{Mode::IN,"D"},Q{0,"Q"};
 		val_t data{};
 		explicit Reg(std::string name=""):Chip(std::move(name)){
 			add_ports(clk, D, Q);
@@ -44,7 +44,7 @@ namespace BBCPU::Sim{
 	template<size_t Size>
 	struct RegCE: Reg<Size>{
 		using Base=Reg<Size>;
-		Enable ce;
+		Enable ce{"CE"};
 		explicit RegCE(std::string name=""): Base(std::move(name)){
 			Base::add_ports(ce);
 		}
@@ -64,7 +64,7 @@ namespace BBCPU::Sim{
 	template<size_t Size>
 	struct RegCLR:Reg<Size>{
 		using Base=Reg<Size>;
-		Enable clr;
+		Enable clr{"CLR"};
 		explicit RegCLR(std::string name=""):Base(std::move(name)){
 			Base::add_ports(clr);
 		}
@@ -84,7 +84,7 @@ namespace BBCPU::Sim{
 	// IC 7400
 	template<size_t Size>
 	struct Nand:Chip{
-		Port<Size> A{Mode::IN},B{Mode::IN},Y{0};
+		Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},Y{0,"Y"};
 		explicit Nand(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,Y);
 		}
@@ -100,7 +100,7 @@ namespace BBCPU::Sim{
 	// IC 7408
 	template<size_t Size>
 	struct And:Chip{
-		Port<Size> A{Mode::IN},B{Mode::IN},Y{0};
+		Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},Y{0,"Y"};
 		explicit And(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,Y);
 		}
@@ -116,7 +116,7 @@ namespace BBCPU::Sim{
 	// IC 7404
 	template<size_t Size>
 	struct Not:Chip{
-		Port<Size> A{Mode::IN},Y{0};
+		Port<Size> A{Mode::IN,"A"},Y{0,"Y"};
 		explicit Not(std::string name=""):Chip(std::move(name)){
 			add_ports(A,Y);
 		}
@@ -131,7 +131,7 @@ namespace BBCPU::Sim{
 	};
 	template<size_t Size>
 	struct Adder:Chip{
-		Port<Size> A{Mode::IN},B{Mode::IN},O{0};
+		Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},O{0,"O"};
 		explicit Adder(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,O);
 		}
@@ -147,9 +147,9 @@ namespace BBCPU::Sim{
 	// IC 74181
 	template<size_t Size=8>
 	struct ALU:Chip{
-		Port<Size> A{Mode::IN},B{Mode::IN},O{0};
-		Port<6> CMS{Mode::IN};
-		Port<1> Co{0};
+		Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},O{0,"O"};
+		Port<6> CMS{Mode::IN,"CMS"};
+		Port<1> Co{0,"Co"};
 		explicit ALU(std::string name=""):Chip(std::move(name)){
 			add_ports(A,B,CMS,O,Co);
 		}
@@ -188,9 +188,9 @@ namespace BBCPU::Sim{
 	template<size_t ASize=19,size_t DSize=8,typename addr_t=size_t,typename data_t=val_t>
 	struct RAM:Chip{
 		static constexpr size_t data_size=1<<ASize;
-		Enable ce,oe,we;
-		Port<ASize> A{Mode::IN};
-		Port<DSize> D;
+		Enable ce{"CE"},oe{"OE"},we{"WE"};
+		Port<ASize> A{Mode::IN,"A"};
+		Port<DSize> D{"D"};
 		data_t data[data_size]{0};
 
 		explicit RAM(std::string name=""):Chip(std::move(name)){
@@ -240,9 +240,9 @@ namespace BBCPU::Sim{
 	// Base on IC 74245
 	template<size_t Size=8>
 	struct Bus:Chip{
-		Enable oe;
-		Port<1> dir{Mode::IN};
-		Port<Size> A,B;
+		Enable oe{"OE"};
+		Port<1> dir{Mode::IN,"DIR"};
+		Port<Size> A{"A"},B{"B"};
 		enum Dir{BtoA=0,AtoB=1};
 		explicit Bus(std::string name=""):Chip(std::move(name)){
 			add_ports(oe,dir,A,B);
@@ -272,9 +272,9 @@ namespace BBCPU::Sim{
 	template<size_t SelSize=2>
 	struct Demux:Chip{
 		static constexpr size_t output_size=1<<SelSize;
-		Port<SelSize> S{Mode::IN};
-		Enable G;
-		Port<output_size> Y{Level::High};
+		Port<SelSize> S{Mode::IN,"S"};
+		Enable G{"G"};
+		Port<output_size> Y{Level::High,"Y"};
 
 		explicit Demux(std::string name=""):Chip(std::move(name)){
 			add_ports(S,G,Y);
@@ -294,8 +294,8 @@ namespace BBCPU::Sim{
 	// Base on IC 74682
 	template<size_t Size=8>
 	struct Cmp:Chip{
-		Port<Size> P{Mode::IN},Q{Mode::IN};
-		Port<1> PgtQ{1},PeqQ{1};
+		Port<Size> P{Mode::IN,"P"},Q{Mode::IN,"Q"};
+		Port<1> PgtQ{1,"P>Q"},PeqQ{1,"P=Q"};
 
 		explicit Cmp(std::string name=""):Chip(std::move(name)){
 			add_ports(P,Q,PgtQ,PeqQ);
@@ -313,9 +313,9 @@ namespace BBCPU::Sim{
 	// Base on IC 74688
 	template<size_t Size=8>
 	struct Eq:Chip{
-		Port<Size> P{Mode::IN},Q{Mode::IN};
-		Enable oe;
-		Port<1> PeqQ{1};
+		Port<Size> P{Mode::IN,"P"},Q{Mode::IN,"Q"};
+		Enable oe{"OE"};
+		Port<1> PeqQ{1,"P=Q"};
 
 		explicit Eq(std::string name=""):Chip(std::move(name)){
 			add_ports(P,Q,oe,PeqQ);
