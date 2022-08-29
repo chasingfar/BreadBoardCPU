@@ -77,6 +77,7 @@ namespace BBCPU::RegSet_SRAM {
 		using alu    = ALU<6, INTA_>;
 		using io     = IO<8, alu>;
 		static auto noOp(auto o){
+			LOG();
 			o=alu::passA(o);
 			o=io::setRs(o,RegSet::A);
 			return o;
@@ -92,19 +93,19 @@ namespace BBCPU::RegSet_SRAM {
 			return o;
 		}
 		static auto AtoB(auto o, Reg to){
-			LOG(from, to);
+			LOG(to);
 			o=alu::passA(o);
 			o=io::setBw(o, to);
 			return o;
 		}
 		static auto MtoReg(auto o, RegSet to){
-			LOG(from, to);
+			LOG(to);
 			o=alu::passB(o);
 			o=io::setMr(o,to);
 			return o;
 		}
 		static auto AtoM(auto o){
-			LOG(from, to);
+			LOG();
 			o=alu::passA(o);
 			o=io::setMw(o);
 			return o;
@@ -135,49 +136,53 @@ namespace BBCPU::RegSet_SRAM {
 		}
 
 		static auto zero(auto o,Reg reg){
+			LOG(reg);
 			o=alu::zero(o);
 			o=io::setBw(o,reg);
 			return o;
 		}
 		static auto zero(auto o,RegSet reg){
+			LOG(reg);
 			o=alu::zero(o);
 			o=io::setBr(o, Reg::OPR, reg);
 			return o;
 		}
 		static auto minusOne(auto o,Reg reg){
+			LOG(reg);
 			o=alu::minusOne(o);
 			o=io::setBw(o,reg);
 			return o;
 		}
 		static auto minusOne(auto o,RegSet reg){
+			LOG(reg);
 			o=alu::minusOne(o);
 			o=io::setBr(o, Reg::OPR, reg);
 			return o;
 		}
 
 		static auto inc(auto o){
-			LOG(from,to);
+			LOG();
 			o=alu::inc(o);
 			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto inc(auto o, alu::Carry carry){
-			LOG(from,to,carry);
+			LOG(carry);
 			o=alu::inc(o,carry);
 			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto dec(auto o){
-			LOG(from,to);
+			LOG();
 			o=alu::dec(o);
 			o=io::setRs(o,RegSet::A);
 			return o;
 		}
 
 		static auto dec(auto o, alu::Carry carry){
-			LOG(from,to,carry);
+			LOG(carry);
 			o=alu::dec(o,carry);
 			o=io::setRs(o,RegSet::A);
 			return o;
@@ -190,6 +195,14 @@ namespace BBCPU::RegSet_SRAM {
 		}
 		static auto decode(auto o,size_t addr){
 			return decode(o,std::to_string(addr));
+		}
+		static std::string decode(auto o,std::string Ls,std::string Rs,std::string Os,std::string addr){
+			auto [L,R,O]=MCTRL::io::decode(o,addr);
+			auto fn_str=MCTRL::alu::get_fn_str(o, L+"("+Ls+")", R+"("+Rs+")");
+			return O+"("+Os+")="+fn_str;
+		}
+		static std::string decode(auto o,size_t Ls,size_t Rs,size_t Os,size_t addr){
+			return decode(o,std::to_string(Ls),std::to_string(Rs),std::to_string(Os),std::to_string(addr));
 		}
 	};
 	static auto incIndex(auto marg,auto mctrl){

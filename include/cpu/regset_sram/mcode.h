@@ -128,12 +128,12 @@ namespace BBCPU::RegSet_SRAM {
 		}
 
 		void logic_and(Reg rhs){
-			LOG(lhs,rhs,dest);
+			LOG(rhs);
 			constexpr auto fn=MCTRL::alu::AND<MCTRL::type>;
 			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
 		}
 		void logic_or(Reg rhs){
-			LOG(lhs,rhs,dest);
+			LOG(rhs);
 			constexpr auto fn=MCTRL::alu::OR<MCTRL::type>;
 			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
 		}
@@ -142,7 +142,7 @@ namespace BBCPU::RegSet_SRAM {
 			if(step()){mctrl=MCTRL::logic<fn>(mctrl, Reg::OPR);}
 		}
 		void logic_xor(Reg rhs){
-			LOG(lhs,rhs,dest);
+			LOG(rhs);
 			constexpr auto fn=MCTRL::alu::XOR<MCTRL::type>;
 			if(step()){mctrl=MCTRL::logic<fn>(mctrl, rhs);}
 		}
@@ -358,7 +358,7 @@ namespace BBCPU::RegSet_SRAM {
 			no_op(true);
 		}
 		void test_less(Reg lhs,Reg rhs){
-			LOG(lhs,rhs,dest);
+			LOG(lhs,rhs);
 			load_reg(lhs);
 			test_less(rhs);
 			no_op(true);
