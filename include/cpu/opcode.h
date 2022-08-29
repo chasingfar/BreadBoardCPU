@@ -38,7 +38,7 @@ namespace BBCPU::OpCode {
 		template <typename T>
 		static UReg16 getUReg16(MCode ctx){ return static_cast<UReg16>(T::get(ctx.marg));}
 	};
-
+#define LOG_OP_NAME LOG(parse(ctx).first);
 	template <auto V>
 	struct Load:Base{//load value(8) from address(16) with offset(8) and push to stack
 		inline static const std::string name="Load";
@@ -48,7 +48,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+getUReg16<from>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("LOAD");
+			LOG_OP_NAME
 			UReg16 addr=getUReg16<from>(ctx);
 			ctx.load_imm16(Reg16::TMP);
 			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
@@ -66,7 +66,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+getUReg16<to>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Save");
+			LOG_OP_NAME
 			UReg16 addr=getUReg16<to>(ctx);
 			ctx.load_imm16(Reg16::TMP);
 			ctx.add16(addr.toReg16(),Reg16::TMP,Reg16::TMP);
@@ -83,7 +83,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::u8}};
 		}
 		static void gen(MCode& ctx){
-			LOG("ImmVal");
+			LOG_OP_NAME
 			ctx.load_imm(Reg::TMA);
 			ctx.stack_push(Reg::TMA);
 			ctx.next_op();
@@ -108,7 +108,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+std::string(fn::get(ctx.marg)),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Calc");
+			LOG_OP_NAME
 			auto f = fn::get(ctx.marg);
 #define ARG_1 ctx.stack_pop(Reg::TML);
 #define ARG_2 ARG_1 ctx.stack_pop(Reg::TMH);
@@ -156,7 +156,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+fn::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Logic");
+			LOG_OP_NAME
 			FN f = fn::get(ctx.marg);
 
 #define ARG_1 ctx.stack_pop(Reg::TML);
@@ -188,7 +188,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+from::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Push");
+			LOG_OP_NAME
 			ctx.stack_push(user(getUReg<from>(ctx)));
 			ctx.next_op();
 		}
@@ -202,7 +202,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+to::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Pop");
+			LOG_OP_NAME
 			ctx.stack_pop(user(getUReg<to>(ctx)));
 			ctx.next_op();
 		}
@@ -216,7 +216,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("BranchZero");
+			LOG_OP_NAME
 			ctx.stack_pop(Reg::TMA);
 			ctx.load_imm16(Reg16::TMP);
 			ctx.branch_zero(Reg16::TMP,Reg::TMA);
@@ -231,7 +231,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("BranchCF");
+			LOG_OP_NAME
 			ctx.load_imm16(Reg16::TMP);
 			ctx.branch(Reg16::TMP);
 			ctx.next_op();
@@ -245,7 +245,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Jump");
+			LOG_OP_NAME
 			ctx.load_imm16(Reg16::TMP);
 			ctx.jump(Reg16::TMP);
 		}
@@ -259,7 +259,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::u16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Call");
+			LOG_OP_NAME
 			ctx.load_imm16(Reg16::TMP);
 			ctx.inc16(Reg16::PC);
 			ctx.stack_push16(Reg16::PC);
@@ -274,7 +274,7 @@ namespace BBCPU::OpCode {
 			return {name,{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("CallPtr");
+			LOG_OP_NAME
 			ctx.stack_pop16(Reg16::TMP);
 			ctx.inc16(Reg16::PC);
 			ctx.stack_push16(Reg16::PC);
@@ -289,7 +289,7 @@ namespace BBCPU::OpCode {
 			return {name,{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Return");
+			LOG_OP_NAME
 			ctx.stack_pop16(Reg16::TMP);
 			ctx.jump(Reg16::TMP);
 		}
@@ -303,7 +303,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+getUReg16<bp>(ctx).str(),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Enter");
+			LOG_OP_NAME
 			Reg16 BP=getUReg16<bp>(ctx).toReg16();
 			ctx.stack_push16(BP);
 			ctx.copy16(Reg16::SP,BP);
@@ -318,7 +318,7 @@ namespace BBCPU::OpCode {
 			return {name,{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Adjust");
+			LOG_OP_NAME
 			ctx.load_imm16(Reg16::TMP);
 			ctx.add16(Reg16::SP,Reg16::TMP,Reg16::SP);
 			ctx.next_op();
@@ -333,7 +333,7 @@ namespace BBCPU::OpCode {
 			return {name+" "+getUReg16<bp>(ctx).str(),{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Leave");
+			LOG_OP_NAME
 			Reg16 BP=getUReg16<bp>(ctx).toReg16();
 			ctx.copy16(BP,Reg16::SP);
 			ctx.stack_pop16(BP);
@@ -349,7 +349,7 @@ namespace BBCPU::OpCode {
 			return {name,{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Interrupt");
+			LOG_OP_NAME
 			if(!ctx.isINT()){
 				ctx.inc16(Reg16::PC);
 			}
@@ -369,7 +369,7 @@ namespace BBCPU::OpCode {
 			return {name,{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Init");
+			LOG_OP_NAME
 			ctx.init_op();
 			ctx.set_minus_one16(Reg16::SP);//Reg16::SP=0xFFFF
 			ctx.set_zero16(Reg16::PC);//Reg16::PC=0x0000
@@ -384,7 +384,7 @@ namespace BBCPU::OpCode {
 			return {name,{}};
 		}
 		static void gen(MCode& ctx){
-			LOG("Halt");
+			LOG_OP_NAME
 			ctx.halt();
 		}
 	};
@@ -395,7 +395,7 @@ namespace BBCPU::OpCode {
 			ctx.next_op();
 		}
 	};
-
+#undef LOG_OP_NAME
 	template <typename ...Ops>
 	struct OpCode {
 		template<typename T>
