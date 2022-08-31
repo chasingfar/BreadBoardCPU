@@ -1,179 +1,301 @@
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
-/*
-#define CPU_DEBUG 0
-#include "cpu/regset_sram/mctrl.h"
-#include "include/cpu/regfile8x16/opcode.h"
-#include "include/asm/asm.h"
-#include "include/lang/lang.h"*/
-//#include "include/cpu/regset_sram/cpu.h"
-//#include "include/lang/lang.h"
-#include "include/sim/sim.h"
-/*struct B:std::enable_shared_from_this<B>{
-	int i;
-	B(){
-		i=5;
-		std::cout<<"B construct"<<std::endl;
-	}
-	virtual void c()=0;
-	auto get(){
-		return shared_from_this();
-	}
-};
-struct C:B{
-	C(){
-		std::cout<<"C construct"<<std::endl;
-	}
-	void c() override{
-		std::cout<<"i="<<i<<std::endl;
-	}
-};
+#include <bitset>
+//#define CPU_IMPL RegFile8x16
+#define CPU_IMPL RegSet_SRAM
+#include "include/lang/lang.h"
 
-template<template<typename> typename Ptr=std::shared_ptr>
-struct A{
-	//std::vector<B&> b{};
-	Ptr<B> b;
-	Ptr<C> make(){
-		Ptr<C> c{new C()};
-		b=c;
-		return c;
-	}
-};*/
+using namespace BBCPU::Lang;
+using BBCPU::Lang::Impl::CPU;
+using MEM=decltype(CPU{}.mem);
+
+namespace BBCPU::ASM{
+	struct LCD{
+		static constexpr offset_t fn_cmd  = 0b000;
+		static constexpr offset_t fn_data = 0b001;
+		static constexpr offset_t chip1 = 0b100;
+		static constexpr offset_t chip2 = 0b010;
+		offset_t cur_chip=chip1;
+		Code begin(const Label& lcd_addr){
+			return imm(ASM_PTR,lcd_addr);
+		}
+		Code write(uint8_t data,offset_t offset){
+			return {imm(data),save(ASM_PTR,offset)};
+		}
+		Code cmd(uint8_t cmd){
+			return write(cmd,cur_chip|fn_cmd);
+		}
+		Code data(uint8_t cmd){
+			return write(cmd,cur_chip|fn_data);
+		}
+		Code set_screen_on(bool is_on) {
+			return cmd(0b00111110 | (is_on ? 1 : 0));
+		}
+		Code set_start_line(uint8_t line){
+			return cmd(0b11000000|(0b00111111&line));
+		}
+		Code set_row(uint8_t row){
+			return cmd(0b10111000|(0b111&row));
+		}
+		Code set_col(uint8_t col){
+			return cmd(0b01000000|(0b00111111&col));
+		}
+		Code init(){
+			return {
+				set_screen_on(true),
+				set_start_line(0),
+				set_row(0),
+				set_col(0),
+			};
+		}
+		Code init(offset_t chip){
+			cur_chip=chip;
+			return init();
+		}
+		inline static const std::map<char,std::vector<uint8_t>> font_table{
+			{' ' ,{0x00,0x00,0x00               }},
+			{'!' ,{0x06,0x5F,0x06,0x00          }},
+			{'"' ,{0x07,0x00,0x07,0x00          }},
+			{'#' ,{0x24,0x7E,0x24,0x7E,0x24,0x00}},
+			{'$' ,{0x24,0x2B,0x6A,0x12,0x00     }},
+			{'%' ,{0x63,0x13,0x08,0x64,0x63,0x00}},
+			{'&' ,{0x36,0x49,0x56,0x20,0x50,0x00}},
+			{'\'',{0x07,0x03,0x00               }},
+			{'(' ,{0x3E,0x41,0x00               }},
+			{')' ,{0x41,0x3E,0x00               }},
+			{'*' ,{0x08,0x3E,0x1C,0x3E,0x08,0x00}},
+			{'+' ,{0x08,0x3E,0x08,0x00          }},
+			{',' ,{0xE0,0x60,0x00               }},
+			{'-' ,{0x08,0x08,0x08,0x00          }},
+			{'.' ,{0x60,0x60,0x00               }},
+			{'/' ,{0x20,0x10,0x08,0x04,0x02,0x00}},
+			{'0' ,{0x3E,0x51,0x49,0x45,0x3E,0x00}},
+			{'1' ,{0x42,0x7F,0x40,0x00          }},
+			{'2' ,{0x62,0x51,0x49,0x49,0x46,0x00}},
+			{'3' ,{0x22,0x49,0x49,0x49,0x36,0x00}},
+			{'4' ,{0x18,0x14,0x12,0x7F,0x10,0x00}},
+			{'5' ,{0x2F,0x49,0x49,0x49,0x31,0x00}},
+			{'6' ,{0x3C,0x4A,0x49,0x49,0x30,0x00}},
+			{'7' ,{0x01,0x71,0x09,0x05,0x03,0x00}},
+			{'8' ,{0x36,0x49,0x49,0x49,0x36,0x00}},
+			{'9' ,{0x06,0x49,0x49,0x29,0x1E,0x00}},
+			{':' ,{0x6C,0x6C,0x00               }},
+			{';' ,{0xEC,0x6C,0x00               }},
+			{'<' ,{0x08,0x14,0x22,0x41,0x00     }},
+			{'=' ,{0x24,0x24,0x24,0x00          }},
+			{'>' ,{0x41,0x22,0x14,0x08,0x00     }},
+			{'?' ,{0x02,0x01,0x59,0x09,0x06,0x00}},
+			{'@' ,{0x3E,0x41,0x5D,0x55,0x1E,0x00}},
+			{'A' ,{0x7E,0x11,0x11,0x11,0x7E,0x00}},
+			{'B' ,{0x7F,0x49,0x49,0x49,0x36,0x00}},
+			{'C' ,{0x3E,0x41,0x41,0x41,0x22,0x00}},
+			{'D' ,{0x7F,0x41,0x41,0x41,0x3E,0x00}},
+			{'E' ,{0x7F,0x49,0x49,0x49,0x41,0x00}},
+			{'F' ,{0x7F,0x09,0x09,0x09,0x01,0x00}},
+			{'G' ,{0x3E,0x41,0x49,0x49,0x7A,0x00}},
+			{'H' ,{0x7F,0x08,0x08,0x08,0x7F,0x00}},
+			{'I' ,{0x41,0x7F,0x41,0x00          }},
+			{'J' ,{0x30,0x40,0x40,0x40,0x3F,0x00}},
+			{'K' ,{0x7F,0x08,0x14,0x22,0x41,0x00}},
+			{'L' ,{0x7F,0x40,0x40,0x40,0x40,0x00}},
+			{'M' ,{0x7F,0x02,0x04,0x02,0x7F,0x00}},
+			{'N' ,{0x7F,0x02,0x04,0x08,0x7F,0x00}},
+			{'O' ,{0x3E,0x41,0x41,0x41,0x3E,0x00}},
+			{'P' ,{0x7F,0x09,0x09,0x09,0x06,0x00}},
+			{'Q' ,{0x3E,0x41,0x51,0x21,0x5E,0x00}},
+			{'R' ,{0x7F,0x09,0x09,0x19,0x66,0x00}},
+			{'S' ,{0x26,0x49,0x49,0x49,0x32,0x00}},
+			{'T' ,{0x01,0x01,0x7F,0x01,0x01,0x00}},
+			{'U' ,{0x3F,0x40,0x40,0x40,0x3F,0x00}},
+			{'V' ,{0x1F,0x20,0x40,0x20,0x1F,0x00}},
+			{'W' ,{0x3F,0x40,0x3C,0x40,0x3F,0x00}},
+			{'X' ,{0x63,0x14,0x08,0x14,0x63,0x00}},
+			{'Y' ,{0x07,0x08,0x70,0x08,0x07,0x00}},
+			{'Z' ,{0x71,0x49,0x45,0x43,0x00     }},
+			{'[' ,{0x7F,0x41,0x41,0x00          }},
+			{'\\',{0x02,0x04,0x08,0x10,0x20,0x00}},
+			{']' ,{0x41,0x41,0x7F,0x00          }},
+			{'^' ,{0x04,0x02,0x01,0x02,0x04,0x00}},
+			{'_' ,{0x80,0x80,0x80               }},
+			{'`' ,{0x03,0x07,0x00               }},
+			{'a' ,{0x20,0x54,0x54,0x54,0x78,0x00}},
+			{'b' ,{0x7F,0x44,0x44,0x44,0x38,0x00}},
+			{'c' ,{0x38,0x44,0x44,0x44,0x28,0x00}},
+			{'d' ,{0x38,0x44,0x44,0x44,0x7F,0x00}},
+			{'e' ,{0x38,0x54,0x54,0x54,0x08,0x00}},
+			{'f' ,{0x08,0x7E,0x09,0x09,0x00     }},
+			{'g' ,{0x18,0xA4,0xA4,0xA4,0x7C,0x00}},
+			{'h' ,{0x7F,0x04,0x04,0x78,0x00     }},
+			{'i' ,{0x44,0x7D,0x40,0x00          }},
+			{'j' ,{0x40,0x80,0x84,0x7D,0x00     }},
+			{'k' ,{0x7F,0x10,0x28,0x44,0x00     }},
+			{'l' ,{0x41,0x7F,0x40,0x00          }},
+			{'m' ,{0x7C,0x04,0x18,0x04,0x78,0x00}},
+			{'n' ,{0x7C,0x04,0x04,0x78,0x00     }},
+			{'o' ,{0x38,0x44,0x44,0x44,0x38,0x00}},
+			{'p' ,{0xFC,0x44,0x44,0x44,0x38,0x00}},
+			{'q' ,{0x38,0x44,0x44,0x44,0xFC,0x00}},
+			{'r' ,{0x44,0x78,0x44,0x04,0x08,0x00}},
+			{'s' ,{0x08,0x54,0x54,0x54,0x20,0x00}},
+			{'t' ,{0x04,0x3E,0x44,0x24,0x00     }},
+			{'u' ,{0x3C,0x40,0x20,0x7C,0x00     }},
+			{'v' ,{0x1C,0x20,0x40,0x20,0x1C,0x00}},
+			{'w' ,{0x3C,0x60,0x30,0x60,0x3C,0x00}},
+			{'x' ,{0x6C,0x10,0x10,0x6C,0x00     }},
+			{'y' ,{0x9C,0xA0,0x60,0x3C,0x00     }},
+			{'z' ,{0x64,0x54,0x54,0x4C,0x00     }},
+			{'{' ,{0x08,0x3E,0x41,0x41,0x00     }},
+			{'|' ,{0x00,0x77,0x00               }},
+			{'}' ,{0x41,0x41,0x3E,0x08,0x00     }},
+			{'~' ,{0x02,0x01,0x02,0x01,0x00     }},
+		};
+		Code print(char c){
+			Code code{};
+			for(auto b:font_table.at(c)){
+				code<<data(b);
+			}
+			return code;
+		}
+		Code print(std::string str){
+			Code code{};
+			for(auto c:str){
+				code<<print(c);
+			}
+			return code;
+		}
+	};
+}
 int main() {
-	/*BBCPU::CPU cpu{"[CPU]"};
-	{
-		using namespace BBCPU::Lang;
-		auto program=Code{
-			Reg_A=0_u8,Reg_B=3_u8,
-			while_(Reg_B).do_({
-				Reg_A+=Reg_B,
-				Reg_B-=1_u8,
-			}).end(),
-			halt(),
-		}.assemble();
-		std::cout<<program<<std::endl;
-		cpu.load(program);
-	}
-	std::cout<<std::endl;
-	for(int i=0;i<300;i++){
+	LCD lcd;
+	Label lcd_addr(3<<8);
+	auto program=Code{
+		lcd.begin(lcd_addr),
+		lcd.init(LCD::chip1),
+		lcd.print("Hello, world!"),
+	}.assemble();
+	std::cout<<program<<std::endl;
+	//BBCPU::Sim::Chip::log_change=true;
+	/*
+	auto program=Code{		
+		Reg_B=3_u8,
+		Reg_A=0_u8,
+		while_(Reg_B).do_({
+			Reg_A+=Reg_B,
+			Reg_B-=1_u8,
+		}),
+		halt(),
+	}.assemble();*/
+	//cpu.load(program);
+	//cpu.run_to_halt({aa});
+	//std::cout<<cpu<<std::endl;
+	//std::cout<<std::endl;
+	//cpu.print_port_names();
+	//BBCPU::Sim::Circuit::log_port_status=true;
+	/*for(int i=0;i<100;i++){
 		cpu.tick_op();
 		std::cout<<i<<std::endl;
-		std::cout<<cpu;
-		std::cout<<std::endl;
+		std::cout<<cpu<<std::endl;
 		if(cpu.is_halt()){
 			break;
 		}
 	}*/
-	using namespace BBCPU::Sim;
-	Counter<8> cnt;
+	//BBCPU::Sim::Chip::log_change=true;
+	/*for(int j=0;j<20;j++){
+		cpu.tick();
+		std::cout<<j<<std::endl;
+		std::cout<<cpu<<std::endl;
+		if(cpu.is_halt()){
+			break;
+		}
+	}
+	std::cout<<BBCPU::Sim::Chip::run_count<<":"<<BBCPU::Sim::Chip::err_count<<std::endl;
+	*/
+	/*
+	if(std::ofstream fout("optbl.txt");fout) {
+		std::unordered_set<std::string> keys;
+		std::unordered_multimap<std::string,size_t> tbl{};
+		std::vector<size_t> ops{
+			0b00000000,
+			0b11010111,
+			0b11011000,
+			0b11011001,
+			0b11011100,
+			0b11011101,
+			0b11100000,
+			0b11100001,
+			0b11101100,
+			0b11101101,
+			0b11110110,
+			0b11111100,
+			0b11111110,
+			0b11111111,
+		};
+		for(auto op:ops){
+		for(size_t marg=op<<11;marg<((op+1)<<11);++marg){
+			auto mctrl=BBCPU::OpCode::Ops::all::gen(marg);
+			if(mctrl!=-1){
+				std::string str=BBCPU::CPU_IMPL::MCTRL::decode(mctrl,"");
+				keys.emplace(str);
+				tbl.emplace(str,marg);
+			}
+		}
+		}
+		fout<<R"CODE(
+using val_t=unsigned long;
+String get_mctrl(unsigned long marg){
+	switch(marg){
+)CODE";
+		for(auto str:keys){
+			auto range = tbl.equal_range(str);
+			for (auto it = range.first; it != range.second; ++it) {
+				fout<<"\t\tcase "<<it->second<<":\r\n";
+			}
+			fout<<"\t\t\treturn String(F(\""<<str<<"\"));\r\n";
+		}
+		fout<<R"CODE(
+		default:
+			return String(F("Unknown"));
+	}
+}
+)CODE";
+	}*/
+	
+	/*
+	if(std::ifstream fin("runlog.txt");fin) {
+	if(std::ofstream fout("out.txt");fout) {
+		while(!fin.eof()){
+			int t,k;
+			std::string opname;
+			std::bitset<19> marg;
+			std::bitset<8> A,B,O,L,H;
+			fin>>t>>k>>opname>>marg>>A>>B>>O>>L>>H;
+			auto mctrl=BBCPU::OpCode::Ops::all::gen(marg.to_ullong());
+			fout<<std::bitset<24>(mctrl)<<" "
+			<<std::left<<std::setw(40)<<BBCPU::CPU_IMPL::MCTRL::decode(mctrl,A.to_ulong(),B.to_ulong(),O.to_ulong(),(H.to_ullong()<<8)|L.to_ullong())<<" "
+			<<logout
+			<<std::endl;
+		}
+	}
+	}
+	*/
+	//if(std::ofstream fout("oprom_v3.2.txt");fout) {
+	//	fout<<Util::ROM(BBCPU::OpCode::genOpTable());
+	//}
+	//if(std::ofstream fout("program_hello_world.txt");fout) {
+	//	fout<<Util::ROM(program);
+	//}
+	/*using namespace BBCPU::Sim;
+	Accumulator<8> cnt;
 	for(int i=0;i<10;i++){
 		cnt.update();
 		std::cout<<cnt<<std::endl;
 		cnt.clk.clock();
-	}
-	/*
-	Circuit::CPU cpu(program);
-	try {
-		for(int i=0;i<10;i++){
-			cpu.update();
-			std::cout<<cpu.OP<<" "<<cpu.state<<" "<<cpu.A<<" "<<cpu.B<<" "<<cpu.F<<" ";
-			std::cout<<std::endl;
-			cpu.clk.data.flip();
-		}
-	} catch (const Circuit::Error& err) {
-		std::cout<<err.what()<<std::endl;
 	}*/
-	/*auto [a,b,o]=sim.make_wires<8>(0,1,0);
-	auto [clk,en]=sim.make_wires<1>(0,0);
-	auto adder=sim.make_circuit<Adder>(a,b,o);
-	auto reg=sim.make_circuit<Reg>(clk,en,o,a);*/
-	/*using namespace Circuit;
-	Simulation sim{};
-	auto [adder,reg]=sim.make<Adder,Reg<8>>();
-	auto clk=sim.constant<1>(reg->clk,0);
-	auto en=sim.constant<1>(reg->en,0);
-	auto a=sim.wire<8>(adder->A,reg->output);
-	auto b=sim.constant<8>(adder->B,1);
-	auto o=sim.wire<8>(adder->O,reg->input);
-
-	//sim.update();
-	try {
-		for(int i=0;i<10;i++){
-			sim.step();
-			std::cout<<*clk<<std::endl;
-			std::cout<<*reg<<std::endl;
-			std::cout<<*adder<<std::endl;
-			std::cout<<std::endl;
-			clk->data.flip();
-		}
-	} catch (const Error& err) {
-		std::cout<<err.what()<<std::endl;
-	}*/
-
-	//std::cout<<d<<std::endl;
-	//std::cout<<d.get()<<std::endl;
-	//using namespace BBCPU;
-
-
-	//MCode mctx(0,0,0);
-	//mctx.inc16(Reg16::PC);
-	//std::cout<<std::bitset<16>(-1);
-	//RegPair::generateRPROM();
-	//BBCPU::OpCode::generateOPROM("oprom_regfile8x16.txt",32,0);
-	//BBCPU::OpCode::generateOPROM("oprom_v3_0.txt",8,0);
-	//BBCPU::OpCode::generateOPROM("oprom_v3_1.txt",8,1);
-	//BBCPU::OpCode::generateOPROM("oprom_v3_2.txt",8,2);
-
-	//ASM::generateASMROM();
-	/*
-	{
-		using namespace BBCPU::ASM;
-		UInt8 a{RegVar::make(Reg::A)},b{RegVar::make(Reg::B)};
-		simulate("program.txt",ASM::parse({
-			imm(Reg::A,0),imm(Reg::B,3),
-			While{b,{{
-				a.set(add(a,b)),
-				b.set(sub(b,1_u8)),
-			}}},
-			halt(),
-		}));
-	}
-	*/
-	//ASM::testASM();
-	/*{
-		using namespace ALU74181;
-		auto [c,f]=run<4>(Carry::no,Method::arithmetic,Arith::fn::AornotBplusAandB,0b0100u,0b1010u);
-		std::cout<<std::bitset<4>(f)<<std::endl;
-		std::cout<<std::boolalpha<<(c==Carry::yes)<<std::endl;
-	}*/
-
-	/*
-	std::ofstream fout("a.txt");
-	if(!fout) {return 1;}
-	LogicGenerator::generateROM(fout,std::function{[](OpCode::StackBased::IN::type in){
-		std::cout<<std::bitset<19>(in);
-		auto out=OpCode::StackBased::opcode::run(in);
-		std::cout<<"=>"<<std::bitset<32>(out)<<std::endl;
-		return out;
-	}});
-	*/
-	/*
-	std::ofstream fout("b.txt");
-	if(!fout) {return 1;}
-	LogicGenerator::generateROM(fout,std::function{[](RegPair::IN::type in){
-		RegPair::OUT::type out{0};
-		std::cout<<std::bitset<9>(in);
-		out=RegPair::OUT::run(out,in);
-		std::cout<<"=>"<<std::bitset<8>(out)<<std::endl;
-		return out;
-	}});*/
-	/*Util::bitset_wrap<5> a{3};
-	Util::bitset_wrap<5> b{3};
-	std::cout << (a==b) << std::endl;*/
-
 	return 0;
 }
