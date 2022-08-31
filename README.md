@@ -13,6 +13,11 @@
 3. `asm/` 組譯器基本功能
 4. `lang/` 嵌入 C++ 的 C-like DSL
 
+## Current Progress
+
+能獨立運作並在LCD上印出"Hello, world!"
+![lcd_hello_world](examples/lcd_hello_world.gif)
+
 ## Simulation
 
 在`sim/`資料夾下，為簡易的數位電路模擬，支持三態邏輯。
