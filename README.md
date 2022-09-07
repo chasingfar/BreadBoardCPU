@@ -30,18 +30,18 @@
 ```c++
 template<size_t Size>
 struct Adder:Chip{
-	Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},O{0,"O"};
-	explicit Adder(std::string name=""):Chip(std::move(name)){
-		add_ports(A,B,O);
-	}
-	void run() override{
-		O=A.value()+B.value();
-	}
-	Util::Printer print(std::span<const Level> s) const override{
-		return [=](std::ostream& os){
-			os<<A(s)<<"+"<<B(s)<<"="<<O(s);
-		};
-	}
+    Port<Size> A{Mode::IN,"A"},B{Mode::IN,"B"},O{0,"O"};
+    explicit Adder(std::string name=""):Chip(std::move(name)){
+        add_ports(A,B,O);
+    }
+    void run() override{
+        O=A.value()+B.value();
+    }
+    Util::Printer print(std::span<const Level> s) const override{
+        return [=](std::ostream& os){
+            os<<A(s)<<"+"<<B(s)<<"="<<O(s);
+        };
+    }
 };
 ```
 
@@ -50,32 +50,32 @@ struct Adder:Chip{
 ```c++
 template<size_t Size>
 struct Accumulator:Circuit{
-	Clock clk{Level::PullDown};
-	Port<1> clr{Level::PullUp};
-	Adder<Size> adder{name+"[Adder]"};
-	RegCLR<Size> reg{name+"[Reg]"};
-	explicit Accumulator(std::string name=""):Circuit(std::move(name)){
-		add_comps(adder,reg);
+    Clock clk{Level::PullDown};
+    Port<1> clr{Level::PullUp};
+    Adder<Size> adder{name+"[Adder]"};
+    RegCLR<Size> reg{name+"[Reg]"};
+    explicit Accumulator(std::string name=""):Circuit(std::move(name)){
+        add_comps(adder,reg);
 
-		clk.wire(reg.clk);
-		clr.wire(reg.clr);
-		adder.O.wire(reg.D);
-		adder.A.wire(reg.Q);
-		adder.B.set(1);
-	}
-	Util::Printer print() const override{
-		return [&](std::ostream& os){
-			os<<"adder="<<adder<<"reg="<<reg;
-		};
-	}
+        clk.wire(reg.clk);
+        clr.wire(reg.clr);
+        adder.O.wire(reg.D);
+        adder.A.wire(reg.Q);
+        adder.B.set(1);
+    }
+    Util::Printer print() const override{
+        return [&](std::ostream& os){
+            os<<"adder="<<adder<<"reg="<<reg;
+        };
+    }
 };
 int main(){
     Accumulator<8> cnt;
-	for(int i=0;i<10;i++){
-		cnt.update();
-		std::cout<<cnt<<std::endl;
-		cnt.clk.clock();
-	}
+    for(int i=0;i<10;i++){
+        cnt.update();
+        std::cout<<cnt<<std::endl;
+        cnt.clk.clock();
+    }
     return 0;
 }
 ```
@@ -108,16 +108,16 @@ using BBCPU::ASM::Impl::CPU;
 
 Label start,end;
 auto program=Code{
-	imm(Reg::B,3),
-	imm(Reg::A,0),
-	start,
-	push(Reg::B),
-	brz(end),
-	push(Reg::A),push(Reg::B),add(),pop(Reg::A),
-	push(Reg::B),imm(1)      ,sub(),pop(Reg::B),
-	jmp(start),
-	end,
-	halt(),
+    imm(Reg::B,3),
+    imm(Reg::A,0),
+    start,
+    push(Reg::B),
+    brz(end),
+    push(Reg::A),push(Reg::B),add(),pop(Reg::A),
+    push(Reg::B),imm(1)      ,sub(),pop(Reg::B),
+    jmp(start),
+    end,
+    halt(),
 }.assemble();
 std::cout<<program<<std::endl;
 
@@ -125,12 +125,12 @@ std::cout<<program<<std::endl;
 CPU cpu{};
 cpu.load(program);
 for(int i=0;i<100;i++){
-	cpu.tick_op();
-	std::cout<<i<<std::endl;
-	std::cout<<cpu<<std::endl;
-	if(cpu.is_halt()){
-		break;
-	}
+    cpu.tick_op();
+    std::cout<<i<<std::endl;
+    std::cout<<cpu<<std::endl;
+    if(cpu.is_halt()){
+        break;
+    }
 }
 ```
 
@@ -159,10 +159,10 @@ using MEM=decltype(CPU{}.mem);
 
 //define custom type
 struct Vec:Struct<u8,u8,u8>{
-	#define THIS Vec
-	#define BASE Struct<u8,u8,u8>
-	#define members M(x) M(y) M(z)
-	#include "lang/define_members.h"
+    #define THIS Vec
+    #define BASE Struct<u8,u8,u8>
+    #define members M(x) M(y) M(z)
+    #include "lang/define_members.h"
 };
 
 //variable allocator
@@ -180,32 +180,32 @@ Fn<u8(u8,u8)> sum{};
 CPU cpu{};
 cpu.load(svar,MEM::ram_min);//space for StaticVars (should in RAM)
 auto program=Code{
-	svar.init,//initialize StaticVars (save to RAM)
+    svar.init,//initialize StaticVars (save to RAM)
     static_var=static_var+rovar.x,//use of variable and custom type
-	fib(6_u8),//function call
+    fib(6_u8),//function call
     sum(0_u8,3_u8),
-	halt(),
-	rovar,//space for ReadOnlyVars (should not run)
-	//function implementation
-	fib.impl([&](auto& _,u8 i)->Stmt{
-		return {
-			if_(i < 2_u8).then({
-				_.return_(i),
-			}).else_({
-				_.return_(fib(i - 1_u8) + fib(i - 2_u8)),
-			}),
-		};
-	}),
-	sum.impl([&](auto& _,u8 start,u8 end)->Stmt{
+    halt(),
+    rovar,//space for ReadOnlyVars (should not run)
+    //function implementation
+    fib.impl([&](auto& _,u8 i)->Stmt{
+        return {
+            if_(i < 2_u8).then({
+                _.return_(i),
+            }).else_({
+                _.return_(fib(i - 1_u8) + fib(i - 2_u8)),
+            }),
+        };
+    }),
+    sum.impl([&](auto& _,u8 start,u8 end)->Stmt{
         u8 res{_};//local variable declaration
         u8 i{_};
-		return {
-			res=0_u8,
-			for_(i=start,i<=end,i+=1_u8).do_({
-				res+=i,
-			}),
+        return {
+            res=0_u8,
+            for_(i=start,i<=end,i+=1_u8).do_({
+                res+=i,
+            }),
             _.return_(res),
-		};
-	}),
+        };
+    }),
 }).run_to_halt();
 ```
