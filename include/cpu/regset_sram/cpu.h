@@ -179,6 +179,7 @@ namespace BBCPU::RegSet_SRAM::Impl{
 			run();
 			clr.set(1);
 			run();
+			tick_half();
 		}
 		void load(const std::vector<word_t>& data, addr_t start=0){
 			mem.load(data,start);
@@ -191,16 +192,20 @@ namespace BBCPU::RegSet_SRAM::Impl{
 		word_t get_op() const{
 			return regset.regs[RegSet::I.v()].Q.value();
 		}
+		void tick_half(){
+			clk.clock();
+			run();
+			clk.clock();
+			run();
+			clk.clock();
+			run();
+			clk.clock();
+			run();
+		}
 		void tick(){
 			++tick_count;
-			clk.clock();
-			run();
-			clk.clock();
-			run();
-			clk.clock();
-			run();
-			clk.clock();
-			run();
+			tick_half();
+			tick_half();
 		}
 		void tick_op(){
 			do{

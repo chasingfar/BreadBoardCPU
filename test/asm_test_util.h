@@ -6,8 +6,8 @@
 #define BBCPU_ASM_TEST_UTIL_H
 
 #include "catch.hpp"
-#define CPU_IMPL RegFile8x16
-//#define CPU_IMPL RegSet_SRAM
+//#define CPU_IMPL RegFile8x16
+#define CPU_IMPL RegSet_SRAM
 #include "lang/lang.h"
 
 using namespace BBCPU::Lang;

@@ -36,10 +36,6 @@ namespace BBCPU::RegSet_SRAM {
 			mctrl=MCTRL::state::TCF::set(mctrl, MARG::carry::get(marg));
 		}
 
-		void halt(){
-			end();
-		}
-
 		void reg_to_rs(Reg from,RegSet to,bool save_tcf=false){
 			if(step()){mctrl=MCTRL::BtoReg(mctrl, from, to);if(save_tcf){save_TCF();}}
 		}
@@ -245,6 +241,9 @@ namespace BBCPU::RegSet_SRAM {
 			load_addr(Reg16::PC);
 			mem_to_rs(RegSet::I);
 			end();
+		}
+		void halt(){
+			load_op();
 		}
 		void init_op(){
 			LOG(i);
