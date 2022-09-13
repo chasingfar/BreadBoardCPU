@@ -378,5 +378,127 @@ namespace BBCPU::Sim{
 			};
 		}
 	};
+	// Base on NHD-12864MZ-FSW-GBW-L
+	template<size_t CHIP_NUM=2>
+	struct GLCD:Chip{
+		Port<8> DB{Mode::IN,"DB"};
+		Enable RST{"RST"},CS[CHIP_NUM];
+		Port<1> RW{Mode::IN,"RW"},RS{Mode::IN,"RS"},E{Mode::IN,"E"};
+
+		bool prev_E=false;
+		bool on[CHIP_NUM],busy=false;
+		uint8_t x,y,z;
+		uint8_t chips[CHIP_NUM][8][64];
+		enum{RW_WRITE=0,RW_READ=1};
+		enum{RS_CMD=0,RS_DATA=1};
+		explicit GLCD(std::string name=""):Chip(std::move(name)){
+			add_ports(DB,RST,RW,RS,E);
+			[&]<size_t ...I>(std::index_sequence<I...>){
+				((CS[I].name="CS"+std::to_string(I)),...);
+				add_ports(CS[I]...);
+			}(std::make_index_sequence<CHIP_NUM>{});
+		}
+		void run() override{
+			if(RST.is_enable()){
+				reset();
+			}
+			if(E.value()==1){
+				if(RW.value()==RW_READ){
+				for(size_t i=0;i<CHIP_NUM;++i){
+					if(CS[i].is_enable()){
+						if(RS.value()==RS_DATA){
+							DB=read_data(i);
+						}else{
+							DB=read_status(i);
+						}
+					}
+				}
+				}
+			}else if(prev_E){
+				if(RW.value()==RW_WRITE){
+				for(size_t i=0;i<CHIP_NUM;++i){
+					if(CS[i].is_enable()){
+						if(RS.value()==RS_DATA){
+							write_data(i,DB.value());
+						}else{
+							write_cmd(i,DB.value());
+						}
+					}
+				}
+				}
+			}
+			prev_E=E.value();
+		}
+		val_t read_data(size_t c){
+			return chips[c][x][y];
+		}
+		val_t read_status(size_t c){
+			return (busy<<7)|(on[c]<<5)|(RST.is_enable()<<4);
+		}
+		void write_data(size_t c,uint8_t data){
+			chips[c][x][y]=data;
+			++y;
+		}
+		void write_cmd(size_t c,uint8_t cmd){
+			switch((cmd>>6)&0b11){
+				case 0b00:
+					if((cmd>>1)==0b0011111){
+						on[c]=((cmd&1)==1);
+					}
+					break;
+				case 0b01:
+					y=cmd&0b111111;
+					break;
+				case 0b10:
+					if((cmd>>3)==0b10111){
+						x=cmd&0b111;
+					}
+					break;
+				case 0b11:
+					z=cmd&0b111111;
+					break;
+			}
+		}
+		void reset() {
+			x=0;
+			y=0;
+			z=0;
+			for(size_t i=0;i<CHIP_NUM;++i){
+				on[i]=false;
+			}
+		}
+		enum display_char:char{
+			none='X',
+			white=' ',
+			black='#',
+		};
+		Util::Printer display() const {
+			return [=](std::ostream& os){
+				for(size_t page=0;page<8;++page){
+				for(size_t px=0;px<8;++px){
+				for(size_t c=0;c<CHIP_NUM;++c){
+				for(size_t l=0;l<64;++l){
+					if(on[c]){
+						os<<((((chips[c][page][(l+z)%64]>>px)&1)==1)?display_char::black:display_char::white);
+					}else{
+						os<<display_char::none;
+					}
+				}
+				}
+				os<<std::endl;
+				}
+				}
+			};
+		}
+		Util::Printer print(std::span<const Level> s) const override{
+			return [=](std::ostream& os){
+				os<<"GLCD DB:"<<DB(s)<<",E:"<<E(s)<<",RST:"<<RST(s)<<",RW:"<<RW(s)<<",RS:"<<RS(s);
+				for(size_t i=0;i<CHIP_NUM;++i){
+					os<<",CS"<<i<<":"<<CS[i](s);
+				}
+				
+			};
+		}
+	};
 }
 #endif //BBCPU_SIM_CHIPS_H
