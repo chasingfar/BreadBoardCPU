@@ -71,8 +71,8 @@ namespace BBCPU::RegSet_SRAM {
 			return decode(o,std::to_string(addr));
 		}
 	};
-	struct MCTRL : BitField<24,StartAt<0> > {
-		using state  = STATE<9,StartAt<0> >;
+	BITFILEDBASE(24) struct MCTRL_ : Base {
+		using state  = STATE<9, Base,FollowMode::innerLow >;
 		using INTA_  = BitField<1, state>;
 		using alu    = ALU<6, INTA_>;
 		using io     = IO<8, alu>;
@@ -167,7 +167,7 @@ namespace BBCPU::RegSet_SRAM {
 			return o;
 		}
 
-		static auto inc(auto o, alu::Carry carry){
+		static auto inc(auto o, typename alu::Carry carry){
 			LOG(carry);
 			o=alu::inc(o,carry);
 			o=io::setRs(o,RegSet::A);
@@ -181,7 +181,7 @@ namespace BBCPU::RegSet_SRAM {
 			return o;
 		}
 
-		static auto dec(auto o, alu::Carry carry){
+		static auto dec(auto o, typename alu::Carry carry){
 			LOG(carry);
 			o=alu::dec(o,carry);
 			o=io::setRs(o,RegSet::A);
@@ -189,22 +189,24 @@ namespace BBCPU::RegSet_SRAM {
 		}
 
 		static std::string decode(auto o,std::string addr){
-			auto [L,R,O]=MCTRL::io::decode(o,addr);
-			auto fn_str=MCTRL::alu::get_fn_str(o, L, R);
+			auto [L,R,O]=io::decode(o,addr);
+			auto fn_str=alu::get_fn_str(o, L, R);
 			return O+"="+fn_str;
 		}
 		static auto decode(auto o,size_t addr){
 			return decode(o,std::to_string(addr));
 		}
 		static std::string decode(auto o,std::string Ls,std::string Rs,std::string Os,std::string addr){
-			auto [L,R,O]=MCTRL::io::decode(o,addr);
-			auto fn_str=MCTRL::alu::get_fn_str(o, L+"("+Ls+")", R+"("+Rs+")");
+			auto [L,R,O]=io::decode(o,addr);
+			auto fn_str=alu::get_fn_str(o, L+"("+Ls+")", R+"("+Rs+")");
 			return O+"("+Os+")="+fn_str;
 		}
 		static std::string decode(auto o,size_t Ls,size_t Rs,size_t Os,size_t addr){
 			return decode(o,std::to_string(Ls),std::to_string(Rs),std::to_string(Os),std::to_string(addr));
 		}
 	};
+	using MCTRL=MCTRL_<>;
+	
 	static auto incIndex(auto marg,auto mctrl){
 		return MCTRL::setIndex(mctrl, MARG::getIndex(marg) + 1);
 	}

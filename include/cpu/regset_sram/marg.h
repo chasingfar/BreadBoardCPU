@@ -15,8 +15,8 @@ namespace BBCPU::RegSet_SRAM {
 		using IF    = BitField<1,CF>;
 	};
 
-	struct MARG : BitField<19,StartAt<0> > {
-		using carry  = BitField<1, StartAt<0> >;
+	BITFILEDBASE(19) struct MARG_ : Base {
+		using carry  = BitField<1, Base,FollowMode::innerLow>;
 		using state  = STATE<9, carry>;
 		using INT    = BitField<1, state >;
 		using opcode = BitField<8, INT >;
@@ -36,5 +36,6 @@ namespace BBCPU::RegSet_SRAM {
 			return static_cast<size_t>(state::index::get(o));
 		}
 	};
+	using MARG=MARG_<>;
 }
 #endif //BBCPU_CPU_REGSET_SRAM_MARG_H
