@@ -45,7 +45,7 @@ namespace BBCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using from  = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<from>(ctx).str(),{OpType::i16}};
+			return {name+"-"+getUReg16<from>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
@@ -63,7 +63,7 @@ namespace BBCPU::OpCode {
 		using id    = OPID<6,Base,V>;
 		using to    = OPField<2,UReg16,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+getUReg16<to>(ctx).str(),{OpType::i16}};
+			return {name+"-"+getUReg16<to>(ctx).str(),{OpType::i16}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
@@ -105,7 +105,7 @@ namespace BBCPU::OpCode {
 #include "define_enum_x.h"
 		using fn = OPField<3,FN,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+std::string(fn::get(ctx.marg)),{}};
+			return {name+"-"+std::string(fn::get(ctx.marg)),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
@@ -153,7 +153,7 @@ namespace BBCPU::OpCode {
 #include "define_enum_x.h"
 		using fn = OPField<2,FN, id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+fn::get(ctx.marg).str(),{}};
+			return {name+"-"+fn::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
@@ -185,7 +185,7 @@ namespace BBCPU::OpCode {
 		using id    = OPID<5,Base,V>;
 		using from  = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+from::get(ctx.marg).str(),{}};
+			return {name+"-"+from::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
@@ -199,7 +199,7 @@ namespace BBCPU::OpCode {
 		using id    = OPID<5,Base,V>;
 		using to    = OPField<3,UReg,id>;
 		static layout_t parse(MCode ctx){
-			return {name+" "+to::get(ctx.marg).str(),{}};
+			return {name+"-"+to::get(ctx.marg).str(),{}};
 		}
 		static void gen(MCode& ctx){
 			LOG_OP_NAME
